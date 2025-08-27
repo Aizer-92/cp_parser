@@ -1,0 +1,32 @@
+ИСПРАВЛЕННЫЙ ОТЧЕТ ПО АНАЛИЗУ ЗАРПЛАТ
+============================================================
+
+Дата анализа: 2025-08-26 14:22:22
+Файл: Табл выплаты 2025 (1).xlsx
+Примечание: Проценты могут находиться в столбце с датой 2019-08-23
+
+СТРУКТУРА ДАННЫХ:
+------------------------------
+1. Unnamed: 0 (тип: object)
+2. Unnamed: 1 (тип: object)
+3. 2019-08-23 00:00:00 (тип: object)
+4. Unnamed: 3 (тип: object)
+5. Unnamed: 4 (тип: object)
+6. Unnamed: 5 (тип: object)
+7. Unnamed: 6 (тип: object)
+8. Unnamed: 7 (тип: object)
+9. СС (тип: object)
+10. Кол-во (тип: object)
+11. Unnamed: 10 (тип: object)
+12. Unnamed: 11 (тип: object)
+13. Unnamed: 12 (тип: object)
+14. Unnamed: 13 (тип: object)
+15. Сумма СС (тип: object)
+16. Суммы в счете (тип: object)
+17. Unnamed: 16 (тип: object)
+18. Разница (тип: object)
+19. Unnamed: 18 (тип: object)
+20. Unnamed: 19 (тип: object)
+21. Unnamed: 20 (тип: float64)
+22. Unnamed: 21 (тип: object)
+23. Unnamed: 22 (тип: float64)

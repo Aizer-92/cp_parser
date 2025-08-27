@@ -1,0 +1,15 @@
+# Основные зависимости для облачной синхронизации
+google-api-python-client==2.108.0
+google-auth-httplib2==0.1.1
+google-auth-oauthlib==1.1.0
+
+# Дополнительные утилиты
+requests==2.31.0
+python-dotenv==1.0.0
+
+# Для работы с файлами
+pathlib2==2.3.7
+watchdog==3.0.0
+
+# Для логирования
+colorama==0.4.6

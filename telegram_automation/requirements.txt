@@ -1,0 +1,22 @@
+# Telegram Bot API (официальный способ)
+python-telegram-bot==20.7
+
+# Telethon (для работы с пользовательским аккаунтом)
+telethon==1.32.1
+
+# Pyrogram (альтернатива Telethon)
+pyrogram==2.0.106
+tgcrypto==1.2.5
+
+# Дополнительные библиотеки
+python-dotenv==1.0.0
+schedule==1.2.0
+asyncio
+aiofiles==23.2.1
+pandas==2.1.4
+matplotlib==3.8.2
+seaborn==0.13.0
+
+# Логирование и мониторинг
+loguru==0.7.2
+colorama==0.4.6
