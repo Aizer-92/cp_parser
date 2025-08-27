@@ -85,7 +85,7 @@ def create_service_account_guide():
 5️⃣ Сохраните ключ:
    - Файл JSON автоматически скачается
    - Переместите его в папку credentials/
-   - Переименуйте в service_account.json
+   - Переименуйте в quickstart-1591698112539-676a9e339335.json
     """)
 
 def create_test_spreadsheet_guide():
@@ -152,7 +152,7 @@ def verify_setup():
     print_step(5, "Проверка настройки")
     
     checks = [
-        ("credentials/service_account.json", "Service Account ключ"),
+        ("credentials/quickstart-1591698112539-676a9e339335.json", "Service Account ключ"),
         ("config.json", "Файл конфигурации"),
         ("requirements.txt", "Файл зависимостей")
     ]
@@ -182,8 +182,8 @@ def test_connection():
         
         sheets = GoogleSheetsConnector()
         
-        if os.path.exists("credentials/service_account.json"):
-            success = sheets.authenticate_service_account("credentials/service_account.json")
+            if os.path.exists("credentials/quickstart-1591698112539-676a9e339335.json"):
+        success = sheets.authenticate_service_account("credentials/quickstart-1591698112539-676a9e339335.json")
             if success:
                 print("✅ Аутентификация успешна!")
                 
@@ -203,7 +203,7 @@ def test_connection():
                 print("❌ Ошибка аутентификации")
                 return False
         else:
-            print("❌ Файл service_account.json не найден")
+            print("❌ Файл quickstart-1591698112539-676a9e339335.json не найден")
             return False
             
     except ImportError as e:

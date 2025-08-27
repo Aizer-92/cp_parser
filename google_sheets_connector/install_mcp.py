@@ -69,7 +69,7 @@ def test_mcp_server():
         "mcp_server.py",
         "connector.py", 
         "priorities_manager.py",
-        "credentials/service_account.json"
+        "credentials/quickstart-1591698112539-676a9e339335.json"
     ]
     
     missing_files = []
@@ -172,7 +172,7 @@ python install_mcp.py
 ```
 
 ### 2. Настройка credentials
-Убедитесь, что файл `credentials/service_account.json` содержит корректные данные Service Account.
+        Убедитесь, что файл `credentials/quickstart-1591698112539-676a9e339335.json` содержит корректные данные Service Account.
 
 ### 3. Запуск сервера
 ```bash
@@ -187,7 +187,7 @@ python start_mcp_server.py
 {
   "name": "authenticate",
   "arguments": {
-    "credentials_file": "credentials/service_account.json"
+            "credentials_file": "credentials/quickstart-1591698112539-676a9e339335.json"
   }
 }
 ```
@@ -270,7 +270,7 @@ python start_mcp_server.py
 ## 🛠️ Диагностика проблем
 
 ### Проблема с аутентификацией
-1. Проверьте корректность `credentials/service_account.json`
+1. Проверьте корректность `credentials/quickstart-1591698112539-676a9e339335.json`
 2. Убедитесь, что Service Account имеет доступ к таблице
 3. Проверьте включение Google Sheets API в проекте
 

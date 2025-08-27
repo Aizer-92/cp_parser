@@ -30,7 +30,7 @@ def setup_credentials():
     print("1. Перейдите в Google Cloud Console")
     print("2. Создайте Service Account и скачайте JSON ключ")
     print("3. Замените содержимое service_account_example.json на реальные данные")
-    print("4. Переименуйте файл в service_account.json")
+    print("4. Переименуйте файл в quickstart-1591698112539-676a9e339335.json")
     print("5. Обновите config.json с ID ваших таблиц")
 
 def basic_reading_example():
@@ -41,7 +41,7 @@ def basic_reading_example():
     sheets = GoogleSheetsConnector()
     
     # Аутентификация (замените на путь к вашему файлу)
-    service_account_file = "credentials/service_account.json"
+    service_account_file = "credentials/quickstart-1591698112539-676a9e339335.json"
     
     if not sheets.authenticate_service_account(service_account_file):
         print("❌ Ошибка аутентификации. Проверьте файл с credentials.")
@@ -187,7 +187,7 @@ def main():
     print("=" * 50)
     
     # Проверяем наличие необходимых файлов
-    if not os.path.exists("credentials/service_account.json"):
+    if not os.path.exists("credentials/quickstart-1591698112539-676a9e339335.json"):
         setup_credentials()
         print("\n⚠️ Настройте credentials и запустите скрипт снова")
         return

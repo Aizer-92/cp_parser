@@ -47,7 +47,7 @@ try:
                 'priority': 'M'       # Приоритет
             }
         
-        def authenticate(self, credentials_file: str = "credentials/service_account.json") -> bool:
+        def authenticate(self, credentials_file: str = "credentials/quickstart-1591698112539-676a9e339335.json") -> bool:
             """Аутентификация"""
             return self.connector.authenticate_service_account(credentials_file)
         
@@ -346,7 +346,7 @@ try:
         # Проверяем аутентификацию
         if not manager.authenticate():
             print("❌ Ошибка аутентификации")
-            print("💡 Убедитесь, что файл credentials/service_account.json существует")
+            print("💡 Убедитесь, что файл credentials/quickstart-1591698112539-676a9e339335.json существует")
             print("💡 И что Service Account имеет доступ к таблице")
             return
         

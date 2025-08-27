@@ -14,7 +14,7 @@ def create_comprehensive_dashboard():
     
     # Подключение
     sheets = GoogleSheetsConnector()
-    if not sheets.authenticate_service_account("credentials/service_account.json"):
+    if not sheets.authenticate_service_account("credentials/quickstart-1591698112539-676a9e339335.json"):
         print("❌ Ошибка аутентификации")
         return
     

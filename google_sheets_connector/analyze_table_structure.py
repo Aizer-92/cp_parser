@@ -166,7 +166,7 @@ def work_with_priorities_table():
     
     # Подключение
     sheets = GoogleSheetsConnector()
-    sheets.authenticate_service_account('credentials/service_account.json')
+    sheets.authenticate_service_account('credentials/quickstart-1591698112539-676a9e339335.json')
     
     table_id = "1Xxx_cNb5eOi0CzRhr1X3mWwYWyltmZu_uI_02B9EfcE"
     

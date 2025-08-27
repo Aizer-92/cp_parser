@@ -27,7 +27,7 @@ class HealthSheetsSync:
         self.connector = connector or GoogleSheetsConnector()
         self.health_data_path = "../../Docs/Health/"
         
-    def authenticate(self, service_account_file: str = "credentials/service_account.json") -> bool:
+    def authenticate(self, service_account_file: str = "credentials/quickstart-1591698112539-676a9e339335.json") -> bool:
         """
         Аутентификация в Google Sheets
         

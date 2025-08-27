@@ -11,10 +11,10 @@ def check_service_account():
     print("🔍 Проверка Service Account credentials")
     print("=" * 50)
     
-    credentials_file = "credentials/service_account.json"
+    credentials_file = "credentials/quickstart-1591698112539-676a9e339335.json"
     
     if not os.path.exists(credentials_file):
-        print("❌ Файл service_account.json не найден")
+        print("❌ Файл quickstart-1591698112539-676a9e339335.json не найден")
         return False
     
     try:
@@ -57,7 +57,7 @@ def test_table_access():
         
         # Аутентификация
         print("🔐 Выполняется аутентификация...")
-        success = sheets.authenticate_service_account("credentials/service_account.json")
+        success = sheets.authenticate_service_account("credentials/quickstart-1591698112539-676a9e339335.json")
         
         if not success:
             print("❌ Ошибка аутентификации")

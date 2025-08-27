@@ -67,7 +67,7 @@ class GoogleSheetsMCPServer:
                             "credentials_file": {
                                 "type": "string",
                                 "description": "Путь к файлу Service Account JSON",
-                                "default": "credentials/service_account.json"
+                                "default": "credentials/quickstart-1591698112539-676a9e339335.json"
                             }
                         }
                     }
@@ -319,7 +319,7 @@ class GoogleSheetsMCPServer:
     
     async def _authenticate(self, args: Dict[str, Any]) -> List[TextContent]:
         """Аутентификация"""
-        credentials_file = args.get("credentials_file", "credentials/service_account.json")
+        credentials_file = args.get("credentials_file", "credentials/quickstart-1591698112539-676a9e339335.json")
         
         try:
             success = self.connector.authenticate_service_account(credentials_file)
@@ -577,7 +577,7 @@ class GoogleSheetsMCPServer:
 
 1. Сначала выполните аутентификацию:
    ```
-   authenticate(credentials_file="credentials/service_account.json")
+           authenticate(credentials_file="credentials/quickstart-1591698112539-676a9e339335.json")
    ```
 
 2. Получите информацию о таблице:

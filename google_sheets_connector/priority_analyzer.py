@@ -16,7 +16,7 @@ class PriorityAnalyzer:
         self.spreadsheet_id = spreadsheet_id
         self.df = None
     
-    def authenticate(self, credentials_file="credentials/service_account.json"):
+    def authenticate(self, credentials_file="credentials/quickstart-1591698112539-676a9e339335.json"):
         """Аутентификация"""
         return self.connector.authenticate_service_account(credentials_file)
     
