@@ -7,14 +7,31 @@ from typing import List, Dict, Any
 def get_database_connection():
     """Возвращает подключение к БД (PostgreSQL или SQLite) - Railway оптимизированная версия"""
     
-    # Railway автоматически предоставляет DATABASE_URL через Service Variables
+    # Сначала пробуем PUBLIC URL (более надежный на Railway)
+    database_public_url = os.environ.get('DATABASE_PUBLIC_URL')
+    if database_public_url:
+        try:
+            import psycopg2
+            print(f"🔌 Подключение к PostgreSQL через PUBLIC URL")
+            
+            # Преобразуем URL для psycopg2
+            if database_public_url.startswith('postgres://'):
+                database_public_url = database_public_url.replace('postgres://', 'postgresql://', 1)
+            
+            conn = psycopg2.connect(database_public_url)
+            print("✅ Подключение к PostgreSQL успешно")
+            return conn, 'postgres'
+        except Exception as e:
+            print(f"❌ Ошибка подключения к PostgreSQL PUBLIC URL: {e}")
+    
+    # Fallback на обычный DATABASE_URL
     database_url = os.environ.get('DATABASE_URL')
     if database_url:
         try:
             import psycopg2
-            print(f"🔌 Подключение к PostgreSQL через Railway Service Variables")
+            print(f"🔌 Подключение к PostgreSQL через обычный DATABASE_URL (fallback)")
             
-            # Преобразуем URL для psycopg2 (как в рабочем promo_calculator_railway)
+            # Преобразуем URL для psycopg2
             if database_url.startswith('postgres://'):
                 database_url = database_url.replace('postgres://', 'postgresql://', 1)
             
@@ -22,7 +39,7 @@ def get_database_connection():
             print("✅ Подключение к PostgreSQL успешно")
             return conn, 'postgres'
         except Exception as e:
-            print(f"❌ Ошибка подключения к PostgreSQL: {e}")
+            print(f"❌ Ошибка подключения к PostgreSQL DATABASE_URL: {e}")
             print("⚠️ Переключаемся на SQLite")
     
     # Fallback к SQLite

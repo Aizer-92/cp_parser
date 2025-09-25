@@ -213,23 +213,39 @@ class FixedNormalizedParser:
         
         offers = []
         
+        # ВАЖНО: Один общий тираж для АВИА и ЖД, для образцов = 1
+        general_quantity = None
+        
+        # Ищем общий тираж (может быть в разных местах)
+        for qty_field in ['quantity', 'quantity_avia', 'quantity_jd']:
+            if qty_field in column_mapping:
+                general_quantity = self._get_cell_number(ws, row, column_mapping.get(qty_field))
+                if general_quantity:
+                    break
+
         # Проверяем каждый маршрут
         routes = [
-            ('АВИА', 'quantity_avia', 'price_avia_usd', 'price_avia_rub', 'delivery_avia'),
-            ('ЖД', 'quantity_jd', 'price_jd_usd', 'price_jd_rub', 'delivery_jd'), 
-            ('ОБРАЗЕЦ', 'quantity_sample', 'price_sample_usd', 'price_sample_rub', 'delivery_sample')
+            ('АВИА', 'price_avia_usd', 'price_avia_rub', 'delivery_avia'),
+            ('ЖД', 'price_jd_usd', 'price_jd_rub', 'delivery_jd'), 
+            ('ОБРАЗЕЦ', 'price_sample_usd', 'price_sample_rub', 'delivery_sample')
         ]
         
-        for route_name, qty_field, usd_field, rub_field, delivery_field in routes:
+        for route_name, usd_field, rub_field, delivery_field in routes:
             
-            # Извлекаем данные для этого маршрута
-            quantity = self._get_cell_number(ws, row, column_mapping.get(qty_field))
+            # Определяем тираж для этого маршрута
+            if route_name == 'ОБРАЗЕЦ':
+                # У образцов всегда 1 штука!
+                quantity = 1
+            else:
+                # АВИА и ЖД используют общий тираж
+                quantity = general_quantity
+                
             price_usd = self._get_cell_number(ws, row, column_mapping.get(usd_field))
             price_rub = self._get_cell_number(ws, row, column_mapping.get(rub_field))
             delivery_time = self._get_cell_text(ws, row, column_mapping.get(delivery_field))
             
             # Создаем предложение если есть хоть какие-то данные
-            if quantity or price_usd or price_rub:
+            if (route_name == 'ОБРАЗЕЦ' and (price_usd or price_rub)) or (route_name != 'ОБРАЗЕЦ' and (quantity or price_usd or price_rub)):
                 
                 offer = PriceOffer(
                     product_id=product_id,
