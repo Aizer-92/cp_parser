@@ -15,8 +15,8 @@ def get_database_connection():
             import psycopg2
             from urllib.parse import urlparse
             
-            # Пробуем сначала внутренний URL, потом публичный
-            url_to_try = database_url or database_public_url
+            # Пробуем сначала ПУБЛИЧНЫЙ URL (более надежный на Railway), потом внутренний
+            url_to_try = database_public_url or database_url
             print(f"🔗 Пробуем подключиться к PostgreSQL: {url_to_try[:50]}...")
             
             # Парсим URL
@@ -34,11 +34,11 @@ def get_database_connection():
         except Exception as e:
             print(f"❌ Ошибка подключения к PostgreSQL внутреннему: {e}")
             
-            # Пробуем публичный URL если есть
-            if database_public_url and database_public_url != url_to_try:
+            # Пробуем внутренний URL если есть
+            if database_url and database_url != url_to_try:
                 try:
-                    print(f"🔗 Пробуем публичный PostgreSQL URL...")
-                    parsed = urlparse(database_public_url)
+                    print(f"🔗 Пробуем внутренний PostgreSQL URL...")
+                    parsed = urlparse(database_url)
                     conn = psycopg2.connect(
                         host=parsed.hostname,
                         port=parsed.port,
@@ -47,10 +47,10 @@ def get_database_connection():
                         password=parsed.password,
                         sslmode='require'
                     )
-                    print("✅ Подключились к PostgreSQL (публичный URL)")
+                    print("✅ Подключились к PostgreSQL (внутренний URL)")
                     return conn, 'postgres'
                 except Exception as e2:
-                    print(f"❌ Ошибка подключения к PostgreSQL публичному: {e2}")
+                    print(f"❌ Ошибка подключения к PostgreSQL внутреннему: {e2}")
             
             print("⚠️ Переключаемся на SQLite")
     
