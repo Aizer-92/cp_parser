@@ -1,0 +1,441 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ product.title }} - Промо-Калькулятор</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .product-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .image-gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .gallery-image {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .gallery-image:hover {
+            transform: scale(1.05);
+        }
+        .specs-table {
+            overflow-y: visible;
+        }
+        .product-info {
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .moq-info {
+            font-size: 1.1em;
+            color: #17a2b8;
+        }
+        .lead-time {
+            font-size: 1.1em;
+            color: #28a745;
+        }
+        .description {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #6c757d;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .description img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 15px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .description img:hover {
+            transform: scale(1.02);
+        }
+        .price-table {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .price-table th {
+            background: #f8f9fa;
+            color: #2c3e50;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .price-table td {
+            vertical-align: middle;
+        }
+        .price-highlight {
+            font-weight: bold;
+            color: #28a745;
+        }
+        .markup-info {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        .spec-source {
+            font-size: 0.8em;
+            color: #6c757d;
+            font-style: italic;
+        }
+        .weight-info {
+            font-weight: bold;
+            color: #fd7e14;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- Кнопка назад -->
+        <div class="mb-4">
+            <a href="/" class="btn btn-outline-dark">Назад к списку</a>
+        </div>
+
+        <div class="row">
+            <!-- Изображения -->
+            <div class="col-md-6">
+                <h3>Изображения</h3>
+                {% if product.all_images %}
+                    <img src="{{ product.all_images[0] }}" 
+                         class="product-image" 
+                         alt="{{ product.title }}"
+                         onclick="openImageModal('{{ product.all_images[0] }}')"
+                         onerror="this.src='/static/placeholder.jpg'">
+                    
+                    {% if product.all_images|length > 1 %}
+                    <div class="image-gallery">
+                        {% for img in product.all_images[1:] %}
+                        <img src="{{ img }}" class="gallery-image" 
+                             alt="Изображение {{ loop.index }}"
+                             onclick="openImageModal('{{ img }}')"
+                             onerror="this.style.display='none'">
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <img src="/static/placeholder.jpg" class="product-image" alt="Нет изображения">
+                {% endif %}
+            </div>
+
+            <!-- Информация о товаре -->
+            <div class="col-md-6">
+                <div class="product-info">
+                    <h2>{{ product.title }}</h2>
+                    
+                    {% if product.original_title and product.original_title != product.title %}
+                    <p class="text-muted"><i class="fas fa-language"></i> {{ product.original_title }}</p>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <h4 class="text-success">
+                            {% if product.price_rub_min %}
+                                {% if product.price_rub_min == product.price_rub_max %}
+                                    {{ "%.2f"|format(product.price_rub_min) }} RUB
+                                {% else %}
+                                    {{ "%.2f"|format(product.price_rub_min) }} - {{ "%.2f"|format(product.price_rub_max) }} RUB
+                                {% endif %}
+                            {% elif product.price_cny_min %}
+                                {% if product.price_cny_min == product.price_cny_max %}
+                                    {{ "%.2f"|format(product.price_cny_min) }} CNY
+                                {% else %}
+                                    {{ "%.2f"|format(product.price_cny_min) }} - {{ "%.2f"|format(product.price_cny_max) }} CNY
+                                {% endif %}
+                            {% else %}
+                                Цена не указана
+                            {% endif %}
+                        </h4>
+                    </div>
+                    
+                    {% if product.moq_min and product.moq_min > 1 %}
+                    <div class="moq-info mb-2">
+                        <strong>Минимальный заказ:</strong> {{ product.moq_min|round|int }}{% if product.moq_max and product.moq_max != product.moq_min %} - {{ product.moq_max|round|int }}{% endif %} штук
+                    </div>
+                    {% endif %}
+                    
+                    {% if product.lead_time %}
+                    <div class="lead-time mb-2">
+                        <strong>Срок поставки:</strong> {{ product.lead_time }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if product.vendor %}
+                    <div class="mb-2">
+                        <strong>Поставщик:</strong> 
+                        <a href="/?vendor={{ product.vendor }}" class="text-decoration-none">{{ product.vendor }}</a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if product.brand %}
+                    <div class="mb-2">
+                        <strong>Бренд:</strong> <span class="badge bg-light text-dark">{{ product.brand }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-2">
+                        <strong>ID товара:</strong> {{ product.offer_id }}
+                    </div>
+                    
+                    {% if product.source_url %}
+                    <div class="mb-2">
+                        <strong>Источник:</strong> <a href="{{ product.source_url }}" target="_blank">{{ product.source_url }}</a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+
+            </div>
+        </div>
+
+        <!-- Образцы -->
+        {% set samples = [] %}
+        {% for variant in product.variants %}
+            {% if variant.moq|int == 1 %}
+                {% set _ = samples.append(variant) %}
+            {% endif %}
+        {% endfor %}
+        {% if samples %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <h3>Образцы ({{ samples|length }} вариантов)</h3>
+                <div class="price-table">
+                    <table class="table table-striped table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Название варианта</th>
+                                <th>Мин. заказ</th>
+                                <th>Цена RUB</th>
+                                <th>Цена USD</th>
+                                <th>Ставка</th>
+                                <th>В коробке</th>
+                                <th>Размеры коробки</th>
+                                <th>Вес коробки</th>
+                                <th>Вес 1 шт.</th>
+                                <th>Плотность груза</th>
+                                <th>Цена CNY</th>
+                                <th>Себестоимость</th>
+                                <th>Наценка</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for variant in samples %}
+                            <tr>
+                                <td><strong>{{ variant.variant_name }}</strong></td>
+                                <td><span class="badge bg-warning text-dark">{{ variant.moq|round|int }}</span></td>
+                                <td class="price-highlight">{{ "%.2f"|format(variant.price_rub) if variant.price_rub else "-" }}</td>
+                                <td class="price-highlight">{{ "%.2f"|format(variant.price_usd) if variant.price_usd else "-" }}</td>
+                                <td>{{ "%.1f"|format(variant.transport_tariff) if variant.transport_tariff else "-" }}</td>
+                                <td>{{ variant.quantity_in_box or "-" }}</td>
+                                <td>
+                                    {% if variant.box_width and variant.box_height and variant.box_length %}
+                                        {{ "%.2f"|format(variant.box_width) }}×{{ "%.2f"|format(variant.box_height) }}×{{ "%.2f"|format(variant.box_length) }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if variant.box_weight %}
+                                        {{ "%.2f"|format(variant.box_weight) }} кг
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if variant.item_weight %}
+                                        {{ "%.2f"|format(variant.item_weight) }} кг
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if variant.cargo_density %}
+                                        {{ "%.1f"|format(variant.cargo_density) }} кг/м³
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="price-highlight">{{ "%.2f"|format(variant.price_cny) if variant.price_cny else "-" }}</td>
+                                <td>{{ "%.2f"|format(variant.cost_price) if variant.cost_price else "-" }}</td>
+                                <td>
+                                    {% if variant.markup_percent %}
+                                        <span class="markup-info">{{ "%.1f"|format(variant.markup_percent) }}x</span>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Таблица с ценами -->
+        {% set regular_variants = [] %}
+        {% for variant in product.variants %}
+            {% if variant.moq|int != 1 %}
+                {% set _ = regular_variants.append(variant) %}
+            {% endif %}
+        {% endfor %}
+        {% if regular_variants %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <h3>Таблица цен ({{ regular_variants|length }} вариантов)</h3>
+                <div class="price-table">
+                    <table class="table table-striped table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Название варианта</th>
+                                <th>Мин. заказ</th>
+                                <th>Цена RUB</th>
+                                <th>Цена USD</th>
+                                <th>Ставка</th>
+                                <th>В коробке</th>
+                                <th>Размеры коробки</th>
+                                <th>Вес коробки</th>
+                                <th>Вес 1 шт.</th>
+                                <th>Плотность груза</th>
+                                <th>Цена CNY</th>
+                                <th>Себестоимость</th>
+                                <th>Наценка</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for variant in regular_variants %}
+                            <tr>
+                                <td><strong>{{ variant.variant_name }}</strong></td>
+                                <td><span class="badge bg-light text-dark">{{ variant.moq|round|int }}</span></td>
+                                <td class="price-highlight">{{ "%.2f"|format(variant.price_rub) if variant.price_rub else "-" }}</td>
+                                <td class="price-highlight">{{ "%.2f"|format(variant.price_usd) if variant.price_usd else "-" }}</td>
+                                <td>{{ "%.1f"|format(variant.transport_tariff) if variant.transport_tariff else "-" }}</td>
+                                <td>{{ variant.quantity_in_box or "-" }}</td>
+                                <td>
+                                    {% if variant.box_width and variant.box_height and variant.box_length %}
+                                        {{ "%.2f"|format(variant.box_width) }}×{{ "%.2f"|format(variant.box_height) }}×{{ "%.2f"|format(variant.box_length) }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if variant.box_weight %}
+                                        {{ "%.2f"|format(variant.box_weight) }} кг
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if variant.item_weight %}
+                                        {{ "%.2f"|format(variant.item_weight) }} кг
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if variant.cargo_density %}
+                                        {{ "%.1f"|format(variant.cargo_density) }} кг/м³
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="price-highlight">{{ "%.2f"|format(variant.price_cny) if variant.price_cny else "-" }}</td>
+                                <td>{{ "%.2f"|format(variant.cost_price) if variant.cost_price else "-" }}</td>
+                                <td>
+                                    {% if variant.markup_percent %}
+                                        <span class="markup-info">{{ "%.1f"|format(variant.markup_percent) }}x</span>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Описание товара -->
+        {% if product.description %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <h3>Описание товара</h3>
+                <div class="description">
+                    <div style="white-space: pre-line;">{{ product.description|safe }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Характеристики -->
+        {% if product.specifications %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <h3>Характеристики ({{ product.specifications|length }})</h3>
+                <div class="specs-table">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Значение</th>
+                                <th>Источник</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for spec in product.specifications %}
+                            <tr>
+                                <td><strong>{{ spec.name }}</strong></td>
+                                <td>{{ spec.value }}</td>
+                                <td><span class="spec-source">{{ spec.source }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Модальное окно для изображений -->
+    <div class="modal fade" id="imageModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Изображение товара</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="modalImage" src="" class="img-fluid" alt="Изображение товара">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function openImageModal(imageUrl) {
+            document.getElementById('modalImage').src = imageUrl;
+            new bootstrap.Modal(document.getElementById('imageModal')).show();
+        }
+    </script>
+</body>
+</html>

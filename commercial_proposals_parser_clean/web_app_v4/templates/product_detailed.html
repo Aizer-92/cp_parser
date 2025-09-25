@@ -1,0 +1,396 @@
+{% extends "base_tailwind.html" %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Breadcrumb -->
+    <nav class="flex mb-8" aria-label="Breadcrumb">
+        <ol role="list" class="flex items-center space-x-4">
+            <li>
+                <div>
+                    <a href="/" class="text-gray-400 hover:text-gray-500 transition-colors">
+                        <svg class="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9.293 2.293a1 1 0 011.414 0l7 7A1 1 0 0117 11h-1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-3a1 1 0 00-1-1H9a1 1 0 00-1 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-6H3a1 1 0 01-.707-1.707l7-7z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="sr-only">Каталог</span>
+                    </a>
+                </div>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 flex-shrink-0 text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="ml-4 text-sm font-medium text-gray-500 truncate">{{ product.name }}</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Product Header -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="lg:grid lg:grid-cols-2 lg:gap-x-8">
+            <!-- Image Gallery -->
+            <div class="aspect-w-1 aspect-h-1 bg-gray-50 lg:aspect-none lg:h-auto">
+                <div class="p-8">
+                    <!-- Main Image -->
+                    <div class="aspect-w-1 aspect-h-1 w-full mb-6">
+                        {% if images %}
+                        <img id="main-image" src="{{ get_web_image_path(images[0].local_path) }}?v={{ timestamp }}" 
+                             alt="{{ product.name }}" 
+                             class="w-full h-96 object-contain rounded-xl bg-white shadow-sm">
+                        {% else %}
+                        <div class="w-full h-96 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <svg class="h-24 w-24 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Image Thumbnails -->
+                    {% if images|length > 1 %}
+                    <div class="grid grid-cols-4 gap-4">
+                        {% for image in images %}
+                        <button onclick="switchMainImage('{{ get_web_image_path(image.local_path) }}?v={{ timestamp }}', {{ loop.index }})"
+                                class="aspect-w-1 aspect-h-1 rounded-lg overflow-hidden border-2 hover:border-blue-500 transition-colors {% if loop.first %}border-blue-500{% else %}border-gray-200{% endif %}"
+                                id="thumb-{{ loop.index }}">
+                            <img src="{{ get_web_image_path(image.local_path) }}?v={{ timestamp }}" 
+                                 alt="{{ product.name }}" 
+                                 class="w-full h-full object-contain bg-white">
+                            <div class="absolute top-1 right-1">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                           {% if image.image_type == 'main' %}bg-blue-100 text-blue-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {% if image.image_type == 'main' %}Основное{% else %}Дополнительное{% endif %}
+                                </span>
+                            </div>
+                        </button>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Product Info -->
+            <div class="p-8 lg:p-12">
+                <!-- Product Title & Meta -->
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold text-gray-900 mb-4">{{ product.name }}</h1>
+                    
+                    <!-- Meta Badges -->
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            ID: {{ product.id }}
+                        </span>
+                        {% if sheet_metadata %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            {{ sheet_metadata.sheet_title|truncate(20) }}
+                        </span>
+                        {% endif %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            Строки {{ product.start_row }}-{{ product.end_row }}
+                        </span>
+                    </div>
+
+                    <!-- Product Description -->
+                    {% if product.characteristics %}
+                    <div class="bg-gray-50 rounded-xl p-6 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-3">Характеристики</h3>
+                        <div class="prose prose-sm text-gray-700 whitespace-pre-line">
+                            {{ product.characteristics }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Custom Design -->
+                    {% if product.custom_design %}
+                    <div class="bg-blue-50 rounded-xl p-6 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-3">Дизайн (кастом)</h3>
+                        <div class="text-gray-700">
+                            {{ product.custom_design }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Project Info -->
+                    <div class="bg-green-50 rounded-xl p-6 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-3">Информация о проекте</h3>
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <span class="text-sm font-medium text-gray-500">Название проекта:</span>
+                                <div class="text-gray-700 text-sm">
+                                    {% if project_metadata and project_metadata.project_title %}
+                                        {{ project_metadata.project_title }}
+                                    {% else %}
+                                        <span class="text-gray-400 italic">Не найдено</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div>
+                                <span class="text-sm font-medium text-gray-500">Исполнители:</span>
+                                <div class="text-gray-700">
+                                    {% if project_metadata and project_metadata.executors %}
+                                        {{ project_metadata.executors }}
+                                    {% else %}
+                                        <span class="text-gray-400 italic">Не найдено</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div>
+                                <span class="text-sm font-medium text-gray-500">Менеджер:</span>
+                                <div class="text-gray-700">
+                                    {% if project_metadata and project_metadata.manager %}
+                                        {{ project_metadata.manager }}
+                                    {% else %}
+                                        <span class="text-gray-400 italic">Не найдено</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div>
+                                <span class="text-sm font-medium text-gray-500">Контрагент:</span>
+                                <div class="text-gray-700">
+                                    {% if project_metadata and project_metadata.counterparty %}
+                                        {{ project_metadata.counterparty }}
+                                    {% else %}
+                                        <span class="text-gray-400 italic">Не найдено</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div>
+                                <span class="text-sm font-medium text-gray-500">Исходная таблица:</span>
+                                <div>
+                                    {% if correct_google_url %}
+                                    <a href="{{ correct_google_url }}" target="_blank" 
+                                       class="inline-flex items-center text-blue-600 hover:text-blue-800">
+                                        Открыть Google Sheets
+                                        <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                        </svg>
+                                    </a>
+                                    {% elif sheet_metadata and sheet_metadata.sheet_url %}
+                                    <a href="{{ sheet_metadata.sheet_url }}" target="_blank" 
+                                       class="inline-flex items-center text-blue-600 hover:text-blue-800">
+                                        Открыть Google Sheets (исходная)
+                                        <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                        </svg>
+                                    </a>
+                                    {% else %}
+                                    <span class="text-gray-400">Ссылка недоступна</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sample Price (if available) -->
+                    {% if sample_offer %}
+                    <div class="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-6 mb-8">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-3">Цена образца</h3>
+                        <div class="flex items-center space-x-4">
+                            {% if sample_offer.price_usd %}
+                            <span class="text-2xl font-bold text-green-600">${{ "%.2f"|format(sample_offer.price_usd) }}</span>
+                            {% endif %}
+                            {% if sample_offer.price_rub %}
+                            <span class="text-2xl font-bold text-blue-600">₽{{ "%.2f"|format(sample_offer.price_rub) }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Price Variants Section -->
+    {% if price_variants %}
+    <div class="mt-12 bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-8 py-6 border-b">
+            <h2 class="text-2xl font-bold text-gray-900">Варианты цен и доставки</h2>
+            <p class="text-gray-600 mt-2">Цены зависят от тиража и способа доставки</p>
+        </div>
+        
+        <div class="p-8">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Тираж
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                USD
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                RUB
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Доставка
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Маршрут
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for variant in price_variants %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ variant.quantity|default('—', true) }}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if variant.price_usd %}
+                                <span class="text-sm font-semibold text-green-600">${{ "%.2f"|format(variant.price_usd) }}</span>
+                                {% else %}
+                                <span class="text-sm text-gray-400">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if variant.price_rub %}
+                                <span class="text-sm font-semibold text-blue-600">₽{{ "%.2f"|format(variant.price_rub) }}</span>
+                                {% else %}
+                                <span class="text-sm text-gray-400">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if variant.delivery_time %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    {{ variant.delivery_time }} дн
+                                </span>
+                                {% else %}
+                                <span class="text-sm text-gray-400">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if variant.route_name %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                           {% if 'АВИА' in variant.route_name %}bg-blue-100 text-blue-800
+                                           {% elif 'ЖД' in variant.route_name %}bg-green-100 text-green-800
+                                           {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ variant.route_name }}
+                                </span>
+                                {% else %}
+                                <span class="text-sm text-gray-400">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Additional Details -->
+    <div class="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Technical Details -->
+        <div class="bg-white rounded-2xl shadow-xl p-8">
+            <h3 class="text-xl font-bold text-gray-900 mb-6">Технические детали</h3>
+            <dl class="space-y-4">
+                <div class="flex justify-between py-3 border-b border-gray-200">
+                    <dt class="text-sm font-medium text-gray-500">ID товара</dt>
+                    <dd class="text-sm text-gray-900">{{ product.id }}</dd>
+                </div>
+                <div class="flex justify-between py-3 border-b border-gray-200">
+                    <dt class="text-sm font-medium text-gray-500">Таблица-источник</dt>
+                    <dd class="text-sm text-gray-900">{{ sheet_metadata.sheet_title if sheet_metadata else 'Неизвестно' }}</dd>
+                </div>
+                <div class="flex justify-between py-3 border-b border-gray-200">
+                    <dt class="text-sm font-medium text-gray-500">Диапазон строк</dt>
+                    <dd class="text-sm text-gray-900">{{ product.start_row }} - {{ product.end_row }}</dd>
+                </div>
+                {% if sheet_metadata %}
+                <div class="flex justify-between py-3 border-b border-gray-200">
+                    <dt class="text-sm font-medium text-gray-500">ID таблицы</dt>
+                    <dd class="text-sm text-gray-900">{{ product.sheet_id }}</dd>
+                </div>
+                {% endif %}
+            </dl>
+        </div>
+
+        <!-- Image Details -->
+        {% if images %}
+        <div class="bg-white rounded-2xl shadow-xl p-8">
+            <h3 class="text-xl font-bold text-gray-900 mb-6">Галерея изображений</h3>
+            <div class="space-y-4">
+                {% for image in images %}
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <img src="{{ get_web_image_path(image.local_path) }}?v={{ timestamp }}" 
+                             alt="{{ product.name }}" 
+                             class="w-12 h-12 object-contain bg-white rounded border">
+                        <div>
+                            <div class="text-sm font-medium text-gray-900">
+                                Изображение {{ loop.index }}
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                {% if image.column and image.row %}{{ image.column }}{{ image.row }}{% else %}Позиция неизвестна{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                               {% if image.image_type == 'main' %}bg-blue-100 text-blue-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {% if image.image_type == 'main' %}Основное{% else %}Дополнительное{% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Actions -->
+    <div class="mt-12 flex justify-center">
+        <button type="button" onclick="window.history.back()" 
+                class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Назад к каталогу
+        </button>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+function switchMainImage(imageSrc, index) {
+    // Update main image
+    document.getElementById('main-image').src = imageSrc;
+    
+    // Update thumbnail borders
+    document.querySelectorAll('[id^="thumb-"]').forEach(thumb => {
+        thumb.className = thumb.className.replace('border-blue-500', 'border-gray-200');
+    });
+    document.getElementById('thumb-' + index).className = 
+        document.getElementById('thumb-' + index).className.replace('border-gray-200', 'border-blue-500');
+}
+
+// Lazy loading for images
+if ('IntersectionObserver' in window) {
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                const src = img.getAttribute('data-src');
+                if (src) {
+                    img.src = src;
+                    img.classList.remove('opacity-0');
+                    img.classList.add('opacity-100');
+                    observer.unobserve(img);
+                }
+            }
+        });
+    });
+
+    document.querySelectorAll('img[data-src]').forEach(img => {
+        imageObserver.observe(img);
+    });
+}
+</script>
+{% endblock %}

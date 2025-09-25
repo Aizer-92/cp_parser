@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Главная - Каталог товаров{% endblock %}
+
+{% block content %}
+<!-- Герой секция -->
+<div class="hero-section text-white text-center py-5 mb-5">
+    <div class="container">
+        <h1 class="display-4 fw-bold mb-4">Каталог товаров</h1>
+        <p class="lead mb-4">Найдите идеальные товары для вашего бизнеса</p>
+        <a href="/products" class="btn btn-light btn-lg">
+            <i class="fas fa-th-large me-2"></i>
+            Перейти к каталогу
+        </a>
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="row mb-5">
+    <div class="col-md-3">
+        <div class="stats-card card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-box fa-3x text-primary mb-3"></i>
+                <h3 class="card-title">{{ stats.total_products }}</h3>
+                <p class="card-text">Товаров</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-route fa-3x text-success mb-3"></i>
+                <h3 class="card-title">{{ stats.total_price_offers }}</h3>
+                <p class="card-text">Ценовых предложений</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-images fa-3x text-info mb-3"></i>
+                <h3 class="card-title">{{ stats.total_images }}</h3>
+                <p class="card-text">Изображений</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-file-alt fa-3x text-warning mb-3"></i>
+                <h3 class="card-title">{{ stats.total_sheets }}</h3>
+                <p class="card-text">Таблиц</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Популярные товары -->
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">Популярные товары</h2>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-10">
+            <div class="row">
+                {% for product, price_offers, images in products %}
+    <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+        <div class="product-card card h-100">
+            <!-- Изображение товара -->
+            <div class="product-image">
+                {% if images %}
+                    {% set main_image = images | selectattr('image_type', 'equalto', 'main') | first %}
+                    {% if main_image %}
+                        <img src="/{{ main_image.local_path }}" alt="{{ product.name }}" class="img-fluid">
+                    {% else %}
+                        <img src="/{{ images[0].local_path }}" alt="{{ product.name }}" class="img-fluid">
+                    {% endif %}
+                {% else %}
+                    <div class="placeholder-image d-flex align-items-center justify-content-center">
+                        <i class="fas fa-image fa-3x text-muted"></i>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">{{ product.display_name or product.name }}</h5>
+                <div class="card-text text-muted small" style="white-space: pre-line;">{{ (product.characteristics or '')[:100]|safe }}{% if product.characteristics and product.characteristics|length > 100 %}...{% endif %}</div>
+                
+                <!-- Информация о товаре -->
+                <div class="product-info mb-3">
+                    {% if product.custom_design %}
+                    <div class="info-item">
+                        <i class="fas fa-palette me-1"></i>
+                        <span style="white-space: pre-line;">Кастом: {{ product.custom_design|safe }}</span>
+                    </div>
+                    {% endif %}
+                    {% if images|length > 1 %}
+                    <div class="info-item">
+                        <i class="fas fa-images me-1"></i>
+                        <span>{{ images|length }} фото</span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Таблица маршрутов -->
+                <div class="routes-table mb-3">
+                    <h6 class="text-muted mb-2">Варианты доставки:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Маршрут</th>
+                                    <th>Тираж</th>
+                                    <th>Цена USD</th>
+                                    <th>Срок</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for offer in price_offers[:3] %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">{{ offer.route_name }}</span>
+                                    </td>
+                                    <td>
+                                        {% if offer.quantity %}
+                                            <span class="fw-bold">{{ "{:,}".format(offer.quantity).replace(',', ' ') }} шт</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if offer.price_usd %}
+                                            <span class="price">${{ "%.2f"|format(offer.price_usd) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if offer.delivery_time %}
+                                            <small>{{ offer.delivery_time }}</small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% if price_offers|length > 3 %}
+                                <tr>
+                                    <td colspan="4" class="text-center">
+                                        <small class="text-muted">+{{ price_offers|length - 3 }} вариантов</small>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="mt-auto">
+                    <a href="/product/{{ product.id }}" class="btn btn-outline-primary btn-sm w-100">
+                        Подробнее
+                    </a>
+                </div>
+            </div>
+        </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

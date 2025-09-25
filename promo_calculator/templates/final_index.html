@@ -1,0 +1,374 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Промо-Калькулятор</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .product-card {
+            height: 100%;
+            border: none;
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            background: #ffffff;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+        }
+        .product-image-container {
+            position: relative;
+            width: 100%;
+            height: 280px;
+            overflow: hidden;
+            background: #f8f9fa;
+        }
+        .product-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+        .image-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .price {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #28a745;
+        }
+        .price-variants {
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+        .price-variant {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            margin: 4px 0;
+            border-radius: 8px;
+            border-left: 3px solid #6c757d;
+        }
+        .specs {
+            font-size: 0.9em;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .spec-item {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        .spec-source {
+            font-size: 0.8em;
+            color: #6c757d;
+            font-style: italic;
+        }
+        .additional-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .additional-image {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .additional-image:hover {
+            transform: scale(1.1);
+        }
+        .moq-info {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        .lead-time {
+            font-size: 0.9em;
+            color: #17a2b8;
+        }
+        .description {
+            font-size: 0.9em;
+            max-height: 100px;
+            overflow-y: auto;
+            color: #495057;
+        }
+        .description img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+        .card-body {
+            padding: 12px;
+        }
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            line-height: 1.3;
+        }
+        
+        /* 5 колонок на больших экранах */
+        @media (min-width: 992px) {
+            .col-lg-2 {
+                flex: 0 0 20% !important;
+                max-width: 20% !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Заголовок -->
+        <div class="row bg-light text-dark py-4 mb-4">
+            <div class="col">
+                <h1 class="mb-2">Промо-Калькулятор</h1>
+                <p class="text-muted mb-0">Товаров: {{ stats.total_products }}</p>
+            </div>
+        </div>
+
+        <!-- Фильтры -->
+        <div class="row mb-4">
+            <div class="col">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" name="search" value="{{ filters.search }}" placeholder="Поиск...">
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" name="vendor">
+                            <option value="">Все поставщики</option>
+                            {% for vendor in vendors %}
+                            <option value="{{ vendor }}" {% if vendor == filters.vendor %}selected{% endif %}>{{ vendor }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" name="has_specifications">
+                            <option value="">Все товары</option>
+                            <option value="true" {% if filters.has_specifications == 'true' %}selected{% endif %}>С характеристиками</option>
+                            <option value="false" {% if filters.has_specifications == 'false' %}selected{% endif %}>Без характеристик</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" name="has_images">
+                            <option value="">Все товары</option>
+                            <option value="true" {% if filters.has_images == 'true' %}selected{% endif %}>С изображениями</option>
+                            <option value="false" {% if filters.has_images == 'false' %}selected{% endif %}>Без изображений</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-outline-dark">Поиск</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Товары -->
+        <div class="row">
+            {% for product in products %}
+                            <div class="col-lg-2 col-md-4 col-sm-6 mb-4">
+                <div class="card product-card" onclick="window.location.href='/product/{{ product.id }}'">
+                    <div class="product-image-container">
+                        {% if product.main_image %}
+                        <img src="{{ product.main_image }}" 
+                             class="product-image" 
+                             alt="{{ product.title }}"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                             onload="this.style.display='block';">
+                        {% endif %}
+                        <div class="image-placeholder" style="display: {% if not product.main_image %}flex{% else %}none{% endif %};">
+                            <i class="fas fa-image"></i> Нет фото
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <h6 class="card-title">{{ product.title[:80] }}{% if product.title|length > 80 %}...{% endif %}</h6>
+                        
+                        {% if product.price_variants %}
+                        <div class="price-variants">
+                            {% for variant in product.price_variants %}
+                            <div class="price-variant">
+                                <strong>{{ variant.variant_name }}:</strong><br>
+                                {% if variant.price_rub %}
+                                    <span class="price">{{ "%.2f"|format(variant.price_rub) }} RUB</span>
+                                {% elif variant.price_cny %}
+                                    <span class="price">{{ "%.2f"|format(variant.price_cny) }} CNY</span>
+                                {% endif %}
+                                <span class="moq-info">(мин. {{ variant.moq|round|int }} шт.)</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="price">
+                            {% if product.price_rub_min %}
+                                {% if product.price_rub_min == product.price_rub_max %}
+                                    {{ "%.2f"|format(product.price_rub_min) }} RUB
+                                {% else %}
+                                    {{ "%.2f"|format(product.price_rub_min) }} - {{ "%.2f"|format(product.price_rub_max) }} RUB
+                                {% endif %}
+                            {% elif product.price_cny_min %}
+                                {% if product.price_cny_min == product.price_cny_max %}
+                                    {{ "%.2f"|format(product.price_cny_min) }} CNY
+                                {% else %}
+                                    {{ "%.2f"|format(product.price_cny_min) }} - {{ "%.2f"|format(product.price_cny_max) }} CNY
+                                {% endif %}
+                            {% else %}
+                                Цена не указана
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+
+                        
+
+                        
+
+                        
+
+                        
+
+                        
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                ID: {{ product.offer_id }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Улучшенная пагинация -->
+        {% if pagination.total_pages > 1 %}
+        <nav aria-label="Навигация">
+            <ul class="pagination justify-content-center flex-wrap">
+                <!-- Первая страница -->
+                {% if pagination.page > 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.vendor %}&vendor={{ filters.vendor }}{% endif %}{% if filters.has_specifications %}&has_specifications={{ filters.has_specifications }}{% endif %}{% if filters.has_images %}&has_images={{ filters.has_images }}{% endif %}">1</a>
+                </li>
+                {% endif %}
+                
+                <!-- Многоточие в начале -->
+                {% if pagination.page > 4 %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+                {% endif %}
+                
+                <!-- Предыдущая страница -->
+                {% if pagination.page > 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ pagination.page - 1 }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.vendor %}&vendor={{ filters.vendor }}{% endif %}{% if filters.has_specifications %}&has_specifications={{ filters.has_specifications }}{% endif %}{% if filters.has_images %}&has_images={{ filters.has_images }}{% endif %}">←</a>
+                </li>
+                {% endif %}
+                
+                <!-- Текущая страница и соседние -->
+                {% set start_page = [1, pagination.page - 1] | max %}
+                {% set end_page = [pagination.total_pages, pagination.page + 1] | min %}
+                
+                {% if pagination.page > 2 %}
+                {% set start_page = pagination.page - 1 %}
+                {% endif %}
+                
+                {% if pagination.page < pagination.total_pages - 1 %}
+                {% set end_page = pagination.page + 1 %}
+                {% endif %}
+                
+                {% for p in range(start_page, end_page + 1) %}
+                {% if p != 1 and p != pagination.total_pages %}
+                <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                    <a class="page-link" href="?page={{ p }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.vendor %}&vendor={{ filters.vendor }}{% endif %}{% if filters.has_specifications %}&has_specifications={{ filters.has_specifications }}{% endif %}{% if filters.has_images %}&has_images={{ filters.has_images }}{% endif %}">{{ p }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+                
+                <!-- Следующая страница -->
+                {% if pagination.page < pagination.total_pages %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ pagination.page + 1 }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.vendor %}&vendor={{ filters.vendor }}{% endif %}{% if filters.has_specifications %}&has_specifications={{ filters.has_specifications }}{% endif %}{% if filters.has_images %}&has_images={{ filters.has_images }}{% endif %}">→</a>
+                </li>
+                {% endif %}
+                
+                <!-- Многоточие в конце -->
+                {% if pagination.page < pagination.total_pages - 3 %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+                {% endif %}
+                
+                <!-- Последняя страница -->
+                {% if pagination.page < pagination.total_pages %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ pagination.total_pages }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.vendor %}&vendor={{ filters.vendor }}{% endif %}{% if filters.has_specifications %}&has_specifications={{ filters.has_specifications }}{% endif %}{% if filters.has_images %}&has_images={{ filters.has_images }}{% endif %}">{{ pagination.total_pages }}</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        
+        <!-- Быстрая навигация -->
+        <div class="text-center mt-3">
+            <div class="btn-group" role="group">
+                {% if pagination.page > 10 %}
+                <a href="?page={{ pagination.page - 10 }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.vendor %}&vendor={{ filters.vendor }}{% endif %}{% if filters.has_specifications %}&has_specifications={{ filters.has_specifications }}{% endif %}{% if filters.has_images %}&has_images={{ filters.has_images }}{% endif %}" class="btn btn-outline-secondary btn-sm">-10</a>
+                {% endif %}
+                
+                {% if pagination.page > 5 %}
+                <a href="?page={{ pagination.page - 5 }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.vendor %}&vendor={{ filters.vendor }}{% endif %}{% if filters.has_specifications %}&has_specifications={{ filters.has_specifications }}{% endif %}{% if filters.has_images %}&has_images={{ filters.has_images }}{% endif %}" class="btn btn-outline-secondary btn-sm">-5</a>
+                {% endif %}
+                
+                {% if pagination.page < pagination.total_pages - 4 %}
+                <a href="?page={{ pagination.page + 5 }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.vendor %}&vendor={{ filters.vendor }}{% endif %}{% if filters.has_specifications %}&has_specifications={{ filters.has_specifications }}{% endif %}{% if filters.has_images %}&has_images={{ filters.has_images }}{% endif %}" class="btn btn-outline-secondary btn-sm">+5</a>
+                {% endif %}
+                
+                {% if pagination.page < pagination.total_pages - 9 %}
+                <a href="?page={{ pagination.page + 10 }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.vendor %}&vendor={{ filters.vendor }}{% endif %}{% if filters.has_specifications %}&has_specifications={{ filters.has_specifications }}{% endif %}{% if filters.has_images %}&has_images={{ filters.has_images }}{% endif %}" class="btn btn-outline-secondary btn-sm">+10</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="text-center text-muted mt-4">
+            <p>Показано {{ products|length }} из {{ pagination.total_count }} товаров (страница {{ pagination.page }} из {{ pagination.total_pages }})</p>
+        </div>
+    </div>
+
+    <!-- Модальное окно для изображений -->
+    <div class="modal fade" id="imageModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Изображение товара</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="modalImage" src="" class="img-fluid" alt="Изображение товара">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function openImageModal(imageUrl) {
+            document.getElementById('modalImage').src = imageUrl;
+            new bootstrap.Modal(document.getElementById('imageModal')).show();
+        }
+    </script>
+</body>
+</html>

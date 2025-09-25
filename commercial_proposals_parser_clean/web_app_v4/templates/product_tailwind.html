@@ -1,0 +1,233 @@
+{% extends "base_tailwind.html" %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8">
+    <!-- Breadcrumb -->
+    <nav class="flex mb-8" aria-label="Breadcrumb">
+        <ol role="list" class="flex items-center space-x-4">
+            <li>
+                <div>
+                    <a href="/" class="text-gray-400 hover:text-gray-500">
+                        <svg class="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M9.293 2.293a1 1 0 011.414 0l7 7A1 1 0 0117 11h-1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-3a1 1 0 00-1-1H9a1 1 0 00-1 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-6H3a1 1 0 01-.707-1.707l7-7z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="sr-only">Каталог</span>
+                    </a>
+                </div>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 flex-shrink-0 text-gray-300" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="ml-4 text-sm font-medium text-gray-500 truncate">{{ product.name }}</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Product -->
+    <div class="lg:grid lg:grid-cols-2 lg:gap-x-8 lg:items-start">
+        <!-- Image gallery -->
+        <div class="flex flex-col-reverse">
+            <!-- Image selector -->
+            {% if images|length > 1 %}
+            <div class="hidden mt-6 w-full max-w-2xl mx-auto sm:block lg:max-w-none">
+                <div class="grid grid-cols-4 gap-6" aria-orientation="horizontal" role="tablist">
+                    {% for image in images %}
+                    <button id="tabs-1-tab-{{ loop.index }}" class="relative h-24 bg-white rounded-md flex items-center justify-center text-sm font-medium uppercase text-gray-900 cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring focus:ring-offset-4 focus:ring-brand-500" 
+                            aria-controls="tabs-1-panel-{{ loop.index }}" role="tab" type="button"
+                            onclick="switchImage('{{ get_web_image_path(image.local_path) }}', {{ loop.index }})">
+                        <span class="sr-only">{{ image.image_type }} изображение {{ loop.index }}</span>
+                        <span class="absolute inset-0 rounded-md overflow-hidden">
+                            <img src="{{ get_web_image_path(image.local_path) }}?v={{ timestamp }}" alt="{{ product.name }}" class="w-full h-full object-center object-contain">
+                        </span>
+                        <span class="absolute inset-0 rounded-md ring-2 ring-offset-2 pointer-events-none" 
+                              id="ring-{{ loop.index }}" 
+                              class="{% if loop.first %}ring-brand-500{% else %}ring-transparent{% endif %}" aria-hidden="true"></span>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="aspect-w-1 aspect-h-1 w-full">
+                <!-- Main image -->
+                <div id="main-image-container" class="relative">
+                    {% if images %}
+                    <img id="main-image" src="{{ get_web_image_path(images[0].local_path) }}?v={{ timestamp }}" 
+                         alt="{{ product.name }}" 
+                         class="w-full h-full object-center object-contain sm:rounded-lg bg-white">
+                    {% else %}
+                    <div class="flex items-center justify-center w-full h-96 bg-gray-100 rounded-lg">
+                        <svg class="h-24 w-24 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Product info -->
+        <div class="mt-10 px-4 sm:px-0 sm:mt-16 lg:mt-0">
+            <h1 class="text-3xl font-bold tracking-tight text-gray-900">{{ product.name }}</h1>
+
+            <!-- Product metadata -->
+            <div class="mt-6">
+                <div class="flex items-center space-x-2 text-sm text-gray-500">
+                    <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                        ID: {{ product.id }}
+                    </span>
+                    {% if product.sheet %}
+                    <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                        {{ product.sheet.sheet_title }}
+                    </span>
+                    {% endif %}
+                    <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-700/10">
+                        Строки: {{ product.start_row }}-{{ product.end_row }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Description -->
+            {% if product.description %}
+            <div class="mt-6">
+                <h3 class="sr-only">Описание</h3>
+                <div class="text-base text-gray-700 space-y-6">
+                    <p>{{ product.description }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Price variants -->
+            {% if price_variants %}
+            <div class="mt-8">
+                <h3 class="text-lg font-medium text-gray-900">Варианты цен</h3>
+                <div class="mt-4 overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-300">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Тираж
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    USD
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    RUB
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Доставка
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for variant in price_variants %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {{ variant.quantity or '—' }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {% if variant.price_usd %}
+                                        <span class="text-lg font-semibold text-green-600">${{ "%.2f"|format(variant.price_usd) }}</span>
+                                    {% else %}
+                                        <span class="text-gray-400">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {% if variant.price_rub %}
+                                        <span class="text-lg font-semibold text-blue-600">₽{{ "%.2f"|format(variant.price_rub) }}</span>
+                                    {% else %}
+                                        <span class="text-gray-400">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                    {% if variant.delivery_time %}
+                                        <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-700/10">
+                                            {{ variant.delivery_time }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-gray-400">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Product details -->
+            <div class="mt-8">
+                <h3 class="text-lg font-medium text-gray-900">Детали товара</h3>
+                <div class="mt-4">
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-gray-900">ID товара</h4>
+                            <p class="text-gray-700">{{ product.id }}</p>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-gray-900">Источник</h4>
+                            <p class="text-gray-700">{{ sheet_metadata.sheet_title if sheet_metadata else 'Неизвестен' }}</p>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-gray-900">Строки в таблице</h4>
+                            <p class="text-gray-700">{{ product.start_row }} - {{ product.end_row }}</p>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-gray-900">Изображений</h4>
+                            <p class="text-gray-700">{{ images|length if images else 0 }}</p>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-gray-900">Вариантов цен</h4>
+                            <p class="text-gray-700">{{ price_variants|length if price_variants else 0 }}</p>
+                        </div>
+                        
+                        {% if sample_offer %}
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-gray-900">Цена образца</h4>
+                            <p class="text-gray-700">
+                                {% if sample_offer.price_usd %}${{ "%.2f"|format(sample_offer.price_usd) }}{% endif %}
+                                {% if sample_offer.price_rub %}₽{{ "%.2f"|format(sample_offer.price_rub) }}{% endif %}
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="mt-10 flex">
+                <button type="button" onclick="window.history.back()" 
+                        class="flex max-w-xs flex-1 items-center justify-center rounded-md border border-transparent bg-brand-600 px-8 py-3 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-gray-50 sm:w-full">
+                    ← Назад к каталогу
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related products section could go here -->
+</div>
+
+<script>
+    function switchImage(imageSrc, index) {
+        // Update main image
+        document.getElementById('main-image').src = imageSrc + '?v=' + Date.now();
+        
+        // Update ring indicators
+        document.querySelectorAll('[id^="ring-"]').forEach(ring => {
+            ring.className = ring.className.replace('ring-brand-500', 'ring-transparent');
+        });
+        document.getElementById('ring-' + index).className = 
+            document.getElementById('ring-' + index).className.replace('ring-transparent', 'ring-brand-500');
+    }
+</script>
+{% endblock %}

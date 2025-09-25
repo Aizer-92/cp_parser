@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Каталог товаров{% endblock %}
+
+{% block content %}
+<!-- Заголовок и фильтры -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="mb-4">Каталог товаров</h1>
+        
+        <!-- Фильтры -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">Поиск</label>
+                        <input type="text" class="form-control" id="search" name="search" 
+                               value="{{ search or '' }}" placeholder="Название товара...">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="route_name" class="form-label">Маршрут</label>
+                        <select class="form-select" id="route_name" name="route_name">
+                            <option value="">Все маршруты</option>
+                            <option value="ЖД" {% if route_name == 'ЖД' %}selected{% endif %}>ЖД</option>
+                            <option value="АВИА" {% if route_name == 'АВИА' %}selected{% endif %}>АВИА</option>
+                            <option value="Контейнер" {% if route_name == 'Контейнер' %}selected{% endif %}>Контейнер</option>
+                            <option value="Образец" {% if route_name == 'Образец' %}selected{% endif %}>Образец</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="min_price" class="form-label">Цена от ($)</label>
+                        <input type="number" class="form-control" id="min_price" name="min_price" 
+                               value="{{ min_price or '' }}" step="0.01">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="max_price" class="form-label">Цена до ($)</label>
+                        <input type="number" class="form-control" id="max_price" name="max_price" 
+                               value="{{ max_price or '' }}" step="0.01">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Список товаров -->
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-10">
+            <div class="row">
+                {% if products %}
+                    {% for product, price_offers, images in products %}
+        <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+            <div class="product-card card h-100">
+                <!-- Изображение товара -->
+                <div class="product-image">
+                    {% if images %}
+                        {% set main_image = images | selectattr('image_type', 'equalto', 'main') | first %}
+                {% if main_image %}
+                    <img src="/{{ main_image.local_path }}" alt="{{ product.name }}" class="img-fluid">
+                {% else %}
+                    <img src="/{{ images[0].local_path }}" alt="{{ product.name }}" class="img-fluid">
+                {% endif %}
+                    {% else %}
+                        <div class="placeholder-image d-flex align-items-center justify-content-center">
+                            <i class="fas fa-image fa-3x text-muted"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">{{ product.display_name or product.name }}</h5>
+                    <div class="card-text text-muted small" style="white-space: pre-line;">{{ product.description[:150] }}{% if product.description|length > 150 %}...{% endif %}</div>
+                    
+                    <!-- Информация о товаре -->
+                    <div class="product-info mb-3">
+                        {% if product.custom_design %}
+                        <div class="info-item">
+                            <i class="fas fa-palette me-1"></i>
+                            <span>Кастом: {{ product.custom_design|safe }}</span>
+                        </div>
+                        {% endif %}
+                        {% if images|length > 1 %}
+                        <div class="info-item">
+                            <i class="fas fa-images me-1"></i>
+                            <span>{{ images|length }} фото</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Таблица маршрутов -->
+                    <div class="routes-table mb-3">
+                        <h6 class="text-muted mb-2">Варианты доставки ({{ price_offers|length }}):</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Маршрут</th>
+                                        <th>Тираж</th>
+                                        <th>USD</th>
+                                        <th>RUB</th>
+                                        <th>Срок</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for offer in price_offers[:4] %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-primary">{{ offer.route_name }}</span>
+                                        </td>
+                                        <td>
+                                            {% if offer.quantity %}
+                                                <small>{{ "{:,}".format(offer.quantity).replace(',', ' ') }}</small>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if offer.price_usd %}
+                                                <span class="price">${{ "%.2f"|format(offer.price_usd) }}</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if offer.price_rub %}
+                                                <span class="price">{{ "%.2f"|format(offer.price_rub) }} ₽</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if offer.delivery_time %}
+                                                <small>{{ offer.delivery_time }}</small>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% if price_offers|length > 4 %}
+                                    <tr>
+                                        <td colspan="5" class="text-center">
+                                            <small class="text-muted">+{{ price_offers|length - 4 }} вариантов</small>
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-auto">
+                        <a href="/product/{{ product.id }}" class="btn btn-outline-primary btn-sm w-100">
+                            <i class="fas fa-eye me-1"></i>
+                            Подробнее
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-12">
+                        <div class="text-center py-5">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h3 class="text-muted">Товары не найдены</h3>
+                            <p class="text-muted">Попробуйте изменить параметры поиска</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

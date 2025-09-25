@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} - Детали товара{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Главная</a></li>
+                <li class="breadcrumb-item"><a href="/products">Каталог</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ product.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Изображения товара -->
+    <div class="col-lg-6 mb-4">
+        <div class="product-gallery">
+            {% if images %}
+                <div class="main-image mb-3">
+        <img src="/{{ images[0].local_path }}" alt="{{ product.name }}" 
+             class="img-fluid rounded shadow" id="mainImage"
+             onclick="showImageModal('/{{ images[0].local_path }}', '{{ product.name }}')">
+                </div>
+                
+                {% if images|length > 1 %}
+                <div class="thumbnail-gallery">
+                    <div class="row">
+                        {% for image in images %}
+                        <div class="col-3 mb-2">
+                        <img src="/{{ image.local_path }}" alt="{{ product.name }}" 
+                             class="img-fluid rounded thumbnail {% if loop.first %}active{% endif %}"
+                             onclick="changeMainImage('/{{ image.local_path }}', this)">
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="placeholder-image d-flex align-items-center justify-content-center rounded shadow">
+                    <i class="fas fa-image fa-3x text-muted"></i>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Информация о товаре -->
+    <div class="col-lg-6 mb-4">
+        <div class="product-info">
+            <h1 class="product-title mb-3">{{ product.name }}</h1>
+            
+            {% if product.description %}
+            <div class="product-description mb-4">
+                <h5>Описание</h5>
+                <div class="text-muted" style="white-space: pre-line;">{{ product.description|safe }}</div>
+            </div>
+            {% endif %}
+            
+            {% if product.custom_design %}
+            <div class="custom-design mb-4">
+                <h5>Кастомный дизайн</h5>
+                <div class="text-muted" style="white-space: pre-line;">{{ product.custom_design|safe }}</div>
+            </div>
+            {% endif %}
+            
+            <div class="product-stats mb-4">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="stat-item">
+                            <i class="fas fa-images text-primary me-2"></i>
+                            <span>{{ images|length }} фото</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-item">
+                            <i class="fas fa-route text-success me-2"></i>
+                            <span>{{ price_offers|length }} вариантов доставки</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<!-- Ценовые предложения -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-truck me-2"></i>
+                    Варианты доставки и цены
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Маршрут</th>
+                                <th>Тираж</th>
+                                <th>Цена USD</th>
+                                <th>Цена RUB</th>
+                                <th>Срок доставки</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for offer in price_offers %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-primary fs-6">{{ offer.route_name }}</span>
+                                </td>
+                                <td>
+                                    {% if offer.quantity %}
+                                        <span class="fw-bold">{{ "{:,}".format(offer.quantity).replace(',', ' ') }} шт</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if offer.price_usd %}
+                                        <span class="price fw-bold">${{ "%.2f"|format(offer.price_usd) }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if offer.price_rub %}
+                                        <span class="price fw-bold">{{ "%.2f"|format(offer.price_rub) }} ₽</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if offer.delivery_time %}
+                                        <span class="text-muted">{{ offer.delivery_time }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-outline-primary btn-sm" 
+                                            onclick="addToCart({{ product.id }}, {{ offer.id }})">
+                                        <i class="fas fa-shopping-cart me-1"></i>
+                                        В корзину
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Информация по образцам -->
+{% if sample_offers %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-gift me-2"></i>
+                    Информация по образцам
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Тип образца</th>
+                                <th>Цена RUB</th>
+                                <th>Срок изготовления</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for offer in sample_offers %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-warning fs-6">{{ offer.route_name }}</span>
+                                </td>
+                                <td>
+                                    {% if offer.sample_price %}
+                                        <span class="price fw-bold">{{ "%.2f"|format(offer.sample_price) }} ₽</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if offer.delivery_time %}
+                                        <span class="text-muted">{{ offer.delivery_time }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-outline-warning btn-sm" 
+                                            onclick="addToCart({{ product.id }}, {{ offer.id }})">
+                                        <i class="fas fa-gift me-1"></i>
+                                        Заказать образец
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Дополнительная информация -->
+{% if price_offers %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Дополнительная информация
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Варианты доставки:</h6>
+                        <ul class="list-unstyled">
+                            {% for offer in price_offers %}
+                            <li>
+                                <i class="fas fa-arrow-right text-primary me-2"></i>
+                                <strong>{{ offer.route_name }}</strong>
+                                {% if offer.delivery_time %}
+                                    - {{ offer.delivery_time }}
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Ценовой диапазон:</h6>
+                        {% set min_usd = price_offers | selectattr('price_usd') | map(attribute='price_usd') | min | default(0) %}
+                        {% set max_usd = price_offers | selectattr('price_usd') | map(attribute='price_usd') | max | default(0) %}
+                        {% set min_rub = price_offers | selectattr('price_rub') | map(attribute='price_rub') | min | default(0) %}
+                        {% set max_rub = price_offers | selectattr('price_rub') | map(attribute='price_rub') | max | default(0) %}
+                        
+                        {% if min_usd > 0 and max_usd > 0 %}
+                        <p class="mb-2">
+                            <strong>USD:</strong> 
+                            ${{ "%.2f"|format(min_usd) }} - ${{ "%.2f"|format(max_usd) }}
+                        </p>
+                        {% endif %}
+                        
+                        {% if min_rub > 0 and max_rub > 0 %}
+                        <p class="mb-2">
+                            <strong>RUB:</strong> 
+                            {{ "%.2f"|format(min_rub) }} - {{ "%.2f"|format(max_rub) }} ₽
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Ссылка на исходную таблицу -->
+                {% if sheet_metadata and sheet_metadata.sheet_url %}
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <h6>
+                            <i class="fas fa-external-link-alt me-2"></i>
+                            Источник данных:
+                        </h6>
+                        <p class="mb-2">
+                            <strong>Таблица:</strong> {{ sheet_metadata.sheet_title }}
+                        </p>
+                        <a href="{{ sheet_metadata.sheet_url }}" 
+                           target="_blank" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-external-link-alt me-1"></i>
+                            Открыть в Google Docs
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+<script>
+function changeMainImage(imageSrc, thumbnail) {
+    // Обновляем главное изображение
+    document.getElementById('mainImage').src = imageSrc;
+    
+    // Убираем активный класс со всех миниатюр
+    document.querySelectorAll('.thumbnail').forEach(thumb => {
+        thumb.style.border = '2px solid transparent';
+    });
+    
+    // Добавляем активный класс к выбранной миниатюре
+    thumbnail.style.border = '2px solid #007bff';
+}
+
+function showImageModal(imageSrc, imageAlt) {
+    // Показ изображения в модальном окне
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">${imageAlt}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img src="${imageSrc}" class="img-fluid" alt="${imageAlt}">
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    // Удаляем модальное окно после закрытия
+    modal.addEventListener('hidden.bs.modal', () => {
+        modal.remove();
+    });
+}
+</script>

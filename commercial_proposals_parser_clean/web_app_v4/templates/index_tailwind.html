@@ -1,0 +1,218 @@
+{% extends "base_tailwind.html" %}
+
+{% block title %}Каталог товаров{% endblock %}
+
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8">
+    <!-- Header Section -->
+    <div class="sm:flex sm:items-center">
+        <div class="sm:flex-auto">
+            <h1 class="text-2xl font-semibold leading-6 text-gray-900">Каталог товаров</h1>
+            <p class="mt-2 text-sm text-gray-700">Найдено {{ products|length }} товаров из {{ total_products }} в базе данных</p>
+        </div>
+        <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
+            <button type="button" onclick="refreshImages()" class="block rounded-md bg-brand-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">
+                🔄 Обновить изображения
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="mt-8 bg-white shadow-sm ring-1 ring-gray-900/5 rounded-lg p-6">
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <!-- Search -->
+            <div>
+                <label for="search" class="block text-sm font-medium leading-6 text-gray-900">Поиск</label>
+                <input type="text" name="search" id="search" placeholder="Название товара..." 
+                       class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+            </div>
+            
+            <!-- Sheet Filter -->
+            <div>
+                <label for="sheet" class="block text-sm font-medium leading-6 text-gray-900">Таблица</label>
+                <select name="sheet" id="sheet" 
+                        class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+                    <option value="">Все таблицы</option>
+                    {% for sheet in sheets %}
+                    <option value="{{ sheet.id }}">{{ sheet.sheet_title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Price Range -->
+            <div>
+                <label for="price_min" class="block text-sm font-medium leading-6 text-gray-900">Цена от (USD)</label>
+                <input type="number" name="price_min" id="price_min" placeholder="0" 
+                       class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+            </div>
+            
+            <div>
+                <label for="price_max" class="block text-sm font-medium leading-6 text-gray-900">до (USD)</label>
+                <input type="number" name="price_max" id="price_max" placeholder="1000" 
+                       class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+            </div>
+        </div>
+        
+        <div class="mt-6 flex items-center justify-end gap-x-6">
+            <button type="button" onclick="clearFilters()" class="text-sm font-semibold leading-6 text-gray-900">Сбросить</button>
+            <button type="button" onclick="applyFilters()" class="rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">
+                Применить фильтры
+            </button>
+        </div>
+    </div>
+
+    <!-- Products Grid -->
+    <div class="mt-8">
+        {% if products %}
+        <div class="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
+            {% for product in products %}
+            <div class="group relative bg-white rounded-lg shadow-sm ring-1 ring-gray-900/5 hover:shadow-md transition-shadow duration-200">
+                <!-- Product Image -->
+                <div class="relative h-64 w-full overflow-hidden rounded-t-lg bg-gray-100">
+                    {% if product.main_image %}
+                    <img data-src="{{ product.main_image }}?v={{ timestamp }}" 
+                         alt="{{ product.name }}"
+                         class="h-full w-full object-contain object-center opacity-0 transition-opacity duration-200 group-hover:opacity-75">
+                    {% else %}
+                    <div class="flex h-full w-full items-center justify-center bg-gray-100">
+                        <svg class="h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Product Info -->
+                <div class="p-6">
+                    <h3 class="text-sm font-semibold text-gray-900">
+                        <a href="/product/{{ product.id }}" class="stretched-link">
+                            {{ product.name }}
+                        </a>
+                    </h3>
+                    
+                    {% if product.description %}
+                    <p class="mt-2 text-sm text-gray-600 line-clamp-2">{{ product.description }}</p>
+                    {% endif %}
+                    
+                    <!-- Price Info -->
+                    <div class="mt-4">
+                        {% if product.min_price_usd and product.max_price_usd %}
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-lg font-bold text-gray-900">
+                                    ${{ "%.1f"|format(product.min_price_usd) }}
+                                </span>
+                                {% if product.min_price_usd != product.max_price_usd %}
+                                <span class="text-sm text-gray-500">
+                                    - ${{ "%.1f"|format(product.max_price_usd) }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% if product.min_price_rub %}
+                            <div class="text-right">
+                                <span class="text-sm text-gray-600">
+                                    ₽{{ "%.0f"|format(product.min_price_rub) }}
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Quantity and delivery badges -->
+                        <div class="mt-3 flex items-center gap-2">
+                            {% if product.min_quantity and product.max_quantity %}
+                            <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                                {{ product.min_quantity }}{% if product.min_quantity != product.max_quantity %} - {{ product.max_quantity }}{% endif %} шт
+                            </span>
+                            {% endif %}
+                            {% if product.delivery_time %}
+                            <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-700/10">
+                                {{ product.delivery_time }} дн
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-semibold text-gray-900">Товары не найдены</h3>
+            <p class="mt-1 text-sm text-gray-500">Попробуйте изменить фильтры поиска</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if products and products|length >= 20 %}
+    <div class="mt-12 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+        <div class="flex flex-1 justify-between sm:hidden">
+            <a href="#" class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Предыдущая</a>
+            <a href="#" class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Следующая</a>
+        </div>
+        <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm text-gray-700">
+                    Показано <span class="font-medium">1</span> до <span class="font-medium">{{ products|length }}</span> из
+                    <span class="font-medium">{{ total_products }}</span> результатов
+                </p>
+            </div>
+            <div>
+                <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                    <a href="#" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">
+                        <span class="sr-only">Предыдущая</span>
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+                        </svg>
+                    </a>
+                    <a href="#" aria-current="page" class="relative z-10 inline-flex items-center bg-brand-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">1</a>
+                    <a href="#" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">
+                        <span class="sr-only">Следующая</span>
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                        </svg>
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function clearFilters() {
+        document.getElementById('search').value = '';
+        document.getElementById('sheet').value = '';
+        document.getElementById('price_min').value = '';
+        document.getElementById('price_max').value = '';
+    }
+
+    function applyFilters() {
+        const search = document.getElementById('search').value;
+        const sheet = document.getElementById('sheet').value;
+        const priceMin = document.getElementById('price_min').value;
+        const priceMax = document.getElementById('price_max').value;
+        
+        const params = new URLSearchParams();
+        if (search) params.append('search', search);
+        if (sheet) params.append('sheet', sheet);
+        if (priceMin) params.append('price_min', priceMin);
+        if (priceMax) params.append('price_max', priceMax);
+        
+        window.location.href = '/?' + params.toString();
+    }
+
+    // Применяем фильтры при нажатии Enter
+    document.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            applyFilters();
+        }
+    });
+</script>
+{% endblock %}

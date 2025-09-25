@@ -1,0 +1,356 @@
+/* Кастомные стили для каталога товаров v4 */
+
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    margin: 20px;
+}
+
+.stats-card {
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+}
+
+.product-card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+}
+
+.product-image {
+    height: 300px;
+    width: 300px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+    margin: 0 auto;
+    aspect-ratio: 1/1;
+}
+
+.product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Полное отображение без обрезки */
+    transition: transform 0.3s ease;
+    border-radius: 8px 8px 0 0;
+    background-color: white;
+    padding: 10px;
+}
+
+.product-card:hover .product-image img {
+    transform: scale(1.02);
+}
+
+.placeholder-image {
+    height: 250px;
+    background-color: #f8f9fa;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Стили для таблицы маршрутов */
+.routes-table {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.routes-table .table {
+    margin-bottom: 0;
+}
+
+.routes-table .table th {
+    border-top: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6c757d;
+    padding: 0.5rem 0.25rem;
+}
+
+.routes-table .table td {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.85rem;
+    vertical-align: middle;
+}
+
+.routes-table .badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.price {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: #28a745;
+}
+
+.info-item {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 5px;
+}
+
+.info-item i {
+    color: #007bff;
+}
+
+/* Анимации */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.product-card {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .hero-section {
+        margin: 10px;
+        padding: 2rem 1rem;
+    }
+    
+    .hero-section h1 {
+        font-size: 2rem;
+    }
+    
+    .product-image {
+        height: 200px;
+    }
+    
+    .routes-table .table th,
+    .routes-table .table td {
+        padding: 0.25rem 0.1rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Кастомные цвета */
+:root {
+    --primary-color: #667eea;
+    --secondary-color: #764ba2;
+    --success-color: #28a745;
+    --info-color: #17a2b8;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+    transform: translateY(-2px);
+}
+
+.bg-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
+}
+
+/* Улучшенные карточки */
+.card {
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Стили для фильтров */
+.card .card-body {
+    background-color: #f8f9fa;
+    border-radius: 15px;
+}
+
+/* Стили для навигации */
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.5rem;
+}
+
+.nav-link {
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+    color: #fff !important;
+}
+
+/* Стили для футера */
+footer {
+    margin-top: auto;
+}
+
+/* Улучшенные формы */
+.form-control, .form-select {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Стили для кнопок */
+.btn {
+    border-radius: 10px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+/* Стили для бейджей */
+.badge {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 20px;
+}
+
+/* Стили для детальной страницы товара */
+.product-title {
+    color: #2c3e50;
+    font-weight: 700;
+}
+
+.product-gallery .main-image img {
+    transition: transform 0.3s ease;
+}
+
+.product-gallery .main-image img:hover {
+    transform: scale(1.02);
+}
+
+.thumbnail {
+    transition: all 0.3s ease;
+}
+
+.thumbnail:hover {
+    transform: scale(1.05);
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.stat-item i {
+    font-size: 1.2rem;
+}
+
+.price {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: #28a745;
+}
+
+.table th {
+    font-weight: 600;
+    color: #495057;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.btn-outline-primary:hover {
+    transform: translateY(-1px);
+}
+
+/* Стили для галереи изображений */
+.product-gallery .main-image {
+    width: 400px;
+    height: 400px;
+    margin: 0 auto;
+    aspect-ratio: 1/1;
+}
+
+.product-gallery .main-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.thumbnail {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    background-color: white;
+    padding: 5px;
+    border-radius: 4px;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    aspect-ratio: 1/1;
+}
+
+.thumbnail:hover {
+    border-color: #007bff;
+    transform: scale(1.05);
+}
+
+.thumbnail.active {
+    border-color: #007bff;
+}
+
+.placeholder-image {
+    height: 400px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Адаптивность для детальной страницы */
+@media (max-width: 768px) {
+    .product-gallery .main-image img {
+        height: 250px;
+        padding: 10px;
+    }
+    
+    .thumbnail {
+        height: 60px;
+        padding: 3px;
+    }
+    
+    .table-responsive {
+        font-size: 0.9rem;
+    }
+}

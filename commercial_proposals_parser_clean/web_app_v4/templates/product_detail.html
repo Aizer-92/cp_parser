@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} - Парсер коммерческих предложений{% endblock %}
+
+{% block content %}
+<!-- Хлебные крошки -->
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Главная</a></li>
+        <li class="breadcrumb-item active">{{ product.name }}</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <!-- Левая колонка - изображения -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-images me-2"></i>
+                    Изображения товара
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if images %}
+                    <!-- Главное изображение -->
+                    <div class="mb-3">
+                        <img src="{{ images[0].local_path }}" class="img-fluid rounded" alt="{{ product.name }}" id="mainImage">
+                    </div>
+                    
+                    <!-- Миниатюры -->
+                    {% if images|length > 1 %}
+                    <div class="row">
+                        {% for image in images %}
+                        <div class="col-3 mb-2">
+                            <img src="{{ image.local_path }}" 
+                                 class="img-thumbnail cursor-pointer" 
+                                 style="height: 80px; object-fit: cover; width: 100%;"
+                                 onclick="changeMainImage('{{ image.local_path }}')"
+                                 alt="Изображение {{ loop.index }}">
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-image fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Изображения не найдены</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Правая колонка - информация о товаре -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Информация о товаре
+                </h5>
+            </div>
+            <div class="card-body">
+                <h3 class="card-title">{{ product.name }}</h3>
+                
+                {% if product.characteristics %}
+                <div class="mb-3">
+                    <h6><i class="fas fa-list me-2"></i>Характеристики:</h6>
+                    <p class="text-muted">{{ product.characteristics }}</p>
+                </div>
+                {% endif %}
+                
+                {% if product.custom_design %}
+                <div class="mb-3">
+                    <h6><i class="fas fa-paint-brush me-2"></i>Кастомный дизайн:</h6>
+                    <p class="text-muted">{{ product.custom_design }}</p>
+                </div>
+                {% endif %}
+                
+                {% if product.description %}
+                <div class="mb-3">
+                    <h6><i class="fas fa-file-text me-2"></i>Описание:</h6>
+                    <p class="text-muted">{{ product.description }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Данные по образцу -->
+{% if sample_offer %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-flask me-2"></i>
+                    Данные по образцу
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if sample_offer.sample_price %}
+                    <div class="col-md-3">
+                        <strong>Цена образца:</strong><br>
+                        <span class="text-success fs-5">{{ "%.2f"|format(sample_offer.sample_price) }} ₽</span>
+                    </div>
+                    {% endif %}
+                    {% if sample_offer.sample_time %}
+                    <div class="col-md-3">
+                        <strong>Срок изготовления:</strong><br>
+                        <span class="text-info">{{ sample_offer.sample_time }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Варианты цен -->
+{% if price_variants %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-dollar-sign me-2"></i>
+                    Варианты цен
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for route_name, variants in price_variants.items() %}
+                <div class="mb-4">
+                    <h6 class="text-primary">{{ route_name }}</h6>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Тираж</th>
+                                    <th>Цена (USD)</th>
+                                    <th>Цена (RUB)</th>
+                                    <th>Срок доставки</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for variant in variants %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">{{ variant.quantity }} шт</span>
+                                    </td>
+                                    <td>
+                                        {% if variant.price_usd %}
+                                            <span class="text-success fw-bold">${{ "%.2f"|format(variant.price_usd) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if variant.price_rub %}
+                                            <span class="text-success fw-bold">{{ "%.0f"|format(variant.price_rub) }} ₽</span>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if variant.delivery_time %}
+                                            <span class="text-info">{{ variant.delivery_time }}</span>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Метаданные таблицы -->
+{% if sheet_metadata %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-table me-2"></i>
+                    Информация о таблице
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Название таблицы:</strong><br>
+                        <span class="text-primary">{{ sheet_metadata.sheet_title }}</span>
+                    </div>
+                    {% if sheet_metadata.executor %}
+                    <div class="col-md-6">
+                        <strong>Менеджер:</strong><br>
+                        <span class="text-info">{{ sheet_metadata.executor }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if sheet_metadata.counterparty %}
+                <div class="row mt-2">
+                    <div class="col-md-6">
+                        <strong>Контрагент:</strong><br>
+                        <span class="text-success">{{ sheet_metadata.counterparty }}</span>
+                    </div>
+                    {% if sheet_metadata.region %}
+                    <div class="col-md-6">
+                        <strong>Регион:</strong><br>
+                        <span class="text-muted">{{ sheet_metadata.region }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                {% if sheet_metadata.sheet_url %}
+                <div class="row mt-2">
+                    <div class="col-12">
+                        <strong>Ссылка на Google Sheets:</strong><br>
+                        <a href="{{ sheet_metadata.sheet_url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-external-link-alt me-1"></i>
+                            Открыть в Google Sheets
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Кнопка назад -->
+<div class="row mt-4">
+    <div class="col-12">
+        <a href="/" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>
+            Назад к списку товаров
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function changeMainImage(imageSrc) {
+    document.getElementById('mainImage').src = imageSrc;
+}
+</script>
+{% endblock %}

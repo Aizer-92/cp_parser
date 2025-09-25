@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Список товаров - Парсер коммерческих предложений{% endblock %}
+
+{% block content %}
+<!-- Статистика -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <h3 class="card-title">{{ products|length }}</h3>
+                <p class="card-text">Всего товаров</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <h3 class="card-title">{{ products|selectattr('main_image')|list|length }}</h3>
+                <p class="card-text">С изображениями</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <h3 class="card-title">{{ products|selectattr('min_price_usd')|list|length }}</h3>
+                <p class="card-text">С ценами</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <h3 class="card-title">{{ products|selectattr('min_quantity')|list|length }}</h3>
+                <p class="card-text">С тиражами</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Поиск и фильтры -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="input-group">
+            <span class="input-group-text">
+                <i class="fas fa-search"></i>
+            </span>
+            <input type="text" class="form-control" id="searchInput" placeholder="Поиск товаров...">
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="btn-group" role="group">
+            <input type="radio" class="btn-check" name="filter" id="all" value="all" checked>
+            <label class="btn btn-outline-primary" for="all">Все</label>
+            
+            <input type="radio" class="btn-check" name="filter" id="withImages" value="withImages">
+            <label class="btn btn-outline-primary" for="withImages">С фото</label>
+            
+            <input type="radio" class="btn-check" name="filter" id="withPrices" value="withPrices">
+            <label class="btn btn-outline-primary" for="withPrices">С ценами</label>
+        </div>
+    </div>
+</div>
+
+<!-- Список товаров -->
+<div class="row" id="productsContainer">
+    {% for product in products %}
+    <div class="col-lg-4 col-md-6 mb-4 product-item" 
+         data-name="{{ product.name|lower }}" 
+         data-has-image="{{ 'true' if product.main_image else 'false' }}"
+         data-has-price="{{ 'true' if product.min_price_usd else 'false' }}">
+        <div class="card product-card h-100">
+            <!-- Изображение товара -->
+            <div class="position-relative">
+                {% if product.main_image %}
+                    <img src="{{ product.main_image }}" class="card-img-top product-image" alt="{{ product.name }}">
+                {% else %}
+                    <div class="product-image no-image">
+                        <i class="fas fa-image"></i>
+                    </div>
+                {% endif %}
+                
+                <!-- Бейджи с ценами -->
+                <div class="position-absolute top-0 end-0 p-2">
+                    {% if product.min_price_usd %}
+                        <span class="badge price-badge me-1">
+                            ${{ "%.2f"|format(product.min_price_usd) }}
+                        </span>
+                    {% endif %}
+                    {% if product.min_price_rub %}
+                        <span class="badge price-badge">
+                            {{ "%.0f"|format(product.min_price_rub) }} ₽
+                        </span>
+                    {% endif %}
+                </div>
+                
+                <!-- Бейдж с тиражом -->
+                {% if product.min_quantity %}
+                <div class="position-absolute bottom-0 start-0 p-2">
+                    <span class="badge quantity-badge">
+                        от {{ product.min_quantity }} шт
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Информация о товаре -->
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">{{ product.name }}</h5>
+                
+                {% if product.characteristics %}
+                <p class="card-text text-muted small flex-grow-1">
+                    {{ product.characteristics[:100] }}{% if product.characteristics|length > 100 %}...{% endif %}
+                </p>
+                {% endif %}
+                
+                <!-- Кнопка детального просмотра -->
+                <div class="mt-auto">
+                    <a href="/product/{{ product.id }}" class="btn btn-primary w-100">
+                        <i class="fas fa-eye me-2"></i>
+                        Подробнее
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Сообщение, если товары не найдены -->
+<div id="noProductsMessage" class="text-center py-5" style="display: none;">
+    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+    <h4 class="text-muted">Товары не найдены</h4>
+    <p class="text-muted">Попробуйте изменить параметры поиска</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const filterRadios = document.querySelectorAll('input[name="filter"]');
+    const productItems = document.querySelectorAll('.product-item');
+    const noProductsMessage = document.getElementById('noProductsMessage');
+    
+    function filterProducts() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedFilter = document.querySelector('input[name="filter"]:checked').value;
+        
+        let visibleCount = 0;
+        
+        productItems.forEach(item => {
+            const name = item.dataset.name;
+            const hasImage = item.dataset.hasImage === 'true';
+            const hasPrice = item.dataset.hasPrice === 'true';
+            
+            let show = true;
+            
+            // Поиск по названию
+            if (searchTerm && !name.includes(searchTerm)) {
+                show = false;
+            }
+            
+            // Фильтр по типу
+            if (selectedFilter === 'withImages' && !hasImage) {
+                show = false;
+            }
+            
+            if (selectedFilter === 'withPrices' && !hasPrice) {
+                show = false;
+            }
+            
+            if (show) {
+                item.style.display = 'block';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        
+        // Показываем сообщение, если товары не найдены
+        if (visibleCount === 0) {
+            noProductsMessage.style.display = 'block';
+        } else {
+            noProductsMessage.style.display = 'none';
+        }
+    }
+    
+    searchInput.addEventListener('input', filterProducts);
+    filterRadios.forEach(radio => {
+        radio.addEventListener('change', filterProducts);
+    });
+});
+</script>
+{% endblock %}
+
