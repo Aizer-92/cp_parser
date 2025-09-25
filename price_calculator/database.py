@@ -21,13 +21,24 @@ def get_database_connection():
             
             # Парсим URL
             parsed = urlparse(url_to_try)
+            
+            # Определяем режим SSL в зависимости от хоста
+            if 'proxy.rlwy.net' in parsed.hostname:
+                # Для публичного Railway URL отключаем SSL
+                ssl_mode = 'disable'
+                print("🔓 Используем sslmode=disable для публичного URL")
+            else:
+                # Для внутренних подключений используем SSL
+                ssl_mode = 'require'
+                print("🔐 Используем sslmode=require для внутреннего URL")
+            
             conn = psycopg2.connect(
                 host=parsed.hostname,
                 port=parsed.port,
                 database=parsed.path[1:],  # убираем ведущий /
                 user=parsed.username,
                 password=parsed.password,
-                sslmode='require'
+                sslmode=ssl_mode
             )
             print("✅ Подключились к PostgreSQL")
             return conn, 'postgres'
@@ -39,13 +50,22 @@ def get_database_connection():
                 try:
                     print(f"🔗 Пробуем внутренний PostgreSQL URL...")
                     parsed = urlparse(database_url)
+                    
+                    # Определяем режим SSL
+                    if 'proxy.rlwy.net' in parsed.hostname:
+                        ssl_mode = 'disable'
+                        print("🔓 Используем sslmode=disable для публичного URL (fallback)")
+                    else:
+                        ssl_mode = 'require'
+                        print("🔐 Используем sslmode=require для внутреннего URL (fallback)")
+                    
                     conn = psycopg2.connect(
                         host=parsed.hostname,
                         port=parsed.port,
                         database=parsed.path[1:],
                         user=parsed.username,
                         password=parsed.password,
-                        sslmode='require'
+                        sslmode=ssl_mode
                     )
                     print("✅ Подключились к PostgreSQL (внутренний URL)")
                     return conn, 'postgres'
