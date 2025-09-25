@@ -6,6 +6,33 @@ from typing import List, Dict, Any
 
 def get_database_connection():
     """Возвращает подключение к БД (PostgreSQL или SQLite)"""
+    
+    # Попробуем сначала через переменные окружения Railway
+    pg_host = os.environ.get('PGHOST')
+    pg_port = os.environ.get('PGPORT')
+    pg_database = os.environ.get('PGDATABASE') 
+    pg_user = os.environ.get('PGUSER')
+    pg_password = os.environ.get('PGPASSWORD')
+    
+    if all([pg_host, pg_port, pg_database, pg_user, pg_password]):
+        try:
+            import psycopg2
+            print(f"🔗 Пробуем подключение через переменные окружения: {pg_host}:{pg_port}")
+            
+            conn = psycopg2.connect(
+                host=pg_host,
+                port=int(pg_port),
+                database=pg_database,
+                user=pg_user,
+                password=pg_password,
+                sslmode='prefer'  # Railway предпочитает 'prefer'
+            )
+            print("✅ Подключились к PostgreSQL через переменные окружения")
+            return conn, 'postgres'
+        except Exception as e:
+            print(f"❌ Ошибка подключения через переменные окружения: {e}")
+    
+    # Fallback на URL подход
     database_url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
     database_public_url = os.environ.get('DATABASE_PUBLIC_URL')
     
@@ -24,13 +51,13 @@ def get_database_connection():
             
             # Определяем режим SSL в зависимости от хоста
             if 'proxy.rlwy.net' in parsed.hostname:
-                # Для публичного Railway URL отключаем SSL
-                ssl_mode = 'disable'
-                print("🔓 Используем sslmode=disable для публичного URL")
+                # Для публичного Railway URL используем prefer
+                ssl_mode = 'prefer'
+                print("🔓 Используем sslmode=prefer для публичного URL")
             else:
-                # Для внутренних подключений используем SSL
-                ssl_mode = 'require'
-                print("🔐 Используем sslmode=require для внутреннего URL")
+                # Для внутренних подключений используем prefer
+                ssl_mode = 'prefer' 
+                print("🔐 Используем sslmode=prefer для внутреннего URL")
             
             conn = psycopg2.connect(
                 host=parsed.hostname,
@@ -53,11 +80,11 @@ def get_database_connection():
                     
                     # Определяем режим SSL
                     if 'proxy.rlwy.net' in parsed.hostname:
-                        ssl_mode = 'disable'
-                        print("🔓 Используем sslmode=disable для публичного URL (fallback)")
+                        ssl_mode = 'prefer'
+                        print("🔓 Используем sslmode=prefer для публичного URL (fallback)")
                     else:
-                        ssl_mode = 'require'
-                        print("🔐 Используем sslmode=require для внутреннего URL (fallback)")
+                        ssl_mode = 'prefer'
+                        print("🔐 Используем sslmode=prefer для внутреннего URL (fallback)")
                     
                     conn = psycopg2.connect(
                         host=parsed.hostname,
