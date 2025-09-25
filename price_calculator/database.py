@@ -4,48 +4,62 @@ from typing import List, Dict, Any
 
 # Универсальный модуль для работы с БД (PostgreSQL или SQLite)
 
-def get_database_connection():
+# Глобальная переменная для кэширования типа БД
+_db_type_cache = None
+
+def get_database_connection(silent=False):
     """Возвращает подключение к БД (PostgreSQL или SQLite) - Railway оптимизированная версия"""
+    global _db_type_cache
     
     # Сначала пробуем PUBLIC URL (более надежный на Railway)
     database_public_url = os.environ.get('DATABASE_PUBLIC_URL')
     if database_public_url:
         try:
             import psycopg2
-            print(f"🔌 Подключение к PostgreSQL через PUBLIC URL")
+            if not silent and _db_type_cache != 'postgres':
+                print(f"🔌 Подключение к PostgreSQL через PUBLIC URL")
             
             # Преобразуем URL для psycopg2
             if database_public_url.startswith('postgres://'):
                 database_public_url = database_public_url.replace('postgres://', 'postgresql://', 1)
             
             conn = psycopg2.connect(database_public_url)
-            print("✅ Подключение к PostgreSQL успешно")
+            if not silent and _db_type_cache != 'postgres':
+                print("✅ Подключение к PostgreSQL успешно")
+            _db_type_cache = 'postgres'
             return conn, 'postgres'
         except Exception as e:
-            print(f"❌ Ошибка подключения к PostgreSQL PUBLIC URL: {e}")
+            if not silent:
+                print(f"❌ Ошибка подключения к PostgreSQL PUBLIC URL: {e}")
     
     # Fallback на обычный DATABASE_URL
     database_url = os.environ.get('DATABASE_URL')
     if database_url:
         try:
             import psycopg2
-            print(f"🔌 Подключение к PostgreSQL через обычный DATABASE_URL (fallback)")
+            if not silent and _db_type_cache != 'postgres':
+                print(f"🔌 Подключение к PostgreSQL через DATABASE_URL (fallback)")
             
             # Преобразуем URL для psycopg2
             if database_url.startswith('postgres://'):
                 database_url = database_url.replace('postgres://', 'postgresql://', 1)
             
             conn = psycopg2.connect(database_url)
-            print("✅ Подключение к PostgreSQL успешно")
+            if not silent and _db_type_cache != 'postgres':
+                print("✅ Подключение к PostgreSQL успешно")
+            _db_type_cache = 'postgres'
             return conn, 'postgres'
         except Exception as e:
-            print(f"❌ Ошибка подключения к PostgreSQL DATABASE_URL: {e}")
-            print("⚠️ Переключаемся на SQLite")
+            if not silent:
+                print(f"❌ Ошибка подключения к PostgreSQL DATABASE_URL: {e}")
+                print("⚠️ Переключаемся на SQLite")
     
     # Fallback к SQLite
     import sqlite3
     conn = sqlite3.connect('calculations.db')
-    print("✅ Подключились к SQLite")
+    if not silent and _db_type_cache != 'sqlite':
+        print("✅ Подключились к SQLite")
+    _db_type_cache = 'sqlite'
     return conn, 'sqlite'
 
 def init_database():
@@ -104,7 +118,7 @@ def init_database():
 
 def save_calculation_to_db(data: Dict[str, Any]) -> int:
     """Сохраняет расчет в БД"""
-    conn, db_type = get_database_connection()
+    conn, db_type = get_database_connection(silent=True)  # Тихое подключение
     cursor = conn.cursor()
     
     if db_type == 'postgres':
@@ -145,7 +159,7 @@ def save_calculation_to_db(data: Dict[str, Any]) -> int:
 
 def get_calculation_history() -> List[Dict[str, Any]]:
     """Получает историю расчетов из БД"""
-    conn, db_type = get_database_connection()
+    conn, db_type = get_database_connection(silent=True)  # Тихое подключение
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -186,10 +200,15 @@ def get_calculation_history() -> List[Dict[str, Any]]:
 def restore_from_backup():
     """Восстанавливает данные из бэкапа при пустой БД"""
     try:
-        # Проверяем, пуста ли БД
-        history = get_calculation_history()
-        if len(history) > 0:
-            print(f"✅ БД уже содержит {len(history)} записей")
+        # Проверяем, пуста ли БД (тихо)
+        conn, db_type = get_database_connection(silent=True)
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM calculations')
+        count = cursor.fetchone()[0]
+        conn.close()
+        
+        if count > 0:
+            print(f"✅ БД уже содержит {count} записей")
             return
         
         # Пытаемся загрузить из бэкапа
