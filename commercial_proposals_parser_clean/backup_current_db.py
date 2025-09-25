@@ -15,7 +15,7 @@ from pathlib import Path
 # Добавляем путь к проекту
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from database.manager_v4 import DatabaseManager_v4
+from database.manager_v4 import CommercialProposalsDB
 from database.models_v4 import Product, PriceOffer, ProductImage, SheetMetadata
 
 # Настройка логирования
@@ -28,7 +28,8 @@ def backup_current_data():
     print("💾 СОЗДАНИЕ БЭКАПА ТЕКУЩИХ ДАННЫХ БД")
     print("=" * 80)
     
-    db_manager = DatabaseManager()
+    from config import DATABASE_URL_V4
+    db_manager = CommercialProposalsDB(DATABASE_URL_V4)
     session = db_manager.get_session()
     
     try:
@@ -77,13 +78,10 @@ def backup_current_data():
                 'id': product.id,
                 'name': product.name,
                 'description': product.description,
-                'material': product.material,
-                'size': product.size,
-                'color': product.color,
-                'packaging': product.packaging,
+                'characteristics': product.characteristics,
+                'custom_design': product.custom_design,
                 'sheet_id': product.sheet_id,
-                'row_start': product.row_start,
-                'row_end': product.row_end,
+                'row_number': getattr(product, 'row_number', None),
                 'created_at': product.created_at.isoformat() if product.created_at else None,
                 'updated_at': product.updated_at.isoformat() if product.updated_at else None
             })
@@ -118,12 +116,12 @@ def backup_current_data():
                 'id': image.id,
                 'product_id': image.product_id,
                 'sheet_id': image.sheet_id,
-                'file_path': image.file_path,
-                'position_row': image.position_row,
-                'position_column': image.position_column,
+                'local_path': image.local_path,
+                'image_type': image.image_type,
                 'width': image.width,
                 'height': image.height,
-                'is_main': image.is_main,
+                'row': image.row,
+                'column': image.column,
                 'created_at': image.created_at.isoformat() if image.created_at else None
             })
         
@@ -133,13 +131,12 @@ def backup_current_data():
         for sheet in sheets:
             backup_data['sheet_metadata'].append({
                 'id': sheet.id,
-                'original_filename': sheet.original_filename,
-                'sheet_name': sheet.sheet_name,
-                'processed_at': sheet.processed_at.isoformat() if sheet.processed_at else None,
+                'sheet_title': sheet.sheet_title,
+                'sheet_id': sheet.sheet_id,
                 'status': sheet.status,
-                'total_products': sheet.total_products,
-                'parsing_errors': sheet.parsing_errors,
-                'notes': sheet.notes
+                'products_count': sheet.products_count,
+                'local_file_path': sheet.local_file_path,
+                'created_at': sheet.created_at.isoformat() if sheet.created_at else None
             })
         
         # Записываем бэкап
@@ -164,7 +161,8 @@ def create_summary_report():
     print("\n📊 ДЕТАЛЬНЫЙ ОТЧЕТ О ТЕКУЩЕМ СОСТОЯНИИ:")
     print("-" * 60)
     
-    db_manager = DatabaseManager()
+    from config import DATABASE_URL_V4
+    db_manager = CommercialProposalsDB(DATABASE_URL_V4)
     session = db_manager.get_session()
     
     try:

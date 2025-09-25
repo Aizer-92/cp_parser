@@ -806,7 +806,8 @@
                                             <div><strong>Категория:</strong> {{ item.category }}</div>
                                             <div><strong>Вес:</strong> {{ item.weight_kg }} кг</div>
                                             <div><strong>Количество:</strong> {{ item.quantity }} шт</div>
-                                            <div><strong>Наценка:</strong> × {{ item.markup }}</div>
+                                            <div><strong>Наценка:</strong> × {{ item.markup }} ({{ ((item.markup - 1) * 100).toFixed(0) }}%)</div>
+                                            <div v-if="item.custom_rate"><strong>Логистическая ставка:</strong> ${{ item.custom_rate }}/кг</div>
                                         </div>
                                     </div>
                                     <div>
