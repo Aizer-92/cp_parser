@@ -1,66 +1,80 @@
 import os
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional, Tuple
+import threading
 
 # Универсальный модуль для работы с БД (PostgreSQL или SQLite)
 
-# Глобальная переменная для кэширования типа БД
-_db_type_cache = None
+# Глобальные переменные для singleton подключения
+_db_connection = None
+_db_type = None
+_connection_lock = threading.Lock()
 
-def get_database_connection(silent=False):
-    """Возвращает подключение к БД (PostgreSQL или SQLite) - Railway оптимизированная версия"""
-    global _db_type_cache
+def get_database_connection() -> Tuple[any, str]:
+    """Возвращает единое переиспользуемое подключение к БД (PostgreSQL или SQLite)"""
+    global _db_connection, _db_type, _connection_lock
     
-    # Сначала пробуем PUBLIC URL (более надежный на Railway)
-    database_public_url = os.environ.get('DATABASE_PUBLIC_URL')
-    if database_public_url:
-        try:
-            import psycopg2
-            if not silent and _db_type_cache != 'postgres':
-                print(f"🔌 Подключение к PostgreSQL через PUBLIC URL")
-            
-            # Преобразуем URL для psycopg2
-            if database_public_url.startswith('postgres://'):
-                database_public_url = database_public_url.replace('postgres://', 'postgresql://', 1)
-            
-            conn = psycopg2.connect(database_public_url)
-            if not silent and _db_type_cache != 'postgres':
-                print("✅ Подключение к PostgreSQL успешно")
-            _db_type_cache = 'postgres'
-            return conn, 'postgres'
-        except Exception as e:
-            if not silent:
-                print(f"❌ Ошибка подключения к PostgreSQL PUBLIC URL: {e}")
-    
-    # Fallback на обычный DATABASE_URL
-    database_url = os.environ.get('DATABASE_URL')
-    if database_url:
-        try:
-            import psycopg2
-            if not silent and _db_type_cache != 'postgres':
-                print(f"🔌 Подключение к PostgreSQL через DATABASE_URL (fallback)")
-            
-            # Преобразуем URL для psycopg2
-            if database_url.startswith('postgres://'):
-                database_url = database_url.replace('postgres://', 'postgresql://', 1)
-            
-            conn = psycopg2.connect(database_url)
-            if not silent and _db_type_cache != 'postgres':
-                print("✅ Подключение к PostgreSQL успешно")
-            _db_type_cache = 'postgres'
-            return conn, 'postgres'
-        except Exception as e:
-            if not silent:
-                print(f"❌ Ошибка подключения к PostgreSQL DATABASE_URL: {e}")
+    with _connection_lock:
+        # Если подключение уже существует и активно, возвращаем его
+        if _db_connection is not None and _db_type is not None:
+            try:
+                # Проверяем активность подключения
+                if _db_type == 'postgres':
+                    _db_connection.cursor().execute('SELECT 1')
+                else:
+                    _db_connection.cursor().execute('SELECT 1').fetchone()
+                return _db_connection, _db_type
+            except:
+                # Подключение неактивно, создаем новое
+                _db_connection = None
+                _db_type = None
+        
+        # Создаем новое подключение
+        print(f"🔌 Создание единого подключения к БД...")
+        
+        # Сначала пробуем PUBLIC URL (более надежный на Railway)
+        database_public_url = os.environ.get('DATABASE_PUBLIC_URL')
+        if database_public_url:
+            try:
+                import psycopg2
+                print(f"🔗 PostgreSQL через PUBLIC URL")
+                
+                # Преобразуем URL для psycopg2
+                if database_public_url.startswith('postgres://'):
+                    database_public_url = database_public_url.replace('postgres://', 'postgresql://', 1)
+                
+                _db_connection = psycopg2.connect(database_public_url)
+                _db_type = 'postgres'
+                print("✅ PostgreSQL подключен успешно")
+                return _db_connection, _db_type
+            except Exception as e:
+                print(f"❌ Ошибка PostgreSQL PUBLIC URL: {e}")
+        
+        # Fallback на обычный DATABASE_URL
+        database_url = os.environ.get('DATABASE_URL')
+        if database_url:
+            try:
+                import psycopg2
+                print(f"🔗 PostgreSQL через DATABASE_URL (fallback)")
+                
+                # Преобразуем URL для psycopg2
+                if database_url.startswith('postgres://'):
+                    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+                
+                _db_connection = psycopg2.connect(database_url)
+                _db_type = 'postgres'
+                print("✅ PostgreSQL подключен успешно")
+                return _db_connection, _db_type
+            except Exception as e:
+                print(f"❌ Ошибка PostgreSQL DATABASE_URL: {e}")
                 print("⚠️ Переключаемся на SQLite")
-    
-    # Fallback к SQLite
-    import sqlite3
-    conn = sqlite3.connect('calculations.db')
-    if not silent and _db_type_cache != 'sqlite':
-        print("✅ Подключились к SQLite")
-    _db_type_cache = 'sqlite'
-    return conn, 'sqlite'
+        
+        # Fallback к SQLite
+        import sqlite3
+        _db_connection = sqlite3.connect('calculations.db', check_same_thread=False)
+        _db_type = 'sqlite'
+        print("✅ SQLite подключен")
+        return _db_connection, _db_type
 
 def init_database():
     """Инициализирует таблицы в БД"""
@@ -113,12 +127,12 @@ def init_database():
         ''')
     
     conn.commit()
-    conn.close()
+    # НЕ закрываем подключение - переиспользуем его
     print(f"✅ Таблицы инициализированы ({db_type})")
 
 def save_calculation_to_db(data: Dict[str, Any]) -> int:
     """Сохраняет расчет в БД"""
-    conn, db_type = get_database_connection(silent=True)  # Тихое подключение
+    conn, db_type = get_database_connection()  # Переиспользуем единое подключение
     cursor = conn.cursor()
     
     if db_type == 'postgres':
@@ -154,12 +168,12 @@ def save_calculation_to_db(data: Dict[str, Any]) -> int:
         calculation_id = cursor.lastrowid
     
     conn.commit()
-    conn.close()
+    # НЕ закрываем подключение - переиспользуем его
     return calculation_id
 
 def get_calculation_history() -> List[Dict[str, Any]]:
     """Получает историю расчетов из БД"""
-    conn, db_type = get_database_connection(silent=True)  # Тихое подключение
+    conn, db_type = get_database_connection()  # Переиспользуем единое подключение
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -172,7 +186,7 @@ def get_calculation_history() -> List[Dict[str, Any]]:
     ''')
     
     rows = cursor.fetchall()
-    conn.close()
+    # НЕ закрываем подключение - переиспользуем его
     
     history = []
     for row in rows:
@@ -200,12 +214,12 @@ def get_calculation_history() -> List[Dict[str, Any]]:
 def restore_from_backup():
     """Восстанавливает данные из бэкапа при пустой БД"""
     try:
-        # Проверяем, пуста ли БД (тихо)
-        conn, db_type = get_database_connection(silent=True)
+        # Проверяем, пуста ли БД
+        conn, db_type = get_database_connection()
         cursor = conn.cursor()
         cursor.execute('SELECT COUNT(*) FROM calculations')
         count = cursor.fetchone()[0]
-        conn.close()
+        # НЕ закрываем подключение - переиспользуем его
         
         if count > 0:
             print(f"✅ БД уже содержит {count} записей")

@@ -61,7 +61,7 @@ def get_min_price_info(product_id):
         min_usd = session.query(func.min(PriceOffer.price_usd)).filter(
             and_(
                 PriceOffer.product_id == product_id,
-                or_(PriceOffer.is_sample == False, PriceOffer.is_sample.is_(None)),
+                PriceOffer.route_name != 'ОБРАЗЕЦ',  # Исключаем образцы по route_name
                 PriceOffer.price_usd.isnot(None),
                 PriceOffer.price_usd > 0
             )
@@ -70,17 +70,17 @@ def get_min_price_info(product_id):
         min_rub = session.query(func.min(PriceOffer.price_rub)).filter(
             and_(
                 PriceOffer.product_id == product_id,
-                or_(PriceOffer.is_sample == False, PriceOffer.is_sample.is_(None)),
+                PriceOffer.route_name != 'ОБРАЗЕЦ',  # Исключаем образцы по route_name
                 PriceOffer.price_rub.isnot(None),
                 PriceOffer.price_rub > 0
             )
         ).scalar()
         
-        # Получаем минимальный тираж
+        # Получаем минимальный тираж (исключаем образцы)
         min_quantity = session.query(func.min(PriceOffer.quantity)).filter(
             and_(
                 PriceOffer.product_id == product_id,
-                or_(PriceOffer.is_sample == False, PriceOffer.is_sample.is_(None)),
+                PriceOffer.route_name != 'ОБРАЗЕЦ',  # Исключаем образцы по route_name
                 PriceOffer.quantity.isnot(None),
                 PriceOffer.quantity > 0
             )
@@ -124,7 +124,7 @@ def index():
             max_usd = session.query(func.max(PriceOffer.price_usd)).filter(
                 and_(
                     PriceOffer.product_id == product.id,
-                    PriceOffer.is_sample == False,
+                    PriceOffer.route_name != 'ОБРАЗЕЦ',
                     PriceOffer.price_usd.isnot(None),
                     PriceOffer.price_usd > 0
                 )
@@ -133,7 +133,7 @@ def index():
             max_rub = session.query(func.max(PriceOffer.price_rub)).filter(
                 and_(
                     PriceOffer.product_id == product.id,
-                    PriceOffer.is_sample == False,
+                    PriceOffer.route_name != 'ОБРАЗЕЦ',
                     PriceOffer.price_rub.isnot(None),
                     PriceOffer.price_rub > 0
                 )
@@ -142,7 +142,7 @@ def index():
             max_quantity = session.query(func.max(PriceOffer.quantity)).filter(
                 and_(
                     PriceOffer.product_id == product.id,
-                    PriceOffer.is_sample == False,
+                    PriceOffer.route_name != 'ОБРАЗЕЦ',  # Исключаем образцы по route_name
                     PriceOffer.quantity.isnot(None),
                     PriceOffer.quantity > 0
                 )
@@ -238,11 +238,11 @@ def product_detail(product_id):
         # Получаем ВСЕ варианты цен (включая образцы)
         all_price_offers = session.query(PriceOffer).filter(
             PriceOffer.product_id == product_id
-        ).order_by(PriceOffer.is_sample, PriceOffer.route_name, PriceOffer.quantity).all()
+        ).order_by(PriceOffer.route_name, PriceOffer.quantity).all()
         
         # Разделяем образцы и обычные варианты
-        price_variants = [offer for offer in all_price_offers if not offer.is_sample]
-        sample_offer = next((offer for offer in all_price_offers if offer.is_sample), None)
+        price_variants = [offer for offer in all_price_offers if offer.route_name != 'ОБРАЗЕЦ']
+        sample_offer = next((offer for offer in all_price_offers if offer.route_name == 'ОБРАЗЕЦ'), None)
         
         # Преобразуем пути к изображениям для веб-интерфейса
         web_images = []
