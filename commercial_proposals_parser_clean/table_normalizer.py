@@ -230,9 +230,9 @@ class TableNormalizer:
         # УЛУЧШЕННОЕ определение маршрута с учетом контекста
         route = None
         route_mappings = {
-            'АВИА': ['авиа', 'авто', 'air', 'aviation', 'avia', 'самолет'],
-            'ЖД': ['жд', 'жел', 'поезд', 'railway', 'train', 'железн'],
-            'ОБРАЗЕЦ': ['образец', 'sample', 'пробн', 'проба']  # Убираем 'тест' - слишком общее
+            'АВИА': ['авиа', 'авто', 'air', 'aviation', 'avia', 'самолет', 'дубай', 'dubai'],  # Добавляем дубай
+            'ЖД': ['жд', 'жел', 'поезд', 'railway', 'train', 'железн', 'контейнер'],
+            'ОБРАЗЕЦ': ['образец', 'sample', 'пробн', 'проба']  # НЕ добавляем общие слова!
         }
         
         for route_name, keywords in route_mappings.items():
@@ -271,8 +271,12 @@ class TableNormalizer:
         elif any(word in header_text for word in ['тираж', 'количество', 'кол-во', 'quantity', 'qty']):
             # Убеждаемся что это не цена с "шт"
             if not any(price_word in header_text for price_word in ['цена', 'price', '$', '₽', 'руб']):
-                if 'шт' in header_text or not any('шт' in ctx for ctx in context_headers):
+                # КРИТИЧНО: Если это просто "Тираж, шт" - это БАЗОВОЕ поле, НЕ образец!
+                if not route:  # Если нет явного указания на маршрут - это базовый тираж
                     column_type = 'quantity'
+                    route = None  # Сбрасываем маршрут
+                else:
+                    column_type = 'quantity'  # С маршрутом
         
         # Сроки доставки
         elif any(word in header_text for word in ['срок', 'дн', 'дней', 'время', 'delivery', 'time']):

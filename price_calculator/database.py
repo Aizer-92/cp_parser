@@ -5,100 +5,24 @@ from typing import List, Dict, Any
 # Универсальный модуль для работы с БД (PostgreSQL или SQLite)
 
 def get_database_connection():
-    """Возвращает подключение к БД (PostgreSQL или SQLite)"""
+    """Возвращает подключение к БД (PostgreSQL или SQLite) - Railway оптимизированная версия"""
     
-    # Попробуем сначала через переменные окружения Railway
-    pg_host = os.environ.get('PGHOST')
-    pg_port = os.environ.get('PGPORT')
-    pg_database = os.environ.get('PGDATABASE') 
-    pg_user = os.environ.get('PGUSER')
-    pg_password = os.environ.get('PGPASSWORD')
-    
-    if all([pg_host, pg_port, pg_database, pg_user, pg_password]):
+    # Railway автоматически предоставляет DATABASE_URL через Service Variables
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url:
         try:
             import psycopg2
-            print(f"🔗 Пробуем подключение через переменные окружения: {pg_host}:{pg_port}")
+            print(f"🔌 Подключение к PostgreSQL через Railway Service Variables")
             
-            conn = psycopg2.connect(
-                host=pg_host,
-                port=int(pg_port),
-                database=pg_database,
-                user=pg_user,
-                password=pg_password,
-                sslmode='prefer'  # Railway предпочитает 'prefer'
-            )
-            print("✅ Подключились к PostgreSQL через переменные окружения")
+            # Преобразуем URL для psycopg2 (как в рабочем promo_calculator_railway)
+            if database_url.startswith('postgres://'):
+                database_url = database_url.replace('postgres://', 'postgresql://', 1)
+            
+            conn = psycopg2.connect(database_url)
+            print("✅ Подключение к PostgreSQL успешно")
             return conn, 'postgres'
         except Exception as e:
-            print(f"❌ Ошибка подключения через переменные окружения: {e}")
-    
-    # Fallback на URL подход
-    database_url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
-    database_public_url = os.environ.get('DATABASE_PUBLIC_URL')
-    
-    if database_url or database_public_url:
-        # PostgreSQL
-        try:
-            import psycopg2
-            from urllib.parse import urlparse
-            
-            # Пробуем сначала ПУБЛИЧНЫЙ URL (более надежный на Railway), потом внутренний
-            url_to_try = database_public_url or database_url
-            print(f"🔗 Пробуем подключиться к PostgreSQL: {url_to_try[:50]}...")
-            
-            # Парсим URL
-            parsed = urlparse(url_to_try)
-            
-            # Определяем режим SSL в зависимости от хоста
-            if 'proxy.rlwy.net' in parsed.hostname:
-                # Для публичного Railway URL используем prefer
-                ssl_mode = 'prefer'
-                print("🔓 Используем sslmode=prefer для публичного URL")
-            else:
-                # Для внутренних подключений используем prefer
-                ssl_mode = 'prefer' 
-                print("🔐 Используем sslmode=prefer для внутреннего URL")
-            
-            conn = psycopg2.connect(
-                host=parsed.hostname,
-                port=parsed.port,
-                database=parsed.path[1:],  # убираем ведущий /
-                user=parsed.username,
-                password=parsed.password,
-                sslmode=ssl_mode
-            )
-            print("✅ Подключились к PostgreSQL")
-            return conn, 'postgres'
-        except Exception as e:
-            print(f"❌ Ошибка подключения к PostgreSQL внутреннему: {e}")
-            
-            # Пробуем внутренний URL если есть
-            if database_url and database_url != url_to_try:
-                try:
-                    print(f"🔗 Пробуем внутренний PostgreSQL URL...")
-                    parsed = urlparse(database_url)
-                    
-                    # Определяем режим SSL
-                    if 'proxy.rlwy.net' in parsed.hostname:
-                        ssl_mode = 'prefer'
-                        print("🔓 Используем sslmode=prefer для публичного URL (fallback)")
-                    else:
-                        ssl_mode = 'prefer'
-                        print("🔐 Используем sslmode=prefer для внутреннего URL (fallback)")
-                    
-                    conn = psycopg2.connect(
-                        host=parsed.hostname,
-                        port=parsed.port,
-                        database=parsed.path[1:],
-                        user=parsed.username,
-                        password=parsed.password,
-                        sslmode=ssl_mode
-                    )
-                    print("✅ Подключились к PostgreSQL (внутренний URL)")
-                    return conn, 'postgres'
-                except Exception as e2:
-                    print(f"❌ Ошибка подключения к PostgreSQL внутреннему: {e2}")
-            
+            print(f"❌ Ошибка подключения к PostgreSQL: {e}")
             print("⚠️ Переключаемся на SQLite")
     
     # Fallback к SQLite
