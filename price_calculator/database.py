@@ -7,15 +7,20 @@ from typing import List, Dict, Any
 def get_database_connection():
     """Возвращает подключение к БД (PostgreSQL или SQLite)"""
     database_url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
+    database_public_url = os.environ.get('DATABASE_PUBLIC_URL')
     
-    if database_url:
+    if database_url or database_public_url:
         # PostgreSQL
         try:
             import psycopg2
             from urllib.parse import urlparse
             
+            # Пробуем сначала внутренний URL, потом публичный
+            url_to_try = database_url or database_public_url
+            print(f"🔗 Пробуем подключиться к PostgreSQL: {url_to_try[:50]}...")
+            
             # Парсим URL
-            parsed = urlparse(database_url)
+            parsed = urlparse(url_to_try)
             conn = psycopg2.connect(
                 host=parsed.hostname,
                 port=parsed.port,
@@ -27,7 +32,27 @@ def get_database_connection():
             print("✅ Подключились к PostgreSQL")
             return conn, 'postgres'
         except Exception as e:
-            print(f"❌ Ошибка подключения к PostgreSQL: {e}")
+            print(f"❌ Ошибка подключения к PostgreSQL внутреннему: {e}")
+            
+            # Пробуем публичный URL если есть
+            if database_public_url and database_public_url != url_to_try:
+                try:
+                    print(f"🔗 Пробуем публичный PostgreSQL URL...")
+                    parsed = urlparse(database_public_url)
+                    conn = psycopg2.connect(
+                        host=parsed.hostname,
+                        port=parsed.port,
+                        database=parsed.path[1:],
+                        user=parsed.username,
+                        password=parsed.password,
+                        sslmode='require'
+                    )
+                    print("✅ Подключились к PostgreSQL (публичный URL)")
+                    return conn, 'postgres'
+                except Exception as e2:
+                    print(f"❌ Ошибка подключения к PostgreSQL публичному: {e2}")
+            
+            print("⚠️ Переключаемся на SQLite")
     
     # Fallback к SQLite
     import sqlite3
