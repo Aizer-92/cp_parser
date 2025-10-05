@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Товары - Парсер коммерческих предложений{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <!-- Заголовок и поиск -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight text-gray-900">Товары</h1>
+                <p class="mt-2 text-sm text-gray-600">
+                    Найдено {{ pagination.total }} товаров
+                </p>
+            </div>
+        </div>
+        
+        <!-- Поиск -->
+        <div class="mt-6">
+            <form method="GET" class="max-w-lg">
+                <div class="flex">
+                    <div class="relative flex-grow">
+                        <input type="text" 
+                               name="search" 
+                               value="{{ search }}" 
+                               placeholder="Поиск товаров..." 
+                               class="block w-full rounded-l-md border-gray-300 px-4 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
+                    <button type="submit" 
+                            class="inline-flex items-center rounded-r-md border border-l-0 border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        Найти
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Список товаров -->
+    {% if products %}
+    <div class="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
+        {% for product in products %}
+        <a href="/product/{{ product.id }}" class="group">
+            <div class="w-full h-48 overflow-hidden rounded-lg bg-gray-200 flex items-center justify-center">
+                {% if product.images and product.images[0] %}
+                <img src="/images/{{ product.images[0].image_filename }}" 
+                     alt="{{ product.name }}" 
+                     class="max-w-full max-h-full object-contain group-hover:opacity-75 transition-all">
+                {% else %}
+                <div class="flex items-center justify-center h-full w-full">
+                    <span class="text-gray-400 text-sm">Нет изображения</span>
+                </div>
+                {% endif %}
+            </div>
+            <h3 class="mt-4 text-sm text-gray-700 line-clamp-2">{{ product.name or 'Без названия' }}</h3>
+            
+            <!-- Цены -->
+            {% if product.price_offers %}
+            <div class="mt-1">
+                {% set first_offers = product.price_offers[:3] %}
+                {% for offer in first_offers %}
+                <p class="text-xs text-gray-500">
+                    {{ "{:,}".format(offer.quantity) }} шт - 
+                    {% if offer.price_usd %}${{ "%.2f"|format(offer.price_usd) }}{% endif %}
+                    {% if offer.price_rub %}₽{{ "%.2f"|format(offer.price_rub) }}{% endif %}
+                    {% if offer.delivery_time_days %}<span class="text-gray-400"> • {{ offer.delivery_time_days }}дн</span>{% endif %}
+                </p>
+                {% endfor %}
+                {% if product.price_offers|length > 3 %}
+                <p class="text-xs text-gray-400">+{{ product.price_offers|length - 3 }} вариантов</p>
+                {% endif %}
+            </div>
+            {% else %}
+            <p class="mt-1 text-sm text-gray-500">Цена не указана</p>
+            {% endif %}
+            
+            <!-- Образец -->
+            {% if product.sample_price or product.sample_delivery_time %}
+            <div class="mt-1">
+                <p class="text-xs text-gray-400">
+                    Образец: 
+                    {% if product.sample_price %}₽{{ "%.0f"|format(product.sample_price) }}{% endif %}
+                    {% if product.sample_delivery_time %}{% if product.sample_price %} • {% endif %}{{ product.sample_delivery_time }} дн.{% endif %}
+                </p>
+            </div>
+            {% endif %}
+            
+            <!-- Проект -->
+            <p class="mt-1 text-xs text-gray-400">
+                Проект: {{ product.project.project_name[:30] + '...' if product.project.project_name and product.project.project_name|length > 30 else product.project.project_name or 'ID ' + product.project.id|string }}
+            </p>
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- Пагинация -->
+    {% if pagination.total_pages > 1 %}
+    <nav class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-12">
+        <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm text-gray-700">
+                    Показано
+                    <span class="font-medium">{{ ((pagination.page - 1) * 24) + 1 }}</span>
+                    до
+                    <span class="font-medium">{{ [pagination.page * 24, pagination.total]|min }}</span>
+                    из
+                    <span class="font-medium">{{ pagination.total }}</span>
+                    результатов
+                </p>
+            </div>
+            <div>
+                <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                    <!-- Предыдущая страница -->
+                    {% if pagination.has_prev %}
+                    <a href="?page={{ pagination.prev_num }}{% if search %}&search={{ search }}{% endif %}" 
+                       class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">
+                        <span class="sr-only">Предыдущая</span>
+                        <span class="text-sm">←</span>
+                    </a>
+                    {% else %}
+                    <span class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-300 ring-1 ring-inset ring-gray-300">
+                        <span class="text-sm">←</span>
+                    </span>
+                    {% endif %}
+
+                    <!-- Номера страниц -->
+                    {% set start_page = [1, pagination.page - 2]|max %}
+                    {% set end_page = [pagination.total_pages, pagination.page + 2]|min %}
+                    
+                    {% if start_page > 1 %}
+                    <a href="?page=1{% if search %}&search={{ search }}{% endif %}" 
+                       class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">1</a>
+                    {% if start_page > 2 %}
+                    <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 focus:outline-offset-0">...</span>
+                    {% endif %}
+                    {% endif %}
+
+                    {% for page_num in range(start_page, end_page + 1) %}
+                    {% if page_num == pagination.page %}
+                    <span class="relative z-10 inline-flex items-center bg-indigo-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">{{ page_num }}</span>
+                    {% else %}
+                    <a href="?page={{ page_num }}{% if search %}&search={{ search }}{% endif %}" 
+                       class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">{{ page_num }}</a>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if end_page < pagination.total_pages %}
+                    {% if end_page < pagination.total_pages - 1 %}
+                    <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 focus:outline-offset-0">...</span>
+                    {% endif %}
+                    <a href="?page={{ pagination.total_pages }}{% if search %}&search={{ search }}{% endif %}" 
+                       class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">{{ pagination.total_pages }}</a>
+                    {% endif %}
+
+                    <!-- Следующая страница -->
+                    {% if pagination.has_next %}
+                    <a href="?page={{ pagination.next_num }}{% if search %}&search={{ search }}{% endif %}" 
+                       class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">
+                        <span class="sr-only">Следующая</span>
+                        <span class="text-sm">→</span>
+                    </a>
+                    {% else %}
+                    <span class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-300 ring-1 ring-inset ring-gray-300">
+                        <span class="text-sm">→</span>
+                    </span>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <!-- Пустое состояние -->
+    <div class="text-center py-12">
+        <div class="mx-auto h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center">
+            <span class="text-gray-400 font-medium">Т</span>
+        </div>
+        <h3 class="mt-2 text-sm font-semibold text-gray-900">Товары не найдены</h3>
+        <p class="mt-1 text-sm text-gray-500">
+            {% if search %}
+            По запросу "{{ search }}" ничего не найдено. Попробуйте изменить условия поиска.
+            {% else %}
+            Пока нет товаров для отображения.
+            {% endif %}
+        </p>
+        {% if search %}
+        <div class="mt-6">
+            <a href="/products" class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                Показать все товары
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>
+{% endblock %}
