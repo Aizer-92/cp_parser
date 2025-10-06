@@ -94,11 +94,39 @@ def index():
             completed_projects = session.query(Project).filter(Project.parsing_status == 'completed').count()
             
             # Получаем последние обработанные проекты
-            print("🔍 [DEBUG] Пробуем получить последние проекты...")
-            recent_projects = session.query(Project).filter(
-                Project.parsing_status == 'completed'
-            ).order_by(Project.updated_at.desc()).limit(6).all()
-            print(f"✅ [DEBUG] Получено проектов: {len(recent_projects)}")
+            print("🔍 [DEBUG] Пробуем получить последние проекты через RAW SQL...")
+            
+            # Используем RAW SQL чтобы обойти проблему с типами
+            from sqlalchemy import text
+            raw_sql = text("""
+                SELECT id, project_name, file_name, google_sheets_url, 
+                       manager_name, total_products_found, total_images_found,
+                       updated_at, created_at
+                FROM projects 
+                WHERE parsing_status = 'completed'
+                ORDER BY updated_at DESC 
+                LIMIT 6
+            """)
+            
+            result = session.execute(raw_sql)
+            rows = result.fetchall()
+            
+            # Преобразуем в объекты Project вручную
+            recent_projects = []
+            for row in rows:
+                project = Project()
+                project.id = row[0]
+                project.project_name = row[1]
+                project.file_name = row[2]
+                project.google_sheets_url = row[3]
+                project.manager_name = row[4]
+                project.total_products_found = row[5]
+                project.total_images_found = row[6]
+                project.updated_at = row[7]
+                project.created_at = row[8]
+                recent_projects.append(project)
+            
+            print(f"✅ [DEBUG] Получено проектов через RAW SQL: {len(recent_projects)}")
             
             stats = {
                 'projects': projects_count,
