@@ -10,6 +10,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Копируем весь проект cp_parser в /app
 COPY cp_parser/ /app/
 
+# Отладка - показываем структуру
+RUN echo "=== Содержимое /app ===" && ls -la /app/ && \
+    echo "=== Содержимое /app/web_interface ===" && ls -la /app/web_interface/ || echo "web_interface не найден!"
+
 # Создаем директорию для изображений
 RUN mkdir -p /app/web_interface/storage/images
 
