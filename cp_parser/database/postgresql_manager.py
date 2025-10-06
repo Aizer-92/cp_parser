@@ -55,7 +55,9 @@ class PostgreSQLManager:
                 }
             )
             
-            # TEXT тип уже зарегистрирован глобально при импорте модуля
+            # Регистрируем обработчик для КАЖДОГО соединения в пуле
+            event.listen(self.engine, "connect", register_pg_types)
+            logging.info("✅ Обработчик регистрации типов подключен к engine")
             
             # Создаем фабрику сессий
             self.SessionLocal = scoped_session(
