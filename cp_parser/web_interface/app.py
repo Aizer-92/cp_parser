@@ -147,30 +147,81 @@ def index():
 @app.route('/products')
 def products_list():
     """Список товаров с пагинацией и поиском"""
+    from sqlalchemy import text
+    
     page = request.args.get('page', 1, type=int)
     search = request.args.get('search', '', type=str)
     
     with db_manager.get_session() as session:
-        # Базовый запрос
-        query = session.query(Product)
-        
-        # Применяем поиск если есть
+        # Подсчитываем общее количество с поиском
         if search.strip():
-            search_term = f"%{search.strip()}%"
-            query = query.filter(
-                or_(
-                    Product.name.ilike(search_term),
-                    Product.description.ilike(search_term)
-                )
-            )
+            count_sql = text("""
+                SELECT COUNT(*) FROM products 
+                WHERE name ILIKE :search OR description ILIKE :search
+            """)
+            total = session.execute(count_sql, {"search": f"%{search.strip()}%"}).scalar()
+            
+            # Получаем товары с поиском
+            products_sql = text("""
+                SELECT id, project_id, name, description, article_number, 
+                       sample_price, sample_delivery_time, row_number
+                FROM products 
+                WHERE name ILIKE :search OR description ILIKE :search
+                ORDER BY id DESC 
+                LIMIT :limit OFFSET :offset
+            """)
+            rows = session.execute(products_sql, {
+                "search": f"%{search.strip()}%",
+                "limit": PRODUCTS_PER_PAGE,
+                "offset": (page - 1) * PRODUCTS_PER_PAGE
+            }).fetchall()
+        else:
+            # Без поиска
+            total = session.execute(text("SELECT COUNT(*) FROM products")).scalar()
+            
+            products_sql = text("""
+                SELECT id, project_id, name, description, article_number, 
+                       sample_price, sample_delivery_time, row_number
+                FROM products 
+                ORDER BY id DESC 
+                LIMIT :limit OFFSET :offset
+            """)
+            rows = session.execute(products_sql, {
+                "limit": PRODUCTS_PER_PAGE,
+                "offset": (page - 1) * PRODUCTS_PER_PAGE
+            }).fetchall()
         
-        # Подсчитываем общее количество
-        total = query.count()
-        
-        # Применяем пагинацию
-        products = query.order_by(Product.id.desc()).offset(
-            (page - 1) * PRODUCTS_PER_PAGE
-        ).limit(PRODUCTS_PER_PAGE).all()
+        # Преобразуем в объекты Product
+        products = []
+        for row in rows:
+            product = Product()
+            product.id = row[0]
+            product.project_id = row[1]
+            product.name = row[2]
+            product.description = row[3]
+            product.article_number = row[4]
+            product.sample_price = row[5]
+            product.sample_delivery_time = row[6]
+            product.row_number = row[7]
+            
+            # Получаем изображения для товара
+            images_sql = text("""
+                SELECT id, image_filename, is_main_image 
+                FROM product_images 
+                WHERE product_id = :product_id 
+                ORDER BY is_main_image DESC, display_order
+            """)
+            image_rows = session.execute(images_sql, {"product_id": product.id}).fetchall()
+            
+            product.images = []
+            for img_row in image_rows:
+                img = ProductImage()
+                img.id = img_row[0]
+                img.image_filename = img_row[1]
+                img.is_main_image = img_row[2]
+                product.images.append(img)
+            
+            products.append(product)
         
         # Вычисляем данные для пагинации
         total_pages = math.ceil(total / PRODUCTS_PER_PAGE)
@@ -195,30 +246,67 @@ def products_list():
 @app.route('/projects')
 def projects_list():
     """Список проектов с пагинацией"""
+    from sqlalchemy import text
+    
     page = request.args.get('page', 1, type=int)
     search = request.args.get('search', '', type=str)
     
     with db_manager.get_session() as session:
-        # Базовый запрос
-        query = session.query(Project)
-        
-        # Применяем поиск если есть
+        # Подсчитываем общее количество с поиском
         if search.strip():
-            search_term = f"%{search.strip()}%"
-            query = query.filter(
-                or_(
-                    Project.project_name.ilike(search_term),
-                    Project.table_id.ilike(search_term)
-                )
-            )
+            count_sql = text("""
+                SELECT COUNT(*) FROM projects 
+                WHERE project_name ILIKE :search OR table_id ILIKE :search
+            """)
+            total = session.execute(count_sql, {"search": f"%{search.strip()}%"}).scalar()
+            
+            # Получаем проекты с поиском
+            projects_sql = text("""
+                SELECT id, project_name, file_name, google_sheets_url, 
+                       manager_name, total_products_found, total_images_found,
+                       parsing_status, updated_at, created_at
+                FROM projects 
+                WHERE project_name ILIKE :search OR table_id ILIKE :search
+                ORDER BY id DESC 
+                LIMIT :limit OFFSET :offset
+            """)
+            rows = session.execute(projects_sql, {
+                "search": f"%{search.strip()}%",
+                "limit": PROJECTS_PER_PAGE,
+                "offset": (page - 1) * PROJECTS_PER_PAGE
+            }).fetchall()
+        else:
+            # Без поиска
+            total = session.execute(text("SELECT COUNT(*) FROM projects")).scalar()
+            
+            projects_sql = text("""
+                SELECT id, project_name, file_name, google_sheets_url, 
+                       manager_name, total_products_found, total_images_found,
+                       parsing_status, updated_at, created_at
+                FROM projects 
+                ORDER BY id DESC 
+                LIMIT :limit OFFSET :offset
+            """)
+            rows = session.execute(projects_sql, {
+                "limit": PROJECTS_PER_PAGE,
+                "offset": (page - 1) * PROJECTS_PER_PAGE
+            }).fetchall()
         
-        # Подсчитываем общее количество
-        total = query.count()
-        
-        # Применяем пагинацию
-        projects = query.order_by(Project.id.desc()).offset(
-            (page - 1) * PROJECTS_PER_PAGE
-        ).limit(PROJECTS_PER_PAGE).all()
+        # Преобразуем в объекты Project
+        projects = []
+        for row in rows:
+            project = Project()
+            project.id = row[0]
+            project.project_name = row[1]
+            project.file_name = row[2]
+            project.google_sheets_url = row[3]
+            project.manager_name = row[4]
+            project.total_products_found = row[5]
+            project.total_images_found = row[6]
+            project.parsing_status = row[7]
+            project.updated_at = row[8]
+            project.created_at = row[9]
+            projects.append(project)
         
         # Вычисляем данные для пагинации
         total_pages = math.ceil(total / PROJECTS_PER_PAGE)
@@ -243,22 +331,106 @@ def projects_list():
 @app.route('/project/<int:project_id>')
 def project_detail(project_id):
     """Детальная информация о проекте"""
+    from sqlalchemy import text
+    
     with db_manager.get_session() as session:
-        project = session.query(Project).filter(Project.id == project_id).first()
-        if not project:
+        # Получаем проект
+        project_sql = text("""
+            SELECT id, project_name, file_name, google_sheets_url, 
+                   manager_name, total_products_found, total_images_found,
+                   parsing_status, updated_at, created_at
+            FROM projects 
+            WHERE id = :project_id
+        """)
+        project_row = session.execute(project_sql, {"project_id": project_id}).fetchone()
+        
+        if not project_row:
             return "Проект не найден", 404
+        
+        project = Project()
+        project.id = project_row[0]
+        project.project_name = project_row[1]
+        project.file_name = project_row[2]
+        project.google_sheets_url = project_row[3]
+        project.manager_name = project_row[4]
+        project.total_products_found = project_row[5]
+        project.total_images_found = project_row[6]
+        project.parsing_status = project_row[7]
+        project.updated_at = project_row[8]
+        project.created_at = project_row[9]
         
         # Получаем товары проекта с пагинацией
         page = request.args.get('page', 1, type=int)
-        products_query = session.query(Product).filter(Product.project_id == project_id)
         
         # Подсчитываем общее количество
-        total = products_query.count()
+        total = session.execute(
+            text("SELECT COUNT(*) FROM products WHERE project_id = :project_id"),
+            {"project_id": project_id}
+        ).scalar()
         
-        # Применяем пагинацию
-        products = products_query.order_by(Product.id.desc()).offset(
-            (page - 1) * PRODUCTS_PER_PAGE
-        ).limit(PRODUCTS_PER_PAGE).all()
+        # Получаем товары
+        products_sql = text("""
+            SELECT id, project_id, name, description, article_number, 
+                   sample_price, sample_delivery_time, row_number
+            FROM products 
+            WHERE project_id = :project_id
+            ORDER BY id DESC 
+            LIMIT :limit OFFSET :offset
+        """)
+        rows = session.execute(products_sql, {
+            "project_id": project_id,
+            "limit": PRODUCTS_PER_PAGE,
+            "offset": (page - 1) * PRODUCTS_PER_PAGE
+        }).fetchall()
+        
+        # Преобразуем в объекты Product с изображениями и ценами
+        products = []
+        for row in rows:
+            product = Product()
+            product.id = row[0]
+            product.project_id = row[1]
+            product.name = row[2]
+            product.description = row[3]
+            product.article_number = row[4]
+            product.sample_price = row[5]
+            product.sample_delivery_time = row[6]
+            product.row_number = row[7]
+            
+            # Получаем изображения
+            images_sql = text("""
+                SELECT id, image_filename, is_main_image 
+                FROM product_images 
+                WHERE product_id = :product_id 
+                ORDER BY is_main_image DESC, display_order
+            """)
+            image_rows = session.execute(images_sql, {"product_id": product.id}).fetchall()
+            product.images = []
+            for img_row in image_rows:
+                img = ProductImage()
+                img.id = img_row[0]
+                img.image_filename = img_row[1]
+                img.is_main_image = img_row[2]
+                product.images.append(img)
+            
+            # Получаем ценовые предложения
+            offers_sql = text("""
+                SELECT id, quantity, price_usd, price_rub, delivery_time_days
+                FROM price_offers 
+                WHERE product_id = :product_id 
+                ORDER BY quantity
+            """)
+            offer_rows = session.execute(offers_sql, {"product_id": product.id}).fetchall()
+            product.price_offers = []
+            for offer_row in offer_rows:
+                offer = PriceOffer()
+                offer.id = offer_row[0]
+                offer.quantity = offer_row[1]
+                offer.price_usd = offer_row[2]
+                offer.price_rub = offer_row[3]
+                offer.delivery_time_days = offer_row[4]
+                product.price_offers.append(offer)
+            
+            products.append(product)
         
         # Вычисляем данные для пагинации
         total_pages = math.ceil(total / PRODUCTS_PER_PAGE)
@@ -277,9 +449,26 @@ def project_detail(project_id):
         
         # Статистика проекта
         project_stats = {
-            'products_count': session.query(Product).filter(Product.project_id == project_id).count(),
-            'offers_count': session.query(PriceOffer).join(Product).filter(Product.project_id == project_id).count(),
-            'images_count': session.query(ProductImage).join(Product).filter(Product.project_id == project_id).count()
+            'products_count': session.execute(
+                text("SELECT COUNT(*) FROM products WHERE project_id = :project_id"),
+                {"project_id": project_id}
+            ).scalar(),
+            'offers_count': session.execute(
+                text("""
+                    SELECT COUNT(*) FROM price_offers po
+                    JOIN products p ON po.product_id = p.id
+                    WHERE p.project_id = :project_id
+                """),
+                {"project_id": project_id}
+            ).scalar(),
+            'images_count': session.execute(
+                text("""
+                    SELECT COUNT(*) FROM product_images pi
+                    JOIN products p ON pi.product_id = p.id
+                    WHERE p.project_id = :project_id
+                """),
+                {"project_id": project_id}
+            ).scalar()
         }
         
         return render_template('project_detail.html', 
@@ -291,20 +480,68 @@ def project_detail(project_id):
 @app.route('/product/<int:product_id>')
 def product_detail(product_id):
     """Детальная информация о товаре"""
+    from sqlalchemy import text
+    
     with db_manager.get_session() as session:
-        product = session.query(Product).filter(Product.id == product_id).first()
-        if not product:
+        # Получаем товар
+        product_sql = text("""
+            SELECT id, project_id, name, description, article_number, 
+                   sample_price, sample_delivery_time, row_number
+            FROM products 
+            WHERE id = :product_id
+        """)
+        product_row = session.execute(product_sql, {"product_id": product_id}).fetchone()
+        
+        if not product_row:
             return "Товар не найден", 404
         
+        product = Product()
+        product.id = product_row[0]
+        product.project_id = product_row[1]
+        product.name = product_row[2]
+        product.description = product_row[3]
+        product.article_number = product_row[4]
+        product.sample_price = product_row[5]
+        product.sample_delivery_time = product_row[6]
+        product.row_number = product_row[7]
+        
         # Получаем все ценовые предложения
-        price_offers = session.query(PriceOffer).filter(
-            PriceOffer.product_id == product_id
-        ).order_by(PriceOffer.quantity).all()
+        offers_sql = text("""
+            SELECT id, quantity, price_usd, price_rub, delivery_time_days, route
+            FROM price_offers 
+            WHERE product_id = :product_id 
+            ORDER BY quantity
+        """)
+        offer_rows = session.execute(offers_sql, {"product_id": product_id}).fetchall()
+        
+        price_offers = []
+        for row in offer_rows:
+            offer = PriceOffer()
+            offer.id = row[0]
+            offer.quantity = row[1]
+            offer.price_usd = row[2]
+            offer.price_rub = row[3]
+            offer.delivery_time_days = row[4]
+            offer.route = row[5]
+            price_offers.append(offer)
         
         # Получаем все изображения
-        images = session.query(ProductImage).filter(
-            ProductImage.product_id == product_id
-        ).order_by(ProductImage.is_main_image.desc()).all()
+        images_sql = text("""
+            SELECT id, image_filename, is_main_image, display_order
+            FROM product_images 
+            WHERE product_id = :product_id 
+            ORDER BY is_main_image DESC, display_order
+        """)
+        image_rows = session.execute(images_sql, {"product_id": product_id}).fetchall()
+        
+        images = []
+        for row in image_rows:
+            img = ProductImage()
+            img.id = row[0]
+            img.image_filename = row[1]
+            img.is_main_image = row[2]
+            img.display_order = row[3]
+            images.append(img)
         
         return render_template('product_detail.html', 
                              product=product, 
