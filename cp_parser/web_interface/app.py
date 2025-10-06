@@ -92,21 +92,29 @@ def index():
             offers_count = session.query(PriceOffer).count()
             images_count = session.query(ProductImage).count()
             completed_projects = session.query(Project).filter(Project.parsing_status == 'completed').count()
-        
-        # Получаем последние обработанные проекты
-        recent_projects = session.query(Project).filter(
-            Project.parsing_status == 'completed'
-        ).order_by(Project.updated_at.desc()).limit(6).all()
-        
-        stats = {
-            'projects': projects_count,
-            'products': products_count,
-            'offers': offers_count,
-            'images': images_count,
-            'completed_projects': completed_projects
-        }
-        
-        return render_template('index_new.html', stats=stats, recent_projects=recent_projects)
+            
+            # Получаем последние обработанные проекты
+            print("🔍 [DEBUG] Пробуем получить последние проекты...")
+            recent_projects = session.query(Project).filter(
+                Project.parsing_status == 'completed'
+            ).order_by(Project.updated_at.desc()).limit(6).all()
+            print(f"✅ [DEBUG] Получено проектов: {len(recent_projects)}")
+            
+            stats = {
+                'projects': projects_count,
+                'products': products_count,
+                'offers': offers_count,
+                'images': images_count,
+                'completed_projects': completed_projects
+            }
+            
+            print("🔍 [DEBUG] Рендерим шаблон...")
+            return render_template('index_new.html', stats=stats, recent_projects=recent_projects)
+    except Exception as e:
+        print(f"❌ [ERROR] Критическая ошибка в index(): {e}")
+        import traceback
+        traceback.print_exc()
+        return f"Ошибка: {e}", 500
 
 @app.route('/products')
 def products_list():
