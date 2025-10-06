@@ -373,7 +373,7 @@ def project_detail(project_id):
     with db_manager.get_session() as session:
         # Получаем проект
         project_sql = text("""
-            SELECT id, project_name, file_name, google_sheets_url, 
+            SELECT id, table_id, project_name, file_name, google_sheets_url, 
                    manager_name, total_products_found, total_images_found,
                    parsing_status, updated_at, created_at
             FROM projects 
@@ -386,16 +386,17 @@ def project_detail(project_id):
         
         project = Project()
         project.id = project_row[0]
-        project.project_name = project_row[1]
-        project.file_name = project_row[2]
-        project.google_sheets_url = project_row[3]
-        project.manager_name = project_row[4]
-        project.total_products_found = int(project_row[5]) if project_row[5] is not None else 0
-        project.total_images_found = int(project_row[6]) if project_row[6] is not None else 0
-        project.parsing_status = project_row[7]
+        project.table_id = project_row[1]
+        project.project_name = project_row[2]
+        project.file_name = project_row[3]
+        project.google_sheets_url = project_row[4]
+        project.manager_name = project_row[5]
+        project.total_products_found = int(project_row[6]) if project_row[6] is not None else 0
+        project.total_images_found = int(project_row[7]) if project_row[7] is not None else 0
+        project.parsing_status = project_row[8]
         # Преобразуем строки в datetime объекты
-        project.updated_at = datetime.fromisoformat(str(project_row[8])) if project_row[8] else None
-        project.created_at = datetime.fromisoformat(str(project_row[9])) if project_row[9] else None
+        project.updated_at = datetime.fromisoformat(str(project_row[9])) if project_row[9] else None
+        project.created_at = datetime.fromisoformat(str(project_row[10])) if project_row[10] else None
         
         # Получаем товары проекта с пагинацией
         page = request.args.get('page', 1, type=int)
