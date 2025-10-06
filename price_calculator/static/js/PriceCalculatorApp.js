@@ -19,7 +19,7 @@ const PriceCalculatorApp = {
     data: function() {
         return {
             // UI State
-            activeTab: 'calculator',
+            // activeTab теперь computed из $route.path
             settingsSubTab: 'general', // general или categories
             isCalculating: false,
             editingCalculationId: null,
@@ -97,6 +97,19 @@ const PriceCalculatorApp = {
     },
     
     computed: {
+        // 🔥 НОВОЕ: activeTab определяется из маршрута
+        activeTab: function() {
+            // Маппинг путей на табы
+            var path = this.$route ? this.$route.path : '/';
+            var routeToTab = {
+                '/': 'calculator',
+                '/precise': 'precise',
+                '/history': 'history',
+                '/settings': 'settings'
+            };
+            return routeToTab[path] || 'calculator';
+        },
+        
         isFormValid: function() {
             return this.form.product_name &&
                    parseFloat(this.form.price_yuan) > 0 &&
@@ -467,7 +480,8 @@ const PriceCalculatorApp = {
                 console.log('Расчет сохранен в историю');
                 return self.loadHistory();
             }).then(function() {
-                self.activeTab = 'history';
+                // Используем router для навигации
+                self.$router.push('/history');
             }).catch(function(error) {
                 console.error('Ошибка сохранения:', error);
                 alert('Ошибка при сохранении расчета');
@@ -484,7 +498,8 @@ const PriceCalculatorApp = {
                 return self.loadHistory();
             }).then(function() {
                 self.editingCalculationId = null;
-                self.activeTab = 'history';
+                // Используем router для навигации
+                self.$router.push('/history');
             }).catch(function(error) {
                 console.error('Ошибка обновления:', error);
                 alert('Ошибка при обновлении расчета');
@@ -544,8 +559,9 @@ const PriceCalculatorApp = {
                     self.selectedCategoryIndexPrecise = null;
                 });
                 
-                this.activeTab = 'precise';
-                console.log('EDIT: Switched to precise tab, activeTab:', this.activeTab);
+                // Используем router для навигации
+                this.$router.push('/precise');
+                console.log('EDIT: Switched to precise tab via router');
             } else {
                 // Заполняем форму быстрых расчетов
                 this.form.product_name = item.product_name;
@@ -568,8 +584,9 @@ const PriceCalculatorApp = {
                     self.selectedCategoryIndex = null;
                 });
                 
-                this.activeTab = 'calculator';
-                console.log('EDIT: Switched to calculator tab, activeTab:', this.activeTab);
+                // Используем router для навигации
+                this.$router.push('/');
+                console.log('EDIT: Switched to calculator tab via router');
             }
 
             this.editingCalculationId = item.id;
@@ -610,8 +627,9 @@ const PriceCalculatorApp = {
                 this.preciseForm.packing_box_width = item.packing_box_width || null;
                 this.preciseForm.packing_box_height = item.packing_box_height || null;
                 
-                this.activeTab = 'precise';
-                console.log('COPY: Switched to precise tab, activeTab:', this.activeTab);
+                // Используем router для навигации
+                this.$router.push('/precise');
+                console.log('COPY: Switched to precise tab via router');
             } else {
                 // Копируем в форму быстрых расчетов
                 this.form.product_name = item.product_name;
@@ -623,8 +641,9 @@ const PriceCalculatorApp = {
                 this.form.delivery_type = item.delivery_type || 'rail';
                 this.form.markup = item.markup;
                 
-                this.activeTab = 'calculator';
-                console.log('COPY: Switched to calculator tab, activeTab:', this.activeTab);
+                // Используем router для навигации
+                this.$router.push('/');
+                console.log('COPY: Switched to calculator tab via router');
             }
 
             this.editingCalculationId = null;
@@ -729,18 +748,26 @@ const PriceCalculatorApp = {
                         '<div class="rate-item">1¥ = {{ exchangeRates.yuan_to_rub.toFixed(2) }}₽</div>' +
                     '</div>' +
                     '<nav class="nav">' +
-                        '<button @click="activeTab = \'calculator\'" :class="[\'nav-button\', { active: activeTab === \'calculator\' }]">' +
-                            'Быстрые расчеты' +
-                        '</button>' +
-                        '<button @click="activeTab = \'precise\'" :class="[\'nav-button\', { active: activeTab === \'precise\' }]">' +
-                            'Точные расчеты' +
-                        '</button>' +
-                        '<button @click="activeTab = \'history\'" :class="[\'nav-button\', { active: activeTab === \'history\' }]">' +
-                            'История' +
-                        '</button>' +
-                        '<button @click="activeTab = \'settings\'" :class="[\'nav-button\', { active: activeTab === \'settings\' }]">' +
-                            'Настройки' +
-                        '</button>' +
+                        '<router-link to="/" custom v-slot="{ navigate, isActive }">' +
+                            '<button @click="navigate" :class="[\'nav-button\', { active: isActive }]">' +
+                                'Быстрые расчеты' +
+                            '</button>' +
+                        '</router-link>' +
+                        '<router-link to="/precise" custom v-slot="{ navigate, isActive }">' +
+                            '<button @click="navigate" :class="[\'nav-button\', { active: isActive }]">' +
+                                'Точные расчеты' +
+                            '</button>' +
+                        '</router-link>' +
+                        '<router-link to="/history" custom v-slot="{ navigate, isActive }">' +
+                            '<button @click="navigate" :class="[\'nav-button\', { active: isActive }]">' +
+                                'История' +
+                            '</button>' +
+                        '</router-link>' +
+                        '<router-link to="/settings" custom v-slot="{ navigate, isActive }">' +
+                            '<button @click="navigate" :class="[\'nav-button\', { active: isActive }]">' +
+                                'Настройки' +
+                            '</button>' +
+                        '</router-link>' +
                         '<button @click="logout" class="logout-button">' +
                             'Выход' +
                         '</button>' +

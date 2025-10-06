@@ -31,6 +31,8 @@
     
     <!-- Vue.js 3 CDN -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Vue Router 4 CDN -->
+    <script src="https://unpkg.com/vue-router@4/dist/vue-router.global.js"></script>
     <!-- Axios для HTTP запросов -->
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     
@@ -613,6 +615,9 @@
         <PriceCalculatorApp />
     </div></body>
 
+    <!-- Load Vue Router Configuration -->
+    <script src="/static/js/router.js?v=1-vue-router"></script>
+    
     <!-- Load Vue Components -->
     <script src="/static/js/components/CategorySelector.js?v=3"></script>
     <script src="/static/js/components/ProductForm.js?v=5"></script>
@@ -621,7 +626,7 @@
     <script src="/static/js/components/HistoryPanel.js?v=5"></script>
     <script src="/static/js/components/SettingsPanel.js?v=1"></script>
     <script src="/static/js/components/CategoriesPanel.js?v=5-debug-id"></script>
-    <script src="/static/js/PriceCalculatorApp.js?v=19-categories-final"></script>
+    <script src="/static/js/PriceCalculatorApp.js?v=20-vue-router"></script>
 
     <!-- Initialize App -->
     <script>
@@ -649,6 +654,10 @@
             var createApp = Vue.createApp;
             
             try {
+                // Создаем роутер
+                var router = window.createPriceCalculatorRouter();
+                console.log('✅ Vue Router создан');
+                
                 // Создаем и монтируем приложение
                 var app = createApp({
                     components: {
@@ -657,8 +666,11 @@
                     template: '<PriceCalculatorApp />'
                 });
                 
+                // Подключаем роутер
+                app.use(router);
+                
                 app.mount('#app');
-                console.log('🚀 Price Calculator - Модульная архитектура успешно загружена');
+                console.log('🚀 Price Calculator - Модульная архитектура с Vue Router успешно загружена');
                 
             } catch (error) {
                 console.error('❌ Ошибка инициализации Vue приложения:', error);

@@ -1660,6 +1660,23 @@ async def update_calculation_endpoint(calculation_id: int, request: CalculationR
 
 # Инициализация БД происходит в lifespan
 
+# 🚀 VUE ROUTER SUPPORT - Catch-all route для SPA
+# ВАЖНО: Этот роут должен быть ПОСЛЕДНИМ, чтобы не перехватывать API endpoints
+@app.get("/{full_path:path}")
+async def catch_all(request: Request, full_path: str):
+    """
+    Catch-all маршрут для поддержки Vue Router (history mode)
+    Возвращает index.html для всех неизвестных маршрутов,
+    чтобы Vue Router мог обработать их на клиенте
+    """
+    # Проверяем авторизацию для всех маршрутов SPA
+    session_token = request.cookies.get("session_token")
+    if not verify_session(session_token):
+        return RedirectResponse(url="/login", status_code=302)
+    
+    # Возвращаем index.html для Vue Router
+    return FileResponse('index.html')
+
 if __name__ == "__main__":
     import uvicorn
     import os
