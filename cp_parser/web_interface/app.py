@@ -70,13 +70,28 @@ from config import (
 @app.route('/')
 def index():
     """Главная страница с общей статистикой"""
-    with db_manager.get_session() as session:
-        # Получаем статистику
-        projects_count = session.query(Project).count()
-        products_count = session.query(Product).count()
-        offers_count = session.query(PriceOffer).count()
-        images_count = session.query(ProductImage).count()
-        completed_projects = session.query(Project).filter(Project.parsing_status == 'completed').count()
+    try:
+        print("🔍 [DEBUG] Начинаем запрос к БД...")
+        
+        with db_manager.get_session() as session:
+            print("🔍 [DEBUG] Сессия создана успешно")
+            
+            # ТЕСТОВЫЙ ЗАПРОС: Пробуем простой COUNT
+            try:
+                print("🔍 [DEBUG] Пробуем COUNT(*)...")
+                projects_count = session.query(Project).count()
+                print(f"✅ [DEBUG] COUNT успешен: {projects_count}")
+            except Exception as e:
+                print(f"❌ [DEBUG] Ошибка в COUNT: {e}")
+                import traceback
+                traceback.print_exc()
+                raise
+            
+            # Получаем статистику
+            products_count = session.query(Product).count()
+            offers_count = session.query(PriceOffer).count()
+            images_count = session.query(ProductImage).count()
+            completed_projects = session.query(Project).filter(Project.parsing_status == 'completed').count()
         
         # Получаем последние обработанные проекты
         recent_projects = session.query(Project).filter(
