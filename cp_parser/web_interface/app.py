@@ -6,7 +6,6 @@
 Готов для деплоя в интернет
 """
 
-from flask import Flask, render_template, jsonify, send_from_directory, request
 import os
 from pathlib import Path
 import sys
@@ -14,6 +13,10 @@ import sys
 # Добавляем путь к модулям проекта
 sys.path.append(str(Path(__file__).parent.parent))
 
+# КРИТИЧЕСКИ ВАЖНО: Импортируем fix_pg_types ПЕРВЫМ, до SQLAlchemy!
+from database import fix_pg_types
+
+from flask import Flask, render_template, jsonify, send_from_directory, request
 from database.postgresql_manager import db_manager
 from database.models import Project, Product, PriceOffer, ProductImage
 from sqlalchemy import or_, func
