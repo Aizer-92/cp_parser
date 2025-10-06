@@ -95,7 +95,7 @@ def index():
             images_count = session.query(ProductImage).count()
             completed_projects = session.query(Project).filter(Project.parsing_status == 'completed').count()
             
-            # Получаем последние обработанные проекты
+            # Получаем последние обработанные проекты (только с товарами)
             print("🔍 [DEBUG] Пробуем получить последние проекты через RAW SQL...")
             
             # Используем RAW SQL чтобы обойти проблему с типами
@@ -105,7 +105,7 @@ def index():
                        manager_name, total_products_found, total_images_found,
                        updated_at, created_at
                 FROM projects 
-                WHERE parsing_status = 'completed'
+                WHERE parsing_status = 'completed' AND total_products_found > 0
                 ORDER BY updated_at DESC 
                 LIMIT 6
             """)
@@ -223,6 +223,26 @@ def products_list():
                 img.image_filename = img_row[1]
                 img.is_main_image = img_row[2]
                 product.images.append(img)
+            
+            # Получаем ценовые предложения для товара (для отображения в листинге)
+            offers_sql = text("""
+                SELECT id, quantity, price_usd, price_rub, delivery_time_days
+                FROM price_offers 
+                WHERE product_id = :product_id 
+                ORDER BY quantity
+                LIMIT 3
+            """)
+            offer_rows = session.execute(offers_sql, {"product_id": product.id}).fetchall()
+            
+            product.price_offers = []
+            for offer_row in offer_rows:
+                offer = PriceOffer()
+                offer.id = offer_row[0]
+                offer.quantity = int(offer_row[1]) if offer_row[1] is not None else None
+                offer.price_usd = float(offer_row[2]) if offer_row[2] is not None else None
+                offer.price_rub = float(offer_row[3]) if offer_row[3] is not None else None
+                offer.delivery_time_days = int(offer_row[4]) if offer_row[4] is not None else None
+                product.price_offers.append(offer)
             
             products.append(product)
         
