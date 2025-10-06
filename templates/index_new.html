@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Главная - Парсер коммерческих предложений{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <!-- Заголовок -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold tracking-tight text-gray-900">Парсер коммерческих предложений</h1>
+        <p class="mt-2 text-lg text-gray-600">Анализ и обработка коммерческих предложений из Google Sheets</p>
+    </div>
+
+    <!-- Статистика -->
+    <div class="mb-12">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Общая статистика</h2>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div class="bg-white overflow-hidden border border-gray-200 rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                <span class="text-sm font-medium text-gray-600">П</span>
+                            </div>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Проекты</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ "{:,}".format(stats.projects) }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white overflow-hidden border border-gray-200 rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                <span class="text-sm font-medium text-gray-600">Т</span>
+                            </div>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Товары</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ "{:,}".format(stats.products) }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white overflow-hidden border border-gray-200 rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                <span class="text-sm font-medium text-gray-600">И</span>
+                            </div>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Изображения</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ "{:,}".format(stats.images) }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white overflow-hidden border border-gray-200 rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                <span class="text-sm font-medium text-gray-600">Ц</span>
+                            </div>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Предложения</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ "{:,}".format(stats.offers) }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white overflow-hidden border border-gray-200 rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                <span class="text-sm font-medium text-gray-600">З</span>
+                            </div>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Завершено</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ "{:,}".format(stats.completed_projects) }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Быстрые действия -->
+    <div class="mb-12">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Быстрые действия</h2>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <a href="/products" class="group relative bg-white p-6 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 group-hover:text-gray-700">
+                        Просмотр товаров
+                    </h3>
+                    <p class="mt-2 text-sm text-gray-500">
+                        Список всех товаров с поиском и фильтрацией
+                    </p>
+                </div>
+            </a>
+
+            <a href="/projects" class="group relative bg-white p-6 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 group-hover:text-gray-700">
+                        Просмотр проектов
+                    </h3>
+                    <p class="mt-2 text-sm text-gray-500">
+                        Список всех обработанных проектов
+                    </p>
+                </div>
+            </a>
+
+            <a href="/api/stats" class="group relative bg-white p-6 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 group-hover:text-gray-700">
+                        API статистики
+                    </h3>
+                    <p class="mt-2 text-sm text-gray-500">
+                        Получить данные в формате JSON
+                    </p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Последние проекты -->
+    {% if recent_projects %}
+    <div>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Последние обработанные проекты</h2>
+            <a href="/projects" class="text-sm text-gray-600 hover:text-gray-900">Посмотреть все</a>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <ul class="divide-y divide-gray-200">
+                {% for project in recent_projects %}
+                <li>
+                    <a href="/project/{{ project.id }}" class="block hover:bg-gray-50 px-6 py-4 transition-all">
+                        <div class="flex items-center justify-between">
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm font-medium text-gray-900 truncate">
+                                    {{ project.project_name or 'Без названия' }}
+                                </p>
+                                <p class="text-sm text-gray-500 truncate">
+                                    ID: {{ project.id }} • Товаров: {{ project.total_products_found or 0 }} • Изображений: {{ project.total_images_found or 0 }}
+                                </p>
+                            </div>
+                            <div class="ml-4 flex-shrink-0">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                    {% if project.parsing_status == 'completed' %}bg-green-100 text-green-800
+                                    {% elif project.parsing_status == 'pending' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {% if project.parsing_status == 'completed' %}Завершен
+                                    {% elif project.parsing_status == 'pending' %}В ожидании
+                                    {% else %}Ошибка{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
