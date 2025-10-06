@@ -5,7 +5,6 @@
     "dockerfilePath": "cp_parser/Dockerfile"
   },
   "deploy": {
-    "startCommand": "cd cp_parser && python web_interface/app.py",
     "healthcheckPath": "/",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
