@@ -114,6 +114,94 @@ class PriceCalculator:
         print("Категории не найдены, используем пустой список")
         self.categories = []
     
+    def load_density_surcharges(self) -> Dict:
+        """
+        Загружает таблицу надбавок за плотность из YAML конфига
+        
+        Returns:
+            Dict с надбавками для rail и air
+        """
+        try:
+            import yaml
+            config_path = Path(__file__).parent / "config" / "density_surcharges.yaml"
+            
+            if not config_path.exists():
+                print(f"⚠️ Файл надбавок за плотность не найден: {config_path}")
+                return {"rail": {}, "air": {}}
+            
+            with open(config_path, 'r', encoding='utf-8') as f:
+                data = yaml.safe_load(f)
+            
+            surcharges = data.get('density_surcharges', {})
+            print(f"✅ Загружены надбавки за плотность: ЖД={len(surcharges.get('rail', {}))} точек, Авиа={len(surcharges.get('air', {}))} точек")
+            return surcharges
+            
+        except Exception as e:
+            print(f"❌ Ошибка загрузки надбавок за плотность: {e}")
+            return {"rail": {}, "air": {}}
+    
+    def get_density_surcharge(self, density_kg_m3: float, delivery_type: str) -> float:
+        """
+        Рассчитывает надбавку к базовой ставке за плотность товара
+        Использует линейную интерполяцию между табличными значениями
+        
+        Args:
+            density_kg_m3: Плотность товара в кг/м³
+            delivery_type: Тип доставки - "rail" или "air"
+            
+        Returns:
+            Надбавка в $/кг
+            
+        Example:
+            >>> calc.get_density_surcharge(85, "rail")
+            2.01  # При плотности 85 кг/м³ надбавка +$2.01/кг
+        """
+        if not self.density_surcharges or delivery_type not in self.density_surcharges:
+            return 0.0
+        
+        surcharge_table = self.density_surcharges[delivery_type]
+        
+        if not surcharge_table:
+            return 0.0
+        
+        # Получаем список плотностей (ключи таблицы)
+        densities = sorted([float(d) for d in surcharge_table.keys()])
+        
+        # Если плотность больше максимальной в таблице - надбавка = 0
+        if density_kg_m3 >= densities[-1]:
+            return float(surcharge_table[densities[-1]])
+        
+        # Если плотность меньше минимальной - берем максимальную надбавку
+        if density_kg_m3 <= densities[0]:
+            return float(surcharge_table[densities[0]])
+        
+        # Находим ближайшие точки для интерполяции
+        lower_density = None
+        upper_density = None
+        
+        for i in range(len(densities) - 1):
+            if densities[i] <= density_kg_m3 <= densities[i + 1]:
+                lower_density = densities[i]
+                upper_density = densities[i + 1]
+                break
+        
+        if lower_density is None or upper_density is None:
+            # Не должно случиться, но на всякий случай
+            return 0.0
+        
+        # Точное совпадение
+        if lower_density == upper_density:
+            return float(surcharge_table[lower_density])
+        
+        # Линейная интерполяция
+        lower_surcharge = float(surcharge_table[lower_density])
+        upper_surcharge = float(surcharge_table[upper_density])
+        
+        ratio = (density_kg_m3 - lower_density) / (upper_density - lower_density)
+        interpolated = lower_surcharge + ratio * (upper_surcharge - lower_surcharge)
+        
+        return round(interpolated, 2)
+    
     def find_category_by_name(self, product_name: str) -> Dict:
         """Находит категорию товара по названию с приоритетами и синонимами"""
         product_name_lower = product_name.lower()
