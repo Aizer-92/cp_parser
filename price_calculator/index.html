@@ -3,9 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Price Calculator - Калькулятор цен товаров</title>
+    <title>Price Calculator - Модульная архитектура</title>
+    <meta name="version" content="v14-fix-id-critical">
+    
+    <!-- 🔥 CACHE BUSTER - Очистка Service Worker и кеша -->
+    <script>
+        // Удаляем Service Worker если есть
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister();
+                    console.log('✅ Service Worker удален');
+                }
+            });
+        }
+        
+        // Очищаем кеш
+        if ('caches' in window) {
+            caches.keys().then(function(names) {
+                for (let name of names) {
+                    caches.delete(name);
+                    console.log('✅ Кеш очищен:', name);
+                }
+            });
+        }
+    </script>
+    
+    <!-- Vue.js 3 CDN -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Axios для HTTP запросов -->
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    
+    <!-- Component CSS -->
+    <link rel="stylesheet" href="/static/css/components/settings.css">
+    <link rel="stylesheet" href="/static/css/components/categories-panel.css?v=2-customs">
+    
+    <!-- Настройка axios для отправки cookies -->
+    <script>
+        // Настраиваем axios для отправки cookies с каждым запросом
+        axios.defaults.withCredentials = true;
+        
+        // Добавляем interceptor для обработки 401 ошибок
+        axios.interceptors.response.use(
+            function(response) {
+                return response;
+            },
+            function(error) {
+                if (error.response && error.response.status === 401) {
+                    console.warn('Unauthorized request, redirecting to login...');
+                    window.location.href = '/login';
+                }
+                return Promise.reject(error);
+            }
+        );
+    </script>
+    
     <style>
         * {
             margin: 0;
@@ -37,12 +89,35 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 20px;
         }
         
         .logo {
             font-size: 20px;
             font-weight: 600;
             color: #1f2937;
+        }
+        
+        .exchange-rates {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .rate-item {
+            background: #f3f4f6;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+        }
+        
+        @media (max-width: 768px) {
+            .exchange-rates {
+                display: none;
+            }
         }
         
         .nav {
@@ -64,6 +139,38 @@
             background: #000;
             color: white;
             border-color: #000;
+        }
+        
+        /* Settings Sub-tabs */
+        .settings-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 0;
+        }
+        
+        .settings-tab-btn {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: #666;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .settings-tab-btn:hover {
+            color: #000;
+            background: #f8f9fa;
+        }
+        
+        .settings-tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: 600;
         }
         
         .nav-button:hover:not(.active) {
@@ -321,6 +428,27 @@
             box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
         }
         
+        /* Badges for calculation methods */
+        .calculation-method-badge {
+            display: inline-block;
+            margin-left: 8px;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        
+        .calculation-method-badge.quick {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .calculation-method-badge.precise {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        
         .history-summary {
             padding: 16px;
             display: flex;
@@ -436,574 +564,112 @@
         .refresh-button:hover {
             border-color: #9ca3af;
         }
+        
+        /* Copy Button Styles */
+        .copy-button {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            color: #6b7280;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.8;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 20;
+            width: 32px;
+            height: 32px;
+        }
+        
+        .copy-button:hover {
+            background: rgba(255, 255, 255, 1);
+            color: #374151;
+            opacity: 1;
+            border-color: #d1d5db;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px) scale(1.05);
+        }
+        
+        .copy-button:active {
+            transform: translateY(-1px) scale(1.02);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+        
+        .copy-button svg {
+            width: 16px;
+            height: 16px;
+        }
     </style>
 </head>
 <body>
     <div id="app">
-        
-        <!-- Header -->
-        <header class="header">
-            <div class="container">
-                <div class="header-content">
-                    <div class="logo">Price Calculator</div>
-                    <nav class="nav">
-                        <button @click="activeTab = 'calculator'" 
-                                :class="['nav-button', { active: activeTab === 'calculator' }]">
-                            Калькулятор
-                        </button>
-                        <button @click="activeTab = 'history'" 
-                                :class="['nav-button', { active: activeTab === 'history' }]">
-                            История
-                        </button>
-                        <button @click="logout" class="logout-button">
-                            Выход
-                        </button>
-                    </nav>
-                </div>
-            </div>
-        </header>
+        <PriceCalculatorApp />
+    </div></body>
 
-        <!-- Main Content -->
-        <div class="container">
-            
-            <!-- Calculator Tab -->
-            <div v-if="activeTab === 'calculator'">
-                
-                <!-- Input Form -->
-                <div class="card">
-                    <h2 class="card-title">Расчет стоимости товара</h2>
-                    <p class="card-subtitle">Введите данные о товаре для расчета себестоимости и цены продажи</p>
-                    
-                    <form @submit.prevent="calculatePrice">
-                        
-                        <!-- Product Name -->
-                        <div class="form-group">
-                            <label class="form-label">Название товара</label>
-                            <input v-model="form.product_name" 
-                                   @input="onProductNameChange"
-                                   type="text" 
-                                   placeholder="Введите название товара для автоопределения категории"
-                                   class="form-input"
-                                   required>
-                        </div>
-                        
-                            <!-- Category Selection -->
-                            <div v-if="detectedCategory" class="category-info">
-                                <div class="form-group">
-                                    <label class="form-label">Категория товара</label>
-                                    <select v-model="selectedCategoryIndex" 
-                                            @change="onCategoryChange"
-                                            class="form-select"
-                                            style="height: auto; padding: 12px;">
-                                        <option v-for="(category, index) in categories" :key="index" :value="index"
-                                                style="padding: 8px 0; line-height: 1.4;">
-                                            {{ getCleanCategoryName(category.category) }}
-                                            <span style="color: #6b7280; font-size: 0.9em;">
-                                                ({{ category.material }})
-                                            </span>
-                                        </option>
-                                    </select>
-                                    <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
-                                        Плотность: {{ detectedCategory.density.toFixed(0) }} кг/м³
-                                        • Ставка ЖД: ${{ detectedCategory.rates.rail_base }}
-                                        • Авиа: ${{ detectedCategory.rates.air_base }}
-                                    </div>
-                                </div>
-                            </div>
-                        
-                        <div class="grid grid-2">
-                            <!-- Product URL -->
-                            <div class="form-group">
-                                <label class="form-label">Ссылка или wechat</label>
-                                <input v-model="form.product_url" 
-                                       type="text" 
-                                       placeholder="https://example.com/product или wechat ID или любой текст"
-                                       class="form-input">
-                            </div>
-                            
-                            <!-- Price Yuan -->
-                            <div class="form-group">
-                                <label class="form-label">Цена за единицу (юань)</label>
-                                <input v-model.number="form.price_yuan" 
-                                       type="number" 
-                                       step="0.01"
-                                       placeholder="0.00"
-                                       class="form-input"
-                                       required>
-                            </div>
-                            
-                            <!-- Weight -->
-                            <div class="form-group">
-                                <label class="form-label">Вес единицы товара (кг)</label>
-                                <input v-model.number="form.weight_kg" 
-                                       type="number" 
-                                       step="0.001"
-                                       placeholder="0.000"
-                                       class="form-input"
-                                       required>
-                            </div>
-                            
-                            <!-- Quantity -->
-                            <div class="form-group">
-                                <label class="form-label">Количество (тираж)</label>
-                                <input v-model.number="form.quantity" 
-                                       type="number"
-                                       min="1"
-                                       placeholder="1"
-                                       class="form-input"
-                                       required>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-2">
-                            <!-- Delivery Type -->
-                            <div class="form-group">
-                                <label class="form-label">Тип доставки</label>
-                                <select v-model="form.delivery_type" 
-                                        @change="updateSuggestedRate"
-                                        class="form-select">
-                                    <option value="rail">Ж/Д (железная дорога)</option>
-                                    <option value="air">Авиа</option>
-                                </select>
-                            </div>
-                            
-                            <!-- Logistics Rate -->
-                            <div class="form-group">
-                                <label class="form-label">Логистическая ставка ($/кг)</label>
-                                <input v-model.number="form.custom_rate" 
-                                       type="number" 
-                                       step="0.1"
-                                       placeholder="0.0"
-                                       class="form-input">
-                                <div v-if="suggestedRate > 0" style="font-size: 12px; color: #6b7280; margin-top: 4px;">
-                                    Предлагаемая ставка: ${{ suggestedRate.toFixed(1) }}/кг
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Markup -->
-                        <div class="form-group">
-                            <label class="form-label">Наценка (множитель)</label>
-                            <input v-model.number="form.markup" 
-                                   type="number" 
-                                   step="0.1"
-                                   min="1"
-                                   class="form-input">
-                            <div class="markup-buttons">
-                                <button type="button" @click="form.markup = 1.3" 
-                                        :class="['markup-button', { active: form.markup === 1.3 }]">1.3</button>
-                                <button type="button" @click="form.markup = 1.5" 
-                                        :class="['markup-button', { active: form.markup === 1.5 }]">1.5</button>
-                                <button type="button" @click="form.markup = 1.7" 
-                                        :class="['markup-button', { active: form.markup === 1.7 }]">1.7</button>
-                                <button type="button" @click="form.markup = 2.0" 
-                                        :class="['markup-button', { active: form.markup === 2.0 }]">2.0</button>
-                            </div>
-                            <div style="font-size: 12px; color: #6b7280; margin-top: 8px;">
-                                Наценка {{ ((form.markup - 1) * 100).toFixed(0) }}% • Цена будет в {{ form.markup }} раз больше себестоимости
-                            </div>
-                        </div>
-                        
-                        <!-- Submit Button -->
-                        <button type="submit" 
-                                :disabled="isCalculating || !isFormValid"
-                                class="submit-button">
-                            <span v-if="isCalculating">
-                                <span class="loading"></span>
-                                Расчитываю...
-                            </span>
-                            <span v-else>
-                                Рассчитать стоимость
-                            </span>
-                        </button>
-                    </form>
-                </div>
-                
-                <!-- Results -->
-                <transition name="slide-up">
-                    <div v-if="result" class="results">
-                        <div class="card">
-                            <h2 class="card-title">Результат расчета</h2>
-                            <p class="card-subtitle">{{ result.product_name }}</p>
-                            
-                            <!-- Database Warning for Calculator -->
-                            <div v-if="!databaseAvailable" style="background: #fef3cd; border: 1px solid #fde68a; color: #92400e; padding: 12px; border-radius: 6px; margin: 16px 0; font-size: 14px;">
-                                ⚠️ Расчет выполнен, но не сохранен в истории (БД недоступна)
-                            </div>
-                            
-                            <!-- Price Per Unit (Main for Client) -->
-                            <div class="per-unit-metrics" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 12px; padding: 24px; margin-bottom: 24px; border: 2px solid #e2e8f0;">
-                                <h3 style="text-align: center; margin: 0 0 20px 0; color: #374151; font-size: 18px; font-weight: 600;">Цена для клиента (за единицу)</h3>
-                                <div class="metrics">
-                                    <div class="metric-card" style="border: 1px solid #d1d5db;">
-                                        <div class="metric-title">Цена продажи</div>
-                                        <div class="metric-value" style="font-weight: 800; color: #111827; font-size: 28px;">{{ result.sale_price.per_unit.rub.toLocaleString() }} руб</div>
-                                        <div class="metric-secondary">${{ result.sale_price.per_unit.usd }}</div>
-                                        <div class="metric-unit" style="color: #6b7280;">За {{ result.quantity.toLocaleString() }} шт: {{ result.sale_price.total.rub.toLocaleString() }} руб</div>
-                                    </div>
-                                    
-                                    <div class="metric-card" style="border: 1px solid #d1d5db;">
-                                        <div class="metric-title">Себестоимость</div>
-                                        <div class="metric-value" style="font-weight: 700; color: #374151;">{{ result.cost_price.per_unit.rub.toLocaleString() }} руб</div>
-                                        <div class="metric-secondary">${{ result.cost_price.per_unit.usd }}</div>
-                                        <div class="metric-unit" style="color: #6b7280;">За {{ result.quantity.toLocaleString() }} шт: {{ result.cost_price.total.rub.toLocaleString() }} руб</div>
-                                    </div>
-                                    
-                                    <div class="metric-card" style="border: 1px solid #d1d5db;">
-                                        <div class="metric-title">Прибыль</div>
-                                        <div class="metric-value" style="font-weight: 700; color: #374151;">{{ result.profit.per_unit.rub.toLocaleString() }} руб</div>
-                                        <div class="metric-secondary">${{ result.profit.per_unit.usd }}</div>
-                                        <div class="metric-unit" style="color: #6b7280;">За {{ result.quantity.toLocaleString() }} шт: {{ result.profit.total.rub.toLocaleString() }} руб</div>
-                                    </div>
-                                </div>
-                            </div>
+    <!-- Load Vue Components -->
+    <script src="/static/js/components/CategorySelector.js?v=3"></script>
+    <script src="/static/js/components/ProductForm.js?v=5"></script>
+    <script src="/static/js/components/ProductFormPrecise.js?v=7"></script>
+    <script src="/static/js/components/ResultsDisplay.js?v=15-customs-check"></script>
+    <script src="/static/js/components/HistoryPanel.js?v=5"></script>
+    <script src="/static/js/components/SettingsPanel.js?v=1"></script>
+    <script src="/static/js/components/CategoriesPanel.js?v=5-debug-id"></script>
+    <script src="/static/js/PriceCalculatorApp.js?v=19-categories-final"></script>
 
-                            <!-- Total Metrics -->
-                            <div class="metrics">
-                                <div class="metric-card">
-                                    <div class="metric-title">Общая стоимость продажи</div>
-                                    <div class="metric-value" style="font-weight: 700; color: #1f2937;">{{ result.sale_price.total.rub.toLocaleString() }} руб</div>
-                                    <div class="metric-secondary">${{ result.sale_price.total.usd.toLocaleString() }}</div>
-                                </div>
-                                
-                                <div class="metric-card">
-                                    <div class="metric-title">Общая себестоимость</div>
-                                    <div class="metric-value" style="font-weight: 700; color: #1f2937;">{{ result.cost_price.total.rub.toLocaleString() }} руб</div>
-                                    <div class="metric-secondary">${{ result.cost_price.total.usd.toLocaleString() }}</div>
-                                </div>
-                                
-                                <div class="metric-card">
-                                    <div class="metric-title">Общая прибыль</div>
-                                    <div class="metric-value" style="font-weight: 700; color: #059669;">{{ result.profit.total.rub.toLocaleString() }} руб</div>
-                                    <div class="metric-secondary">${{ result.profit.total.usd.toLocaleString() }}</div>
-                                </div>
-                            </div>
-                            
-                            <!-- Details -->
-                            <div class="details">
-                                <div class="detail-group">
-                                    <div class="detail-title">Детали товара</div>
-                                    <div class="detail-item">
-                                        <span class="detail-label">Категория:</span>
-                                        <span class="detail-value">{{ result.category }}</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <span class="detail-label">Тираж:</span>
-                                        <span class="detail-value">{{ result.quantity.toLocaleString() }} шт</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <span class="detail-label">Общий вес:</span>
-                                        <span class="detail-value">{{ result.estimated_weight }} кг</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <span class="detail-label">Доставка:</span>
-                                        <span class="detail-value">{{ result.logistics.delivery_type === 'rail' ? 'Ж/Д' : 'Авиа' }}</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="detail-group">
-                                    <div class="detail-title">Структура затрат</div>
-                                    <div class="detail-item">
-                                        <span class="detail-label">Товар:</span>
-                                        <span class="detail-value">{{ result.total_price.rub.toLocaleString() }} руб ({{ getPercentOfCost(result.total_price.rub, result.cost_price.total.rub) }}%)</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <span class="detail-label">Логистика:</span>
-                                        <span class="detail-value">{{ result.logistics.cost_rub.toLocaleString() }} руб ({{ getPercentOfCost(result.logistics.cost_rub, result.cost_price.total.rub) }}%)</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <span class="detail-label">Локальная доставка:</span>
-                                        <span class="detail-value">{{ result.additional_costs.local_delivery_rub.toLocaleString() }} руб ({{ getPercentOfCost(result.additional_costs.local_delivery_rub, result.cost_price.total.rub) }}%)</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <span class="detail-label">Забор МСК:</span>
-                                        <span class="detail-value">{{ result.additional_costs.msk_pickup_rub.toLocaleString() }} руб ({{ getPercentOfCost(result.additional_costs.msk_pickup_rub, result.cost_price.total.rub) }}%)</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <span class="detail-label">Прочие расходы:</span>
-                                        <span class="detail-value">{{ result.additional_costs.other_costs_rub.toLocaleString() }} руб ({{ getPercentOfCost(result.additional_costs.other_costs_rub, result.cost_price.total.rub) }}%)</span>
-                                    </div>
-                                    <div class="detail-item" style="border-top: 1px solid #e5e7eb; padding-top: 8px; margin-top: 8px;">
-                                        <span class="detail-label"><strong>Наценка:</strong></span>
-                                        <span class="detail-value"><strong>{{ ((result.markup - 1) * 100).toFixed(0) }}%</strong></span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Product URL -->
-                            <div v-if="result.product_url" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-                                <a :href="result.product_url" target="_blank" 
-                                   style="color: #2563eb; text-decoration: none;">
-                                    → Открыть страницу товара
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </transition>
-            </div>
-            
-            <!-- History Tab -->
-            <div v-if="activeTab === 'history'">
-                <div class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                        <div>
-                            <h2 class="card-title" style="margin-bottom: 0;">История расчетов</h2>
-                            <p class="card-subtitle" style="margin-bottom: 0;">Все ваши расчеты сохранены автоматически</p>
-                        </div>
-                        <button @click="loadHistory" class="refresh-button">
-                            Обновить
-                        </button>
-                    </div>
-                    
-                    <!-- Database Status Warning -->
-                    <div v-if="!databaseAvailable" class="warning-message" style="background: #fef3cd; border: 1px solid #fde68a; color: #92400e; padding: 16px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 20px;">⚠️</span>
-                        <div>
-                            <div style="font-weight: 600; margin-bottom: 4px;">База данных недоступна</div>
-                            <div style="font-size: 14px;">Калькулятор работает, но история расчетов временно недоступна. Ваши расчеты не сохраняются.</div>
-                        </div>
-                    </div>
-                    
-                    <div v-if="history.length === 0 && databaseAvailable" class="empty-state">
-                        <div class="empty-icon">📋</div>
-                        <h3 style="font-size: 18px; color: #1f2937; margin-bottom: 8px;">Пока нет расчетов</h3>
-                        <p style="color: #6b7280; margin-bottom: 16px;">Создайте первый расчет во вкладке "Калькулятор"</p>
-                        <button @click="activeTab = 'calculator'" class="nav-button active">
-                            Создать расчет
-                        </button>
-                    </div>
-                    
-                    <div v-else class="history">
-                        <div v-for="item in history" :key="item.id" class="history-item" @click="toggleHistoryDetails(item.id)">
-                            <!-- Краткая информация (всегда видна) -->
-                            <div class="history-summary">
-                                <div class="history-main-info">
-                                    <h3>
-                                        {{ item.product_name }}
-                                        <span class="history-expand-icon" :class="{ expanded: expandedHistory.includes(item.id) }">
-                                            ▼
-                                        </span>
-                                    </h3>
-                                    <p>{{ formatDate(item.created_at) }}</p>
-                                    <p v-if="item.product_url" style="color: #3b82f6;">
-                                        <a :href="item.product_url" target="_blank" @click.stop style="text-decoration: none; color: inherit;">
-                                            → Ссылка на товар
-                                        </a>
-                                    </p>
-                                </div>
-                                <div class="history-prices">
-                                    <div class="history-yuan-price">{{ item.price_yuan }}¥ × {{ item.quantity }}шт</div>
-                                    <div class="history-unit-price"><strong>{{ (item.sale_price_rub / item.quantity).toFixed(0) }}</strong> ₽/шт</div>
-                                </div>
-                            </div>
-                            
-                            <!-- Детальная информация (раскрывается по клику) -->
-                            <div v-if="expandedHistory.includes(item.id)" class="history-details">
-                                <div class="grid" style="grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px;">
-                                    <div>
-                                        <div style="font-weight: 600; color: #374151; margin-bottom: 8px;">Параметры товара</div>
-                                        <div style="font-size: 14px; color: #6b7280; line-height: 1.5;">
-                                            <div><strong>Категория:</strong> {{ item.category }}</div>
-                                            <div><strong>Вес:</strong> {{ item.weight_kg }} кг</div>
-                                            <div><strong>Количество:</strong> {{ item.quantity }} шт</div>
-                                            <div><strong>Наценка:</strong> × {{ item.markup }} ({{ ((item.markup - 1) * 100).toFixed(0) }}%)</div>
-                                            <div v-if="item.custom_rate"><strong>Логистическая ставка:</strong> ${{ item.custom_rate }}/кг</div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div style="font-weight: 600; color: #374151; margin-bottom: 8px;">Расчет стоимости</div>
-                                        <div style="font-size: 14px; color: #6b7280; line-height: 1.5;">
-                                            <div><strong>Себестоимость общая:</strong> {{ item.cost_price_rub.toFixed(0) }} ₽</div>
-                                            <div><strong>Себестоимость за шт:</strong> {{ (item.cost_price_rub / item.quantity).toFixed(0) }} ₽</div>
-                                            <div><strong>Цена продажи общая:</strong> <span style="color: #059669; font-weight: 600;">{{ item.sale_price_rub.toFixed(0) }} ₽</span></div>
-                                            <div><strong>Прибыль общая:</strong> <span style="color: #dc2626; font-weight: 600;">{{ item.profit_rub.toFixed(0) }} ₽</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    <!-- Initialize App -->
     <script>
-        const { createApp } = Vue;
-        
-        createApp({
-            data() {
-                return {
-                    activeTab: 'calculator',
-                    isCalculating: false,
-                    form: {
-                        product_name: '',
-                        product_url: '',
-                        price_yuan: null,
-                        weight_kg: null,
-                        quantity: 1,
-                        custom_rate: null,
-                        delivery_type: 'rail',
-                        markup: 1.7
-                    },
-                    result: null,
-                    history: [],
-                    expandedHistory: [],
-                    detectedCategory: null,
-                    categories: [],
-                    selectedCategoryIndex: null,
-                    databaseAvailable: true
-                }
-            },
+        // Ждем полной загрузки DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔄 Инициализация модульного приложения...');
             
-            computed: {
-                isFormValid() {
-                    return this.form.product_name && 
-                           this.form.price_yuan > 0 && 
-                           this.form.weight_kg > 0 && 
-                           this.form.quantity > 0;
-                },
-                
-                suggestedRate() {
-                    if (!this.detectedCategory) return 0;
-                    const rates = this.detectedCategory.rates;
-                    return this.form.delivery_type === 'air' ? rates.air_base : rates.rail_base;
-                }
-            },
+            // Проверяем загрузку компонентов
+            var requiredComponents = ['CategorySelector', 'ProductForm', 'ProductFormPrecise', 'ResultsDisplay', 'HistoryPanel', 'SettingsPanel', 'CategoriesPanel', 'PriceCalculatorApp'];
+            var missingComponents = requiredComponents.filter(function(name) { return !window[name]; });
             
-            methods: {
-                async onProductNameChange() {
-                    if (this.form.product_name.length > 2) {
-                        try {
-                            const response = await axios.get(`/api/category/${encodeURIComponent(this.form.product_name)}`);
-                            this.detectedCategory = response.data;
-                            
-                            // Находим индекс категории
-                            this.selectedCategoryIndex = this.categories.findIndex(cat => 
-                                cat.category === this.detectedCategory.category
-                            );
-                            
-                            // Автоматически вставляем ставку
-                            this.updateSuggestedRate();
-                            
-                        } catch (error) {
-                            console.error('Ошибка определения категории:', error);
-                        }
-                    }
-                },
-                
-                onCategoryChange() {
-                    if (this.selectedCategoryIndex !== null) {
-                        this.detectedCategory = this.categories[this.selectedCategoryIndex];
-                        this.updateSuggestedRate();
-                    }
-                },
-                
-                updateSuggestedRate() {
-                    if (this.detectedCategory) {
-                        const rates = this.detectedCategory.rates;
-                        const suggestedRate = this.form.delivery_type === 'air' ? rates.air_base : rates.rail_base;
-                        this.form.custom_rate = suggestedRate;
-                    }
-                },
-                
-                async calculatePrice() {
-                    if (!this.isFormValid) return;
-                    
-                    this.isCalculating = true;
-                    
-                    try {
-                        const response = await axios.post('/api/calculate', this.form);
-                        this.result = response.data;
-                        
-                        // Скролл к результатам
-                        setTimeout(() => {
-                            const resultsEl = document.querySelector('.results');
-                            if (resultsEl) {
-                                resultsEl.scrollIntoView({ behavior: 'smooth' });
-                            }
-                        }, 100);
-                        
-                    } catch (error) {
-                        console.error('Ошибка расчета:', error);
-                        alert('Ошибка при расчете. Проверьте введенные данные.');
-                    } finally {
-                        this.isCalculating = false;
-                    }
-                },
-                
-                async loadHistory() {
-                    try {
-                        const response = await axios.get('/api/history');
-                        this.history = response.data.history;
-                        this.databaseAvailable = !response.data.error;
-                    } catch (error) {
-                        console.error('Ошибка загрузки истории:', error);
-                        this.databaseAvailable = false;
-                        this.history = [];
-                    }
-                },
-                
-                async loadCategories() {
-                    try {
-                        const response = await axios.get('/api/categories');
-                        this.categories = response.data;
-                    } catch (error) {
-                        console.error('Ошибка загрузки категорий:', error);
-                    }
-                },
-                
-                async logout() {
-                    try {
-                        await axios.post('/api/logout');
-                        // Перенаправляем на страницу логина
-                        window.location.href = '/login';
-                    } catch (error) {
-                        console.error('Logout error:', error);
-                        // В любом случае перенаправляем
-                        window.location.href = '/login';
-                    }
-                },
-                
-                toggleHistoryDetails(itemId) {
-                    const index = this.expandedHistory.indexOf(itemId);
-                    if (index > -1) {
-                        // Элемент развернут - сворачиваем
-                        this.expandedHistory.splice(index, 1);
-                    } else {
-                        // Элемент свернут - разворачиваем
-                        this.expandedHistory.push(itemId);
-                    }
-                },
-                
-                formatDate(dateString) {
-                    const date = new Date(dateString);
-                    return date.toLocaleDateString('ru-RU', {
-                        day: 'numeric',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
-                },
-                
-                getCleanCategoryName(categoryName) {
-                    // Убираем переносы строк и делаем название более читаемым
-                    return categoryName.replace(/\n/g, ' - ').trim();
-                },
-                
-                getPercentOfCost(amount, totalCost) {
-                    if (!totalCost || totalCost === 0) return '0';
-                    const percent = (amount / totalCost) * 100;
-                    return percent.toFixed(1);
-                },
-                
-            },
-            
-            async mounted() {
-                await this.loadCategories();
-                await this.loadHistory();
+            if (missingComponents.length > 0) {
+                console.error('❌ Не загружены компоненты:', missingComponents);
+                document.getElementById('app').innerHTML = 
+                    '<div style="text-align: center; padding: 60px; color: #dc2626;">' +
+                        '<h2>❌ Ошибка загрузки компонентов</h2>' +
+                        '<p>Не удалось загрузить: ' + missingComponents.join(', ') + '</p>' +
+                        '<p><a href="/" style="color: #2563eb;">← Вернуться к стабильной версии</a></p>' +
+                    '</div>';
+                return;
             }
-        }).mount('#app');
+            
+            console.log('✅ Все компоненты загружены:', requiredComponents);
+            
+            var createApp = Vue.createApp;
+            
+            try {
+                // Создаем и монтируем приложение
+                var app = createApp({
+                    components: {
+                        PriceCalculatorApp: window.PriceCalculatorApp
+                    },
+                    template: '<PriceCalculatorApp />'
+                });
+                
+                app.mount('#app');
+                console.log('🚀 Price Calculator - Модульная архитектура успешно загружена');
+                
+            } catch (error) {
+                console.error('❌ Ошибка инициализации Vue приложения:', error);
+                document.getElementById('app').innerHTML = 
+                    '<div style="text-align: center; padding: 60px; color: #dc2626;">' +
+                        '<h2>❌ Ошибка инициализации</h2>' +
+                        '<p>' + error.message + '</p>' +
+                        '<p><a href="/" style="color: #2563eb;">← Вернуться к стабильной версии</a></p>' +
+                    '</div>';
+            }
+        });
     </script>
 </body>
 </html>

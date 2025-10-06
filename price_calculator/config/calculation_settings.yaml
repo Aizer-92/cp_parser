@@ -1,0 +1,6 @@
+formula:
+  local_delivery_rate_yuan_per_kg: 2.0
+  msk_pickup_total_rub: 1000.0
+  other_costs_percent: 1.0
+  toni_commission_percent: 5.0
+  transfer_percent: 18.0

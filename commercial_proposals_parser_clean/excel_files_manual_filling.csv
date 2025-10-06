@@ -1,0 +1,159 @@
+﻿Номер,Файл_Excel,Тип_файла,Sheet_ID,Название_проекта,Google_Sheets_URL,Статус,Примечание
+1,original_sheet.xlsx,Тестовый файл,original_sheet,,https://docs.google.com/spreadsheets/d/original_sheet,Найдена автоматически,Ссылка найдена
+2,sheet_1-5pUbx__1758278401.xlsx,Sheet ID файл,sheet_1-5pUbx__1758278401,,https://docs.google.com/spreadsheets/d/sheet_1-5pUbx__1758278401,Найдена автоматически,Ссылка найдена
+3,sheet_12fQQJFP_1758278191.xlsx,Sheet ID файл,sheet_12fQQJFP_1758278191,,https://docs.google.com/spreadsheets/d/sheet_12fQQJFP_1758278191,Найдена автоматически,Ссылка найдена
+4,sheet_15ipEk2j_1758278196.xlsx,Sheet ID файл,sheet_15ipEk2j_1758278196,,https://docs.google.com/spreadsheets/d/sheet_15ipEk2j_1758278196,Найдена автоматически,Ссылка найдена
+5,sheet_17MYSsxo_public.xlsx,Sheet ID файл,sheet_17MYSsxo_public,,https://docs.google.com/spreadsheets/d/sheet_17MYSsxo_public,Найдена автоматически,Ссылка найдена
+6,sheet_18M6bs8k_1758278363.xlsx,Sheet ID файл,sheet_18M6bs8k_1758278363,,https://docs.google.com/spreadsheets/d/sheet_18M6bs8k_1758278363,Найдена автоматически,Ссылка найдена
+7,sheet_18cySstG_1758278370.xlsx,Sheet ID файл,sheet_18cySstG_1758278370,,https://docs.google.com/spreadsheets/d/sheet_18cySstG_1758278370,Найдена автоматически,Ссылка найдена
+8,sheet_1CZAC0TA_1758278189.xlsx,Sheet ID файл,sheet_1CZAC0TA_1758278189,,https://docs.google.com/spreadsheets/d/sheet_1CZAC0TA_1758278189,Найдена автоматически,Ссылка найдена
+9,sheet_1FHHpsQJ_public.xlsx,Sheet ID файл,sheet_1FHHpsQJ_public,,https://docs.google.com/spreadsheets/d/sheet_1FHHpsQJ_public,Найдена автоматически,Ссылка найдена
+10,sheet_1FIAT6ri_1758278199.xlsx,Sheet ID файл,sheet_1FIAT6ri_1758278199,,https://docs.google.com/spreadsheets/d/sheet_1FIAT6ri_1758278199,Найдена автоматически,Ссылка найдена
+11,sheet_1L4XSR4k_1758278208.xlsx,Sheet ID файл,sheet_1L4XSR4k_1758278208,,https://docs.google.com/spreadsheets/d/sheet_1L4XSR4k_1758278208,Найдена автоматически,Ссылка найдена
+12,sheet_1OBjfVrv_1758278376.xlsx,Sheet ID файл,sheet_1OBjfVrv_1758278376,,https://docs.google.com/spreadsheets/d/sheet_1OBjfVrv_1758278376,Найдена автоматически,Ссылка найдена
+13,sheet_1OlOPoua_1758278186.xlsx,Sheet ID файл,sheet_1OlOPoua_1758278186,,https://docs.google.com/spreadsheets/d/sheet_1OlOPoua_1758278186,Найдена автоматически,Ссылка найдена
+14,sheet_1SD3YfSQ_public.xlsx,Sheet ID файл,sheet_1SD3YfSQ_public,,https://docs.google.com/spreadsheets/d/sheet_1SD3YfSQ_public,Найдена автоматически,Ссылка найдена
+15,sheet_1WmKw-t2_1758278219.xlsx,Sheet ID файл,sheet_1WmKw-t2_1758278219,,https://docs.google.com/spreadsheets/d/sheet_1WmKw-t2_1758278219,Найдена автоматически,Ссылка найдена
+16,sheet_1actsAoD_1758278181.xlsx,Sheet ID файл,sheet_1actsAoD_1758278181,,https://docs.google.com/spreadsheets/d/sheet_1actsAoD_1758278181,Найдена автоматически,Ссылка найдена
+17,sheet_1czLDW19_1758278202.xlsx,Sheet ID файл,sheet_1czLDW19_1758278202,,https://docs.google.com/spreadsheets/d/sheet_1czLDW19_1758278202,Найдена автоматически,Ссылка найдена
+18,sheet_1nav9w2d_public.xlsx,Sheet ID файл,sheet_1nav9w2d_public,,https://docs.google.com/spreadsheets/d/sheet_1nav9w2d_public,Найдена автоматически,Ссылка найдена
+19,sheet_1onAKPl5_1758278373.xlsx,Sheet ID файл,sheet_1onAKPl5_1758278373,,https://docs.google.com/spreadsheets/d/sheet_1onAKPl5_1758278373,Найдена автоматически,Ссылка найдена
+20,sheet_1qkWtnDW_1758278205.xlsx,Sheet ID файл,sheet_1qkWtnDW_1758278205,,https://docs.google.com/spreadsheets/d/sheet_1qkWtnDW_1758278205,Найдена автоматически,Ссылка найдена
+21,Вторая таблица_1757933504.xlsx,Именованный файл,Вторая таблица_1757933504,,https://docs.google.com/spreadsheets/d/Вторая таблица_1757933504,Найдена автоматически,Ссылка найдена
+22,Мерч для Sense_1758096973.xlsx,Именованный файл,Мерч для Sense_1758096973,,https://docs.google.com/spreadsheets/d/Мерч для Sense_1758096973,Найдена автоматически,Ссылка найдена
+23,google_sheet_20250923_094851.xlsx,Временный файл,google_sheet_20250923_094851,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+24,google_sheet_20250923_094858.xlsx,Временный файл,google_sheet_20250923_094858,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+25,google_sheet_20250923_094907.xlsx,Временный файл,google_sheet_20250923_094907,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+26,google_sheet_20250923_094914.xlsx,Временный файл,google_sheet_20250923_094914,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+27,google_sheet_20250923_094920.xlsx,Временный файл,google_sheet_20250923_094920,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+28,google_sheet_20250923_094925.xlsx,Временный файл,google_sheet_20250923_094925,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+29,google_sheet_20250923_094933.xlsx,Временный файл,google_sheet_20250923_094933,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+30,google_sheet_20250923_094946.xlsx,Временный файл,google_sheet_20250923_094946,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+31,google_sheet_20250923_094954.xlsx,Временный файл,google_sheet_20250923_094954,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+32,google_sheet_20250923_095001.xlsx,Временный файл,google_sheet_20250923_095001,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+33,google_sheet_20250923_095025.xlsx,Временный файл,google_sheet_20250923_095025,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+34,google_sheet_20250923_095032.xlsx,Временный файл,google_sheet_20250923_095032,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+35,google_sheet_20250923_095040.xlsx,Временный файл,google_sheet_20250923_095040,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+36,google_sheet_20250923_095047.xlsx,Временный файл,google_sheet_20250923_095047,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+37,google_sheet_20250923_095052.xlsx,Временный файл,google_sheet_20250923_095052,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+38,google_sheet_20250923_095126.xlsx,Временный файл,google_sheet_20250923_095126,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+39,google_sheet_20250923_095133.xlsx,Временный файл,google_sheet_20250923_095133,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+40,google_sheet_20250923_095143.xlsx,Временный файл,google_sheet_20250923_095143,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+41,google_sheet_20250923_100041.xlsx,Временный файл,google_sheet_20250923_100041,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+42,google_sheet_20250923_100121.xlsx,Временный файл,google_sheet_20250923_100121,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+43,google_sheet_20250923_151725.xlsx,Временный файл,google_sheet_20250923_151725,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+44,google_sheet_20250923_151729.xlsx,Временный файл,google_sheet_20250923_151729,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+45,google_sheet_20250923_151737.xlsx,Временный файл,google_sheet_20250923_151737,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+46,google_sheet_20250923_151800.xlsx,Временный файл,google_sheet_20250923_151800,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+47,google_sheet_20250923_151811.xlsx,Временный файл,google_sheet_20250923_151811,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+48,google_sheet_20250923_151819.xlsx,Временный файл,google_sheet_20250923_151819,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+49,google_sheet_20250923_151824.xlsx,Временный файл,google_sheet_20250923_151824,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+50,google_sheet_20250923_151834.xlsx,Временный файл,google_sheet_20250923_151834,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+51,google_sheet_20250923_151843.xlsx,Временный файл,google_sheet_20250923_151843,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+52,google_sheet_20250923_151856.xlsx,Временный файл,google_sheet_20250923_151856,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+53,google_sheet_20250923_151904.xlsx,Временный файл,google_sheet_20250923_151904,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+54,google_sheet_20250923_151915.xlsx,Временный файл,google_sheet_20250923_151915,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+55,google_sheet_20250923_151924.xlsx,Временный файл,google_sheet_20250923_151924,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+56,google_sheet_20250923_151933.xlsx,Временный файл,google_sheet_20250923_151933,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+57,google_sheet_20250923_151942.xlsx,Временный файл,google_sheet_20250923_151942,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+58,google_sheet_20250923_151947.xlsx,Временный файл,google_sheet_20250923_151947,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+59,google_sheet_20250923_151958.xlsx,Временный файл,google_sheet_20250923_151958,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+60,google_sheet_20250923_152008.xlsx,Временный файл,google_sheet_20250923_152008,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+61,google_sheet_20250923_152020.xlsx,Временный файл,google_sheet_20250923_152020,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+62,google_sheet_20250923_152032.xlsx,Временный файл,google_sheet_20250923_152032,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+63,google_sheet_20250923_152042.xlsx,Временный файл,google_sheet_20250923_152042,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+64,google_sheet_20250923_152058.xlsx,Временный файл,google_sheet_20250923_152058,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+65,google_sheet_20250923_152104.xlsx,Временный файл,google_sheet_20250923_152104,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+66,google_sheet_20250923_152114.xlsx,Временный файл,google_sheet_20250923_152114,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+67,google_sheet_20250923_152125.xlsx,Временный файл,google_sheet_20250923_152125,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+68,google_sheet_20250923_152134.xlsx,Временный файл,google_sheet_20250923_152134,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+69,google_sheet_20250923_152145.xlsx,Временный файл,google_sheet_20250923_152145,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+70,google_sheet_20250923_152516.xlsx,Временный файл,google_sheet_20250923_152516,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+71,google_sheet_20250923_152539.xlsx,Временный файл,google_sheet_20250923_152539,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+72,google_sheet_20250923_152550.xlsx,Временный файл,google_sheet_20250923_152550,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+73,google_sheet_20250923_152608.xlsx,Временный файл,google_sheet_20250923_152608,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+74,google_sheet_20250923_152623.xlsx,Временный файл,google_sheet_20250923_152623,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+75,google_sheet_20250923_152639.xlsx,Временный файл,google_sheet_20250923_152639,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+76,google_sheet_20250923_152655.xlsx,Временный файл,google_sheet_20250923_152655,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+77,google_sheet_20250923_152712.xlsx,Временный файл,google_sheet_20250923_152712,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+78,google_sheet_20250923_152731.xlsx,Временный файл,google_sheet_20250923_152731,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+79,google_sheet_20250923_152749.xlsx,Временный файл,google_sheet_20250923_152749,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+80,google_sheet_20250923_152807.xlsx,Временный файл,google_sheet_20250923_152807,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+81,google_sheet_20250923_152825.xlsx,Временный файл,google_sheet_20250923_152825,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+82,google_sheet_20250923_152844.xlsx,Временный файл,google_sheet_20250923_152844,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+83,google_sheet_20250923_152902.xlsx,Временный файл,google_sheet_20250923_152902,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+84,google_sheet_20250923_153031.xlsx,Временный файл,google_sheet_20250923_153031,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+85,google_sheet_20250923_153051.xlsx,Временный файл,google_sheet_20250923_153051,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+86,google_sheet_20250923_153522.xlsx,Временный файл,google_sheet_20250923_153522,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+87,google_sheet_20250923_153626.xlsx,Временный файл,google_sheet_20250923_153626,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+88,google_sheet_20250923_154121.xlsx,Временный файл,google_sheet_20250923_154121,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+89,google_sheet_20250923_154131.xlsx,Временный файл,google_sheet_20250923_154131,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+90,google_sheet_20250923_154154.xlsx,Временный файл,google_sheet_20250923_154154,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+91,google_sheet_20250923_154201.xlsx,Временный файл,google_sheet_20250923_154201,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+92,google_sheet_20250923_154219.xlsx,Временный файл,google_sheet_20250923_154219,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+93,google_sheet_20250923_154232.xlsx,Временный файл,google_sheet_20250923_154232,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+94,google_sheet_20250923_154246.xlsx,Временный файл,google_sheet_20250923_154246,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+95,google_sheet_20250923_154254.xlsx,Временный файл,google_sheet_20250923_154254,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+96,google_sheet_20250923_154306.xlsx,Временный файл,google_sheet_20250923_154306,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+97,google_sheet_20250923_154313.xlsx,Временный файл,google_sheet_20250923_154313,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+98,google_sheet_20250923_154325.xlsx,Временный файл,google_sheet_20250923_154325,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+99,google_sheet_20250923_154339.xlsx,Временный файл,google_sheet_20250923_154339,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+100,google_sheet_20250923_154349.xlsx,Временный файл,google_sheet_20250923_154349,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+101,google_sheet_20250923_154404.xlsx,Временный файл,google_sheet_20250923_154404,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+102,google_sheet_20250923_154510.xlsx,Временный файл,google_sheet_20250923_154510,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+103,google_sheet_20250923_154517.xlsx,Временный файл,google_sheet_20250923_154517,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+104,google_sheet_20250923_154527.xlsx,Временный файл,google_sheet_20250923_154527,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+105,google_sheet_20250923_154535.xlsx,Временный файл,google_sheet_20250923_154535,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+106,google_sheet_20250923_154544.xlsx,Временный файл,google_sheet_20250923_154544,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+107,google_sheet_20250923_154649.xlsx,Временный файл,google_sheet_20250923_154649,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+108,google_sheet_20250923_154658.xlsx,Временный файл,google_sheet_20250923_154658,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+109,google_sheet_20250923_154710.xlsx,Временный файл,google_sheet_20250923_154710,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+110,google_sheet_20250923_154721.xlsx,Временный файл,google_sheet_20250923_154721,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+111,google_sheet_20250923_154734.xlsx,Временный файл,google_sheet_20250923_154734,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+112,google_sheet_20250923_154748.xlsx,Временный файл,google_sheet_20250923_154748,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+113,google_sheet_20250923_Просчет-Межд_DSIR_Ruwaida__Брендированные_теннисны_1758711322.xlsx,Файл просчета,google_sheet_20250923_Просчет-Межд_DSIR_Ruwaida__Брендированные_теннисны_1758711322,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+114,google_sheet_20250923_Просчет-Межд_DSIR_Ruwaida__Брендированные_теннисны_excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-Межд_DSIR_Ruwaida__Брендированные_теннисны_excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+115,google_sheet_20250923_Просчет-Межд_Gold_Apple__Мерч_на_продажу_1000-2000_1758711326.xlsx,Файл просчета,google_sheet_20250923_Просчет-Межд_Gold_Apple__Мерч_на_продажу_1000-2000_1758711326,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+116,google_sheet_20250923_Просчет-Межд_Gold_Apple__Мерч_на_продажу_1000-2000_excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-Межд_Gold_Apple__Мерч_на_продажу_1000-2000_excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+117,google_sheet_20250923_Просчет-Межд_Gold_Apple__Стикеры_120тыс_шт_27-05-2_1758711329.xlsx,Файл просчета,google_sheet_20250923_Просчет-Межд_Gold_Apple__Стикеры_120тыс_шт_27-05-2_1758711329,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+118,google_sheet_20250923_Просчет-Межд_Gold_Apple__Стикеры_120тыс_шт_27-05-2_csv.xlsx,Файл просчета,google_sheet_20250923_Просчет-Межд_Gold_Apple__Стикеры_120тыс_шт_27-05-2_csv,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+119,google_sheet_20250923_Просчет-Межд_Gold_Apple__Стикеры_120тыс_шт_27-05-2_excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-Межд_Gold_Apple__Стикеры_120тыс_шт_27-05-2_excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+120,google_sheet_20250923_Просчет-Межд_Zamna_Group__Веер_-_5000_шт_30-04-202_1758711332.xlsx,Файл просчета,google_sheet_20250923_Просчет-Межд_Zamna_Group__Веер_-_5000_шт_30-04-202_1758711332,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+121,google_sheet_20250923_Просчет-Межд_Zamna_Group__Веер_-_5000_шт_30-04-202_excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-Межд_Zamna_Group__Веер_-_5000_шт_30-04-202_excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+122,google_sheet_20250923_Просчет-ОАЭ_BHM_Capital__Подарки_партнерам_6_катег_1758711334.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_BHM_Capital__Подарки_партнерам_6_катег_1758711334,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+123,google_sheet_20250923_Просчет-ОАЭ_BHM_Capital__Подарки_партнерам_6_катег_csv.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_BHM_Capital__Подарки_партнерам_6_катег_csv,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+124,google_sheet_20250923_Просчет-ОАЭ_BHM_Capital__Подарки_партнерам_6_катег_excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_BHM_Capital__Подарки_партнерам_6_катег_excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+125,google_sheet_20250923_Просчет-ОАЭ_Burjeel_Holdings_Saheer__Бутылки_и_кер_1758711337.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Burjeel_Holdings_Saheer__Бутылки_и_кер_1758711337,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+126,google_sheet_20250923_Просчет-ОАЭ_Burjeel_Holdings_Saheer__Бутылки_и_кер_csv.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Burjeel_Holdings_Saheer__Бутылки_и_кер_csv,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+127,google_sheet_20250923_Просчет-ОАЭ_Burjeel_Holdings_Saheer__Бутылки_и_кер_excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Burjeel_Holdings_Saheer__Бутылки_и_кер_excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+128,google_sheet_20250923_Просчет-ОАЭ_Elation_Avenue_Joanna__Пляжные_товары__1758711339.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Elation_Avenue_Joanna__Пляжные_товары__1758711339,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+129,google_sheet_20250923_Просчет-ОАЭ_Elation_Avenue_Joanna__Пляжные_товары__csv.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Elation_Avenue_Joanna__Пляжные_товары__csv,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+130,google_sheet_20250923_Просчет-ОАЭ_Elation_Avenue_Joanna__Пляжные_товары__excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Elation_Avenue_Joanna__Пляжные_товары__excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+131,google_sheet_20250923_Просчет-ОАЭ_Elite_Group_Holding_LTD__Мерч_для_парт_1758711342.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Elite_Group_Holding_LTD__Мерч_для_парт_1758711342,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+132,google_sheet_20250923_Просчет-ОАЭ_Elite_Group_Holding_LTD__Мерч_для_парт_csv.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Elite_Group_Holding_LTD__Мерч_для_парт_csv,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+133,google_sheet_20250923_Просчет-ОАЭ_Elite_Group_Holding_LTD__Мерч_для_парт_excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Elite_Group_Holding_LTD__Мерч_для_парт_excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+134,google_sheet_20250923_Просчет-ОАЭ_Elite_Group_Holding_LTD__Флешка_225_шт_1758711345.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Elite_Group_Holding_LTD__Флешка_225_шт_1758711345,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+135,google_sheet_20250923_Просчет-ОАЭ_Elite_Group_Holding_LTD__Флешка_225_шт_excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Elite_Group_Holding_LTD__Флешка_225_шт_excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+136,google_sheet_20250923_Просчет-ОАЭ_Elite_Merit_Real_Estate__Брелок_и_сумк_1758711349.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Elite_Merit_Real_Estate__Брелок_и_сумк_1758711349,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+137,google_sheet_20250923_Просчет-ОАЭ_Elite_Merit_Real_Estate__Брелок_и_сумк_excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Elite_Merit_Real_Estate__Брелок_и_сумк_excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+138,google_sheet_20250923_Просчет-ОАЭ_Elite_Merit_Real_Estate__Ежедневники_2_1758711351.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Elite_Merit_Real_Estate__Ежедневники_2_1758711351,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+139,google_sheet_20250923_Просчет-ОАЭ_Elite_Merit_Real_Estate__Ежедневники_2_excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Elite_Merit_Real_Estate__Ежедневники_2_excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+140,google_sheet_20250923_Просчет-ОАЭ_Gold_Apple__Пакеты_40000-3000000шт_06-_1758711353.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Gold_Apple__Пакеты_40000-3000000шт_06-_1758711353,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+141,google_sheet_20250923_Просчет-ОАЭ_Gold_Apple__Пакеты_40000-3000000шт_06-_excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Gold_Apple__Пакеты_40000-3000000шт_06-_excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+142,google_sheet_20250923_Просчет-ОАЭ_ISD_-_футбольный_клуб__Мерч_3_категори_1758711355.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_ISD_-_футбольный_клуб__Мерч_3_категори_1758711355,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+143,google_sheet_20250923_Просчет-ОАЭ_ISD_-_футбольный_клуб__Мерч_3_категори_excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_ISD_-_футбольный_клуб__Мерч_3_категори_excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+144,google_sheet_20250923_Просчет-ОАЭ_Media_Makers__Таблетницы_100тыс_шт_21-_1758711357.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Media_Makers__Таблетницы_100тыс_шт_21-_1758711357,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+145,google_sheet_20250923_Просчет-ОАЭ_Media_Makers__Таблетницы_100тыс_шт_21-_excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Media_Makers__Таблетницы_100тыс_шт_21-_excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+146,google_sheet_20250923_Просчет-ОАЭ_Miriyam_Skin_Care__500шт_мягких_игруше_1758711360.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Miriyam_Skin_Care__500шт_мягких_игруше_1758711360,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+147,google_sheet_20250923_Просчет-ОАЭ_Miriyam_Skin_Care__500шт_мягких_игруше_excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Miriyam_Skin_Care__500шт_мягких_игруше_excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+148,google_sheet_20250923_Просчет-ОАЭ_Ольга_Group_IB__Коробочки_под_значки_-_1758711363.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Ольга_Group_IB__Коробочки_под_значки_-_1758711363,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+149,google_sheet_20250923_Просчет-ОАЭ_Ольга_Group_IB__Коробочки_под_значки_-_excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-ОАЭ_Ольга_Group_IB__Коробочки_под_значки_-_excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+150,google_sheet_20250923_Просчет-РФ_79779040266__Рюкзак_для_пикника_с_холод_1758711369.xlsx,Файл просчета,google_sheet_20250923_Просчет-РФ_79779040266__Рюкзак_для_пикника_с_холод_1758711369,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+151,google_sheet_20250923_Просчет-РФ_79779040266__Рюкзак_для_пикника_с_холод_excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-РФ_79779040266__Рюкзак_для_пикника_с_холод_excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+152,google_sheet_20250923_Просчет-РФ_83285_ЛК_Автомобильная_коллекция_4кварт_1758711367.xlsx,Файл просчета,google_sheet_20250923_Просчет-РФ_83285_ЛК_Автомобильная_коллекция_4кварт_1758711367,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+153,google_sheet_20250923_Просчет-РФ_83285_ЛК_Автомобильная_коллекция_4кварт_csv.xlsx,Файл просчета,google_sheet_20250923_Просчет-РФ_83285_ЛК_Автомобильная_коллекция_4кварт_csv,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+154,google_sheet_20250923_Просчет-РФ_83285_ЛК_Автомобильная_коллекция_4кварт_excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-РФ_83285_ЛК_Автомобильная_коллекция_4кварт_excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+155,google_sheet_20250923_Просчет-РФ_FW_Игра_Дженга_-_2_вариант_посчитать_-__1758711372.xlsx,Файл просчета,google_sheet_20250923_Просчет-РФ_FW_Игра_Дженга_-_2_вариант_посчитать_-__1758711372,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+156,google_sheet_20250923_Просчет-РФ_FW_Игра_Дженга_-_2_вариант_посчитать_-__excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-РФ_FW_Игра_Дженга_-_2_вариант_посчитать_-__excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+157,google_sheet_20250923_Просчет-РФ_FW_Подставка_для_ноутбука_и_планшета_Sc_excel.xlsx,Файл просчета,google_sheet_20250923_Просчет-РФ_FW_Подставка_для_ноутбука_и_планшета_Sc_excel,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets
+158,test_multiple_quantities.xlsx,Тестовый файл,test_multiple_quantities,,,Нужно заполнить вручную,Вставьте ссылку на Google Sheets

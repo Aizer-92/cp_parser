@@ -154,7 +154,8 @@ class ProductImage(Base):
     
     id = Column(Integer, primary_key=True)
     product_id = Column(Integer, ForeignKey('products.id'), nullable=True)
-    sheet_id = Column(Integer, ForeignKey('sheets_metadata.id'), nullable=True)  # ID таблицы
+    sheet_id = Column(Integer, ForeignKey('sheets_metadata.id'), nullable=True)  # ID таблицы (числовой)
+    original_sheet_id = Column(String(500), nullable=True)  # Оригинальный sheet_id из имени файла (текстовый)
     local_path = Column(String(500), nullable=True)  # Локальный путь к изображению
     image_type = Column(String(50), default='main')  # main, additional
     file_size = Column(Integer, nullable=True)  # Размер файла в байтах

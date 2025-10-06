@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Price Calculator - Калькулятор цен</title>
+    
+    <!-- 🎨 МОДУЛЬНЫЕ СТИЛИ - ФАЗА 2 РЕФАКТОРИНГА -->
+    <!-- Основные стили (reset, layout, animations) -->
+    <link rel="stylesheet" href="/static/css/main.css">
+    
+    <!-- Компонентные стили -->  
+    <link rel="stylesheet" href="/static/css/components/header.css">
+    <link rel="stylesheet" href="/static/css/components/cards.css">
+    <link rel="stylesheet" href="/static/css/components/forms.css">
+    <link rel="stylesheet" href="/static/css/components/history.css">
+    
+    <!-- Vue.js 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <!-- 🎯 Vue.js Root App -->
+    <div id="app">
+        <!-- Header Component -->
+        <header class="header">
+            <div class="container">
+                <div class="header-content">
+                    <div class="logo">Price Calculator</div>
+                    <nav class="nav">
+                        <button @click="activeTab = 'calculator'" 
+                                :class="['nav-button', { active: activeTab === 'calculator' }]">
+                            Калькулятор
+                        </button>
+                        <button @click="activeTab = 'history'" 
+                                :class="['nav-button', { active: activeTab === 'history' }]">
+                            История
+                        </button>
+                        <button @click="logout" class="logout-button">
+                            Выход
+                        </button>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="container">
+            <!-- 🧮 Calculator Tab -->
+            <div v-if="activeTab === 'calculator'">
+                <calculation-form 
+                    :form="form"
+                    :detected-category="detectedCategory"
+                    :categories="categories" 
+                    :selected-category-index="selectedCategoryIndex"
+                    :is-calculating="isCalculating"
+                    :is-form-valid="isFormValid"
+                    :suggested-rate="suggestedRate"
+                    :editing-calculation-id="editingCalculationId"
+                    @submit="calculatePrice"
+                    @product-name-change="onProductNameChange"
+                    @category-change="onCategoryChange"
+                    @delivery-change="updateSuggestedRate"
+                    @markup-change="form.markup = $event">
+                </calculation-form>
+                
+                <calculation-results 
+                    v-if="result"
+                    :result="result"
+                    :database-available="databaseAvailable">
+                </calculation-results>
+            </div>
+
+            <!-- 📚 History Tab -->
+            <div v-if="activeTab === 'history'">
+                <calculation-history
+                    :history="history"
+                    :expanded-history="expandedHistory"
+                    :database-available="databaseAvailable"
+                    @toggle-details="toggleHistoryDetails"
+                    @edit="editCalculation"
+                    @copy="copyCalculation"
+                    @refresh="loadHistory">
+                </calculation-history>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔧 МОДУЛЬНЫЕ СКРИПТЫ - ФАЗА 2 РЕФАКТОРИНГА -->
+    <!-- API Services -->
+    <script src="/static/js/services/calculationService.js"></script>
+    <script src="/static/js/services/categoryService.js"></script>
+    
+    <!-- Vue Components -->
+    <script src="/static/js/components/CalculationForm.js"></script>
+    <script src="/static/js/components/CalculationResults.js"></script>
+    <script src="/static/js/components/CalculationHistory.js"></script>
+    
+    <!-- Utils -->
+    <script src="/static/js/utils/formatters.js"></script>
+    
+    <!-- Main App -->
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

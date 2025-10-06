@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Price Calculator - Калькулятор цен товаров</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <!-- 🎨 МОДУЛЬНЫЙ CSS - ФАЗА 2.1 -->
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/components/header.css">
+    <link rel="stylesheet" href="/static/css/components/cards.css">
+    <link rel="stylesheet" href="/static/css/components/forms.css">
+    <link rel="stylesheet" href="/static/css/components/history.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="header-title">
+                    Price Calculator
+                    <span class="header-subtitle">Калькулятор цен товаров из Китая</span>
+                </h1>
+                
+                <div class="header-nav">
+                    <button @click="activeTab = 'calculator'" 
+                            :class="['nav-button', { active: activeTab === 'calculator' }]">
+                        🧮 Калькулятор
+                    </button>
+                    <button @click="activeTab = 'history'" 
+                            :class="['nav-button', { active: activeTab === 'history' }]">
+                        📋 История ({{ history.length }})
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <main class="main-content">
+            <!-- Calculator Tab -->
+            <div v-if="activeTab === 'calculator'">
+                <!-- Main Form Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            {{ editingCalculationId ? 'Редактирование расчета' : 'Новый расчет' }}
+                        </h2>
+                        <p class="card-subtitle">
+                            {{ editingCalculationId ? 'Измените параметры и пересчитайте' : 'Заполните форму для расчета стоимости товара' }}
+                        </p>
+                    </div>
+                    
+                    <form @submit.prevent="calculate()" class="calculator-form">
+                        <!-- Product Name -->
+                        <div class="form-group">
+                            <label for="product_name" class="form-label">Название товара *</label>
+                            <input 
+                                type="text" 
+                                id="product_name"
+                                v-model="form.product_name"
+                                @input="onProductNameChange"
+                                class="form-input"
+                                placeholder="Например: Bluetooth наушники"
+                                required
+                            >
+                            <!-- Product Category Display -->
+                            <div v-if="detectedCategory" class="category-display">
+                                <div class="category-info">
+                                    <strong>{{ getCleanCategoryName(detectedCategory.category) }}</strong>
+                                    <span v-if="detectedCategory.material"> - {{ detectedCategory.material }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Category Selection -->
+                        <div class="form-group">
+                            <label for="category" class="form-label">Категория товара</label>
+                            <select 
+                                id="category"
+                                v-model="selectedCategoryIndex"
+                                @change="onCategoryChange"
+                                class="form-select"
+                            >
+                                <option value="" disabled>Выберите категорию или начните вводить название товара</option>
+                                <option v-for="(category, index) in categories" 
+                                        :key="index" 
+                                        :value="index">
+                                    {{ getCleanCategoryName(category.category) }}
+                                    <span v-if="category.material"> - {{ category.material }}</span>
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Product URL -->
+                        <div class="form-group">
+                            <label for="product_url" class="form-label">Ссылка на товар</label>
+                            <input 
+                                type="url" 
+                                id="product_url"
+                                v-model="form.product_url"
+                                class="form-input"
+                                placeholder="https://example.com/product"
+                            >
+                        </div>
+
+                        <!-- Two Column Layout -->
+                        <div class="form-grid">
+                            <!-- Price in Yuan -->
+                            <div class="form-group">
+                                <label for="price_yuan" class="form-label">Цена в юанях *</label>
+                                <input 
+                                    type="number" 
+                                    id="price_yuan"
+                                    v-model="form.price_yuan"
+                                    class="form-input"
+                                    placeholder="0.00"
+                                    step="0.01"
+                                    min="0"
+                                    required
+                                >
+                                <!-- Price Recommendations -->
+                                <div v-if="detectedCategory && detectedCategory.recommendations" class="recommendations">
+                                    <div v-if="detectedCategory.recommendations.price_yuan_min" class="recommendation-item">
+                                        Рекомендуемая цена: {{ detectedCategory.recommendations.price_yuan_min }}¥ - {{ detectedCategory.recommendations.price_yuan_max }}¥
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Weight -->
+                            <div class="form-group">
+                                <label for="weight_kg" class="form-label">Общий вес, кг *</label>
+                                <input 
+                                    type="number" 
+                                    id="weight_kg"
+                                    v-model="form.weight_kg"
+                                    class="form-input"
+                                    placeholder="0.00"
+                                    step="0.01"
+                                    min="0"
+                                    required
+                                >
+                                <!-- Weight Recommendations -->
+                                <div v-if="detectedCategory && detectedCategory.recommendations && detectedCategory.recommendations.weight_min" class="recommendations">
+                                    <div class="recommendation-item">
+                                        Обычный вес: {{ detectedCategory.recommendations.weight_min }}кг - {{ detectedCategory.recommendations.weight_max }}кг
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quantity -->
+                            <div class="form-group">
+                                <label for="quantity" class="form-label">Количество, шт *</label>
+                                <input 
+                                    type="number" 
+                                    id="quantity"
+                                    v-model="form.quantity"
+                                    class="form-input"
+                                    placeholder="1"
+                                    min="1"
+                                    required
+                                >
+                                <!-- Quantity Recommendations -->
+                                <div v-if="detectedCategory && detectedCategory.recommendations && detectedCategory.recommendations.quantity_min" class="recommendations">
+                                    <div class="recommendation-item">
+                                        Обычный тираж: {{ detectedCategory.recommendations.quantity_min }}шт - {{ detectedCategory.recommendations.quantity_max }}шт
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Markup -->
+                            <div class="form-group">
+                                <label for="markup" class="form-label">Наценка *</label>
+                                <input 
+                                    type="number" 
+                                    id="markup"
+                                    v-model="form.markup"
+                                    class="form-input"
+                                    placeholder="1.7"
+                                    step="0.1"
+                                    min="1"
+                                    required
+                                >
+                                <div class="form-help">
+                                    {{ ((form.markup - 1) * 100).toFixed(0) }}% наценка
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Delivery Section -->
+                        <div class="delivery-section">
+                            <h3 class="section-title">Доставка и логистика</h3>
+                            
+                            <div class="form-grid">
+                                <!-- Delivery Type -->
+                                <div class="form-group">
+                                    <label class="form-label">Тип доставки</label>
+                                    <div class="radio-group">
+                                        <label class="radio-label">
+                                            <input 
+                                                type="radio" 
+                                                v-model="form.delivery_type" 
+                                                value="rail"
+                                                @change="updateSuggestedRate"
+                                                class="radio-input"
+                                            >
+                                            <span class="radio-text">🚂 ЖД доставка (медленно, дешево)</span>
+                                        </label>
+                                        <label class="radio-label">
+                                            <input 
+                                                type="radio" 
+                                                v-model="form.delivery_type" 
+                                                value="air"
+                                                @change="updateSuggestedRate"
+                                                class="radio-input"
+                                            >
+                                            <span class="radio-text">✈️ Авиа доставка (быстро, дорого)</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Custom Rate -->
+                                <div class="form-group">
+                                    <label for="custom_rate" class="form-label">Логистическая ставка, $/кг</label>
+                                    <input 
+                                        type="number" 
+                                        id="custom_rate"
+                                        v-model="form.custom_rate"
+                                        class="form-input"
+                                        placeholder="Оставьте пустым для автоматического расчета"
+                                        step="0.01"
+                                        min="0"
+                                    >
+                                    <div v-if="suggestedRate > 0" class="form-help">
+                                        Предлагаемая ставка: ${{ suggestedRate }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="form-actions">
+                            <button 
+                                type="submit" 
+                                :disabled="!isFormValid || isCalculating"
+                                class="btn btn-primary"
+                            >
+                                <span v-if="isCalculating" class="loading-spinner"></span>
+                                {{ isCalculating ? 'Расчет...' : (editingCalculationId ? 'Пересчитать' : 'Рассчитать стоимость') }}
+                            </button>
+                            
+                            <button 
+                                v-if="editingCalculationId" 
+                                type="button" 
+                                @click="resetForm()" 
+                                class="btn btn-secondary"
+                            >
+                                Отменить редактирование
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Results Section -->
+                <transition name="fade">
+                    <div v-if="result" class="results-section">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">Результат расчета</h2>
+                                <p class="card-subtitle">Все цены указаны с учетом текущего курса валют</p>
+                            </div>
+                            
+                            <!-- Main Results Grid -->
+                            <div class="results-grid">
+                                <!-- Cost Price -->
+                                <div class="result-card cost-price">
+                                    <div class="result-header">
+                                        <h3>Себестоимость</h3>
+                                    </div>
+                                    <div class="result-main">
+                                        <div class="result-total">{{ result.cost_price.total.rub.toLocaleString() }} ₽</div>
+                                        <div class="result-unit">{{ (result.cost_price.total.rub / result.quantity).toFixed(0) }} ₽/шт</div>
+                                        <div class="result-secondary">${{ result.cost_price.total.usd.toLocaleString() }}</div>
+                                    </div>
+                                </div>
+
+                                <!-- Sale Price -->
+                                <div class="result-card sale-price">
+                                    <div class="result-header">
+                                        <h3>Цена продажи</h3>
+                                    </div>
+                                    <div class="result-main">
+                                        <div class="result-total">{{ result.sale_price.total.rub.toLocaleString() }} ₽</div>
+                                        <div class="result-unit">{{ (result.sale_price.total.rub / result.quantity).toFixed(0) }} ₽/шт</div>
+                                        <div class="result-secondary">${{ result.sale_price.total.usd.toLocaleString() }}</div>
+                                    </div>
+                                </div>
+
+                                <!-- Profit -->
+                                <div class="result-card profit">
+                                    <div class="result-header">
+                                        <h3>Прибыль</h3>
+                                    </div>
+                                    <div class="result-main">
+                                        <div class="result-total">{{ result.profit.total.rub.toLocaleString() }} ₽</div>
+                                        <div class="result-unit">{{ (result.profit.total.rub / result.quantity).toFixed(0) }} ₽/шт</div>
+                                        <div class="result-secondary">${{ result.profit.total.usd.toLocaleString() }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Detailed Breakdown -->
+                            <div class="breakdown-section">
+                                <h3 class="section-title">Детализация расходов</h3>
+                                <div class="breakdown-grid">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Товар:</span>
+                                        <span class="detail-value">{{ result.cost_breakdown.product_cost_rub.toLocaleString() }} руб ({{ getPercentOfCost(result.cost_breakdown.product_cost_rub, result.cost_price.total.rub) }}%)</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Логистика:</span>
+                                        <span class="detail-value">{{ result.cost_breakdown.logistics_rub.toLocaleString() }} руб ({{ getPercentOfCost(result.cost_breakdown.logistics_rub, result.cost_price.total.rub) }}%)</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Таможенная пошлина:</span>
+                                        <span class="detail-value">{{ result.cost_breakdown.customs_duty_rub.toLocaleString() }} руб ({{ getPercentOfCost(result.cost_breakdown.customs_duty_rub, result.cost_price.total.rub) }}%)</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">НДС:</span>
+                                        <span class="detail-value">{{ result.cost_breakdown.vat_rub.toLocaleString() }} руб ({{ getPercentOfCost(result.cost_breakdown.vat_rub, result.cost_price.total.rub) }}%)</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Доставка по РФ:</span>
+                                        <span class="detail-value">{{ result.additional_costs.local_delivery_rub.toLocaleString() }} руб ({{ getPercentOfCost(result.additional_costs.local_delivery_rub, result.cost_price.total.rub) }}%)</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Забор МСК:</span>
+                                        <span class="detail-value">{{ result.additional_costs.msk_pickup_rub.toLocaleString() }} руб ({{ getPercentOfCost(result.additional_costs.msk_pickup_rub, result.cost_price.total.rub) }}%)</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Прочие расходы:</span>
+                                        <span class="detail-value">{{ result.additional_costs.other_costs_rub.toLocaleString() }} руб ({{ getPercentOfCost(result.additional_costs.other_costs_rub, result.cost_price.total.rub) }}%)</span>
+                                    </div>
+                                    <div class="detail-item" style="border-top: 1px solid #e5e7eb; padding-top: 8px; margin-top: 8px;">
+                                        <span class="detail-label"><strong>Наценка:</strong></span>
+                                        <span class="detail-value"><strong>{{ ((result.markup - 1) * 100).toFixed(0) }}%</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Product URL -->
+                            <div v-if="result.product_url" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                                <a :href="result.product_url" target="_blank" 
+                                   style="color: #2563eb; text-decoration: none;">
+                                    → Открыть страницу товара
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </transition>
+            </div>
+            
+            <!-- History Tab -->
+            <div v-if="activeTab === 'history'">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <div>
+                            <h2 class="card-title" style="margin-bottom: 0;">История расчетов</h2>
+                            <p class="card-subtitle" style="margin-bottom: 0;">Все ваши расчеты сохранены автоматически</p>
+                        </div>
+                        <button @click="loadHistory" class="refresh-button">
+                            Обновить
+                        </button>
+                    </div>
+                    
+                    <!-- Database Status Warning -->
+                    <div v-if="!databaseAvailable" class="warning-message" style="background: #fef3cd; border: 1px solid #fde68a; color: #92400e; padding: 16px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 20px;">⚠️</span>
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 4px;">База данных недоступна</div>
+                            <div style="font-size: 14px;">Калькулятор работает, но история расчетов временно недоступна. Ваши расчеты не сохраняются.</div>
+                        </div>
+                    </div>
+                    
+                    <div v-if="history.length === 0 && databaseAvailable" class="empty-state">
+                        <div class="empty-icon">📋</div>
+                        <h3 style="font-size: 18px; color: #1f2937; margin-bottom: 8px;">Пока нет расчетов</h3>
+                        <p style="color: #6b7280; margin-bottom: 16px;">Создайте первый расчет во вкладке "Калькулятор"</p>
+                        <button @click="activeTab = 'calculator'" class="nav-button active">
+                            Создать расчет
+                        </button>
+                    </div>
+                    
+                    <div v-else class="history">
+                        <div v-for="item in history" :key="item.id" class="history-item" @click="toggleHistoryDetails(item.id)">
+                            <!-- Краткая информация (всегда видна) -->
+                            <div class="history-summary">
+                                <div class="history-main-info">
+                                    <h3>
+                                        {{ item.product_name }}
+                                        <span class="history-expand-icon" :class="{ expanded: expandedHistory.includes(item.id) }">
+                                            ▼
+                                        </span>
+                                    </h3>
+                                    <p>{{ formatDate(item.created_at) }}</p>
+                                    <p v-if="item.product_url" style="color: #3b82f6;">
+                                        <a :href="item.product_url" target="_blank" @click.stop style="text-decoration: none; color: inherit;">
+                                            → Ссылка на товар
+                                        </a>
+                                    </p>
+                                </div>
+                                <div class="history-prices">
+                                    <div class="history-yuan-price">{{ item.price_yuan }}¥ × {{ item.quantity }}шт</div>
+                                    <div class="history-unit-price"><strong>{{ (item.sale_price_rub / item.quantity).toFixed(0) }}</strong> ₽/шт</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Детальная информация (раскрывается по клику) -->
+                            <div v-if="expandedHistory.includes(item.id)" class="history-details">
+                                <div class="grid" style="grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px;">
+                                    <div>
+                                        <div style="font-weight: 600; color: #374151; margin-bottom: 8px;">Параметры товара</div>
+                                        <div style="font-size: 14px; color: #6b7280; line-height: 1.5;">
+                                            <div><strong>Категория:</strong> {{ item.category }}</div>
+                                            <div><strong>Вес:</strong> {{ item.weight_kg }} кг</div>
+                                            <div><strong>Количество:</strong> {{ item.quantity }} шт</div>
+                                            <div><strong>Наценка:</strong> × {{ item.markup }} ({{ ((item.markup - 1) * 100).toFixed(0) }}%)</div>
+                                            <div v-if="item.custom_rate"><strong>Логистическая ставка:</strong> ${{ item.custom_rate }}/кг</div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 600; color: #374151; margin-bottom: 8px;">Расчет стоимости</div>
+                                        <div style="font-size: 14px; color: #6b7280; line-height: 1.5;">
+                                            <div><strong>Себестоимость:</strong> {{ item.cost_price_rub.toLocaleString() }} ₽</div>
+                                            <div><strong>Цена продажи:</strong> {{ item.sale_price_rub.toLocaleString() }} ₽</div>
+                                            <div><strong>Прибыль:</strong> {{ item.profit_rub.toLocaleString() }} ₽</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="history-actions" @click.stop>
+                                    <button @click="editCalculation(item)" class="btn btn-secondary btn-sm">
+                                        ✏️ Редактировать
+                                    </button>
+                                    <button @click="copyCalculation(item)" class="btn btn-secondary btn-sm">
+                                        📋 Копировать
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 🚀 МОДУЛЬНЫЙ JAVASCRIPT - ФАЗА 2.2 -->
+    <!-- Порядок загрузки КРИТИЧЕСКИ ВАЖЕН! -->
+    <script src="/static/js/app-config.js"></script>
+    <script src="/static/js/api-service.js"></script>
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/form-handlers.js"></script>
+    <script src="/static/js/history-handlers.js"></script>
+    <script src="/static/js/main-app.js"></script>
+</body>
+</html>

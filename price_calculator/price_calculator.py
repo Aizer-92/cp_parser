@@ -4,27 +4,86 @@
 """
 
 import json
-from typing import Dict, Optional
+from typing import Dict, Optional, List
+import os
+import sys
+from pathlib import Path
+
+# Добавляем config директорию в путь
+config_dir = Path(__file__).parent / "config"
+if str(config_dir) not in sys.path:
+    sys.path.insert(0, str(config_dir))
+
+try:
+    from config_loader import get_config_loader
+    CONFIG_LOADER_AVAILABLE = True
+except ImportError:
+    CONFIG_LOADER_AVAILABLE = False
+    get_config_loader = None
+
+try:
+    from database import load_categories_from_db, upsert_category
+    DATABASE_AVAILABLE = True
+except ImportError:
+    DATABASE_AVAILABLE = False
+    def load_categories_from_db():
+        return []
+    def upsert_category(_: Dict[str, any]):
+        return None
 
 class PriceCalculator:
     """Класс для расчета стоимости товаров"""
     
     def __init__(self):
-        # Курсы валют (обновленные)
-        self.currencies = {
-            "yuan_to_usd": 1 / 7.2,      # 7.2 юаня за $1, значит юань к доллару = 1/7.2
-            "usd_to_rub": 84,            # 84 руб за $1
-            "yuan_to_rub": 84 / 7.2      # 84 руб за $1 / 7.2 юаня за $1 = 11.67 руб за юань
-        }
-        self.load_categories()
+        if CONFIG_LOADER_AVAILABLE:
+            # Новый способ - загрузка через ConfigLoader
+            self.config_loader = get_config_loader()
+            config = self.config_loader.load_full_config()
+            self.currencies = {
+                "yuan_to_usd": config.currencies.yuan_to_usd,
+                "usd_to_rub": config.currencies.usd_to_rub,
+                "yuan_to_rub": config.currencies.yuan_to_rub
+            }
+            self.formula_config = config.formula
+            # Пробуем загрузить категории из БД если доступно
+            db_categories = []
+            try:
+                db_categories = load_categories_from_db() if DATABASE_AVAILABLE else []
+            except Exception as e:
+                print(f"⚠️ Ошибка загрузки категорий из БД: {e}")
+                db_categories = []
+                
+            if db_categories:
+                self.categories = db_categories
+                print(f"✅ Загружено {len(self.categories)} категорий из БД")
+            else:
+                self.categories = config.categories if config.categories else []
+                print(f"✅ Категории загружены из конфигурации ({len(self.categories)})")
+                if DATABASE_AVAILABLE and self.categories:
+                    try:
+                        for cat in self.categories:
+                            upsert_category(cat)
+                    except Exception as e:
+                        print(f"⚠️ Ошибка сохранения категорий в БД: {e}")
+                        
+            print(f"✅ Итого загружено категорий: {len(self.categories) if self.categories else 0}")
+        else:
+            # Старый способ - fallback
+            self.currencies = {
+                "yuan_to_usd": 1 / 7.2,      # 7.2 юаня за $1, значит юань к доллару = 1/7.2
+                "usd_to_rub": 84,            # 84 руб за $1
+                "yuan_to_rub": 84 / 7.2      # 84 руб за $1 / 7.2 юаня за $1 = 11.67 руб за юань
+            }
+            self.load_categories_legacy()
+            self.formula_config = None
     
-    def load_categories(self):
+    def load_categories_legacy(self):
         """Загружает категории товаров"""
         try:
             # Сначала пробуем загрузить из встроенного модуля
-            from categories_data import CATEGORIES
-            self.categories = CATEGORIES
-            print(f"✅ Загружено {len(self.categories)} встроенных категорий")
+            from categories_data import CATEGORIES_DATA
+            self.categories = CATEGORIES_DATA
+            print(f"Загружено {len(self.categories)} встроенных категорий с рекомендациями")
             return
         except ImportError:
             print("❌ Встроенные категории не найдены")
@@ -32,6 +91,9 @@ class PriceCalculator:
         # Резервный способ - загрузка из JSON файла
         import os
         possible_paths = [
+            'product_categories_v2.json',
+            '/app/product_categories_v2.json',
+            os.path.join(os.path.dirname(__file__), 'product_categories_v2.json'),
             'product_categories.json',
             '/app/product_categories.json',
             os.path.join(os.path.dirname(__file__), 'product_categories.json')
@@ -41,45 +103,20 @@ class PriceCalculator:
             try:
                 with open(path, 'r', encoding='utf-8') as f:
                     self.categories = json.load(f)
-                    print(f"✅ Загружено {len(self.categories)} категорий из файла {path}")
+                    print(f"Загружено {len(self.categories)} категорий из файла {path}")
                     return
             except FileNotFoundError:
                 continue
         
-        print("⚠️ Категории не найдены, используем пустой список")
+        print("Категории не найдены, используем пустой список")
         self.categories = []
     
-    def find_category_by_name(self, product_name: str) -> Optional[Dict]:
+    def find_category_by_name(self, product_name: str) -> Dict:
         """Находит категорию товара по названию с приоритетами и синонимами"""
         product_name_lower = product_name.lower()
         
         # Словарь синонимов для категорий (приоритет: точное совпадение > синонимы > частичное совпадение)
-        category_synonyms = {
-            "Ежедневники, блокноты": {
-                "exact": ["ежедневник", "блокнот", "записная книжка", "планер"],
-                "partial": ["дневник", "тетрадь", "записи", "планирование"]
-            },
-            "Пакеты - не бумага\nПакет, пакет фольгированный": {
-                "exact": ["пакет", "мешок", "сумка пакет"],
-                "partial": ["упаковка", "фольга"]
-            },
-            "Рюкзак": {
-                "exact": ["рюкзак", "backpack"],
-                "partial": ["школьный рюкзак", "спортивный рюкзак"]
-            },
-            "Картхолдер + ланьярд + ретрактор": {
-                "exact": ["картхолдер", "кардхолдер", "ланьярд", "ретрактор"],
-                "partial": ["карт", "держатель карт"]
-            },
-            "Поясная сумка": {
-                "exact": ["поясная сумка", "бананка", "belt bag"],
-                "partial": ["сумка на пояс"]
-            },
-            "Стикеры, наклейки": {
-                "exact": ["стикер", "наклейка", "стикер pack", "наклейки"],
-                "partial": ["клейкий", "липкий"]
-            }
-        }
+        category_synonyms = self._get_synonym_mapping()
         
         # Поиск с приоритетами
         matches = []
@@ -139,20 +176,100 @@ class PriceCalculator:
         
         # Сортируем по убыванию скора и возвращаем лучший результат
         if matches:
-            matches.sort(key=lambda x: x[1], reverse=True)
-            return matches[0][0]
+            # Добавляем приоритет для базовых материалов при одинаковом скоре
+            def sort_key(match):
+                category, score, match_type = match
+                material_lower = category["material"].lower()
+                
+                # Бонус для базовых материалов (полиэстер, нейлон, хлопок)
+                base_materials = ["полиэстер", "нейлон", "хлопок", "оксфорд", "плюш", "фетр", "акрил"]
+                material_bonus = 0
+                for base_mat in base_materials:
+                    if base_mat in material_lower:
+                        material_bonus = 5
+                        break
+                
+                # Штраф для премиальных материалов (кожа, металл)
+                premium_materials = ["кожа", "металл", "сталь"]
+                for premium_mat in premium_materials:
+                    if premium_mat in material_lower:
+                        material_bonus = -5
+                        break
+                
+                return score + material_bonus
+            
+            matches.sort(key=sort_key, reverse=True)
+            top_category = matches[0][0]
+
+            # Гарантируем наличие блока рекомендаций для UI
+            recommendations = self.build_recommendations(top_category)
+            top_category = {
+                **top_category,
+                "recommendations": recommendations
+            }
+            return top_category
         
         # Возвращаем дефолтную категорию если не найдено
         return {
             "category": "Общая категория",
             "material": "",
+            "tnved_code": "",
             "density": 200,
             "rates": {
                 "rail_base": 5.0,
                 "air_base": 7.0,
                 "rail_density": 5.0,
                 "air_density": 7.0
-            }
+            },
+            "recommendations": self.get_recommendations_defaults()
+        }
+    
+    def get_recommendations(self, product_name: str) -> Dict:
+        """Получает рекомендации по цене, количеству и весу для товара"""
+        category = self.find_category_by_name(product_name)
+
+        return self.build_recommendations(category)
+
+    def get_recommendations_defaults(self) -> Dict:
+        """Возвращает стандартный набор рекомендаций."""
+        return {
+            "price_yuan_min": 1.0,
+            "price_yuan_max": 100.0,
+            "price_rub_min": 50.0,
+            "price_rub_max": 5000.0,
+            "median_price_yuan": 15.0,
+            "median_price_rub": 750.0,
+            "quantity_min": 100.0,
+            "quantity_max": 10000.0,
+            "avg_quantity": 1500.0,
+            "weight_min": 50.0,
+            "weight_max": 500.0
+        }
+
+    def build_recommendations(self, category: Dict) -> Dict:
+        """Формирует рекомендации из доступных диапазонов категории."""
+
+        existing = category.get("recommendations")
+        if existing:
+            return existing
+
+        defaults = self.get_recommendations_defaults()
+        price_ranges = category.get("price_ranges", {})
+        quantity_ranges = category.get("quantity_ranges", {})
+        weight_ranges = category.get("weight_ranges", {})
+
+        return {
+            "price_yuan_min": price_ranges.get("price_yuan_min", defaults["price_yuan_min"]),
+            "price_yuan_max": price_ranges.get("price_yuan_max", defaults["price_yuan_max"]),
+            "price_rub_min": price_ranges.get("price_rub_min", defaults["price_rub_min"]),
+            "price_rub_max": price_ranges.get("price_rub_max", defaults["price_rub_max"]),
+            "median_price_yuan": category.get("median_price_yuan", defaults["median_price_yuan"]),
+            "median_price_rub": category.get("median_price_rub", defaults["median_price_rub"]),
+            "quantity_min": quantity_ranges.get("quantity_min", defaults["quantity_min"]),
+            "quantity_max": quantity_ranges.get("quantity_max", defaults["quantity_max"]),
+            "avg_quantity": category.get("avg_quantity", defaults["avg_quantity"]),
+            "weight_min": weight_ranges.get("weight_min", defaults["weight_min"]),
+            "weight_max": weight_ranges.get("weight_max", defaults["weight_max"])
         }
     
     def calculate_cost(self, 
@@ -162,7 +279,8 @@ class PriceCalculator:
                       product_name: str,
                       custom_rate: Optional[float] = None,
                       delivery_type: str = "rail",  # rail или air
-                      markup: float = 1.7) -> Dict:
+                      markup: float = 1.7,
+                      product_url: Optional[str] = None) -> Dict:
         """
         Рассчитывает себестоимость и цену продажи
         
@@ -174,6 +292,7 @@ class PriceCalculator:
             custom_rate: Пользовательская ставка (если None, используется автоматическая)
             delivery_type: Тип доставки - "rail" или "air"
             markup: Наценка (1.5 = 50% наценка)
+            product_url: URL товара (опционально)
             
         Returns:
             Словарь с результатами расчета
@@ -184,10 +303,12 @@ class PriceCalculator:
         base_goods_cost_yuan = price_yuan * quantity
         
         # + 5% комиссия Тони
-        goods_with_toni_yuan = base_goods_cost_yuan * (1 + 5/100)
+        commission_percent = self.formula_config.toni_commission_percent if self.formula_config else 5.0
+        goods_with_toni_yuan = base_goods_cost_yuan * (1 + commission_percent / 100)
         
         # + 18% процент переводов  
-        goods_with_commissions_yuan = goods_with_toni_yuan * (1 + 18/100)
+        transfer_percent = self.formula_config.transfer_percent if self.formula_config else 18.0
+        goods_with_commissions_yuan = goods_with_toni_yuan * (1 + transfer_percent / 100)
         
         # Итоговая стоимость товара за единицу с комиссиями
         goods_cost_per_unit_yuan = goods_with_commissions_yuan / quantity
@@ -214,19 +335,17 @@ class PriceCalculator:
         total_logistics_cost_usd = logistics_cost_per_unit_usd * quantity
         
         # 4. Локальная доставка (2 юаня за кг)
-        local_delivery_rate_yuan_per_kg = 2.0  # 2 юаня за кг
+        local_delivery_rate_yuan_per_kg = self.formula_config.local_delivery_rate_yuan_per_kg if self.formula_config else 2.0
         local_delivery_total_yuan = local_delivery_rate_yuan_per_kg * weight_kg * quantity
         local_delivery_per_unit_yuan = local_delivery_rate_yuan_per_kg * weight_kg  
         local_delivery_per_unit_rub = local_delivery_per_unit_yuan * self.currencies["yuan_to_rub"]
         
         # 5. Забор в МСК (фиксированная сумма на весь тираж)
-        msk_pickup_total_rub = 1000  # По Excel данным
+        msk_pickup_total_rub = self.formula_config.msk_pickup_total_rub if self.formula_config else 1000
         msk_pickup_per_unit_rub = msk_pickup_total_rub / quantity
         
         # 6. Прочие расходы (теперь только дополнительные расходы, без комиссий)
-        # Комиссии Тони и переводов уже включены в стоимость товара
-        # Остаются только: НДС, банковские комиссии, прочие мелкие расходы
-        other_costs_percent = 2.5  # Уменьшенный процент без комиссий переводов и Тони
+        other_costs_percent = self.formula_config.other_costs_percent if self.formula_config else 2.5
         base_cost_for_percent = goods_cost_per_unit_rub + local_delivery_per_unit_rub
         other_costs_per_unit_rub = base_cost_for_percent * (other_costs_percent / 100)
         total_other_costs_rub = other_costs_per_unit_rub * quantity
@@ -255,6 +374,98 @@ class PriceCalculator:
         
         total_profit_rub = profit_per_unit_rub * quantity
         total_profit_usd = profit_per_unit_usd * quantity
+        
+        # 10. Расчет себестоимости под контракт
+        # ВАЖНО: Расчет возможен только при наличии данных по пошлинам
+        contract_cost_data = None
+        cost_difference_data = None
+        
+        # Проверяем наличие обязательных данных для контракта
+        has_customs_data = (
+            category and 
+            category.get('duty_rate') and 
+            category.get('vat_rate') and
+            category.get('tnved_code')
+        )
+        
+        if has_customs_data:
+            # Получаем данные по пошлинам прямо из категории
+            duty_rate_str = category.get('duty_rate', '0%')
+            vat_rate_str = category.get('vat_rate', '20%')
+            
+            print(f"✅ Найдены данные по пошлинам: {duty_rate_str} пошлина, {vat_rate_str} НДС")
+            
+            # Конвертируем проценты в числа для расчетов
+            try:
+                duty_rate = float(duty_rate_str.replace('%', '')) / 100
+                vat_rate = float(vat_rate_str.replace('%', '')) / 100
+            except (ValueError, AttributeError):
+                print(f"⚠️ Ошибка парсинга пошлин: duty_rate={duty_rate_str}, vat_rate={vat_rate_str}")
+                duty_rate = 0.0
+                vat_rate = 0.2
+            
+            # Получаем данные по пошлинам (создаем совместимый объект)
+            customs_info = {
+                'duty_rate': duty_rate_str,
+                'vat_rate': vat_rate_str
+            }
+            
+            if customs_info and customs_info.get('duty_rate') and customs_info.get('vat_rate'):
+                # Формула: (Стоимость товара в юанях * пошлина тони * курс юань в рубли + сумма пошлин переведенная в рубли + 
+                # вес товара * (3,4$ если ЖД или 5,5$ если авиа) * курс в рубли + 25000 рублей + локальная доставка + забор в москве + прочие расходы) / кол-во (тираж)
+                
+                # Стоимость товара с пошлиной Тони в рублях
+                goods_with_toni_rub = base_goods_cost_yuan * (1 + commission_percent / 100) * self.currencies["yuan_to_rub"]
+                
+                # Логистика под контракт (фиксированные ставки)
+                contract_logistics_rate_usd = 3.4 if delivery_type == "rail" else 5.5
+                contract_logistics_cost_usd = weight_kg * contract_logistics_rate_usd * quantity
+                contract_logistics_cost_rub = contract_logistics_cost_usd * self.currencies["usd_to_rub"]
+                
+                # Фиксированная сумма 25000 рублей
+                contract_fixed_cost_rub = 25000.0
+                
+                # Общая себестоимость под контракт
+                contract_total_cost_rub = (goods_with_toni_rub + 
+                                        contract_logistics_cost_rub + 
+                                        local_delivery_total_yuan * self.currencies["yuan_to_rub"] + 
+                                        msk_pickup_total_rub + 
+                                        total_other_costs_rub + 
+                                        contract_fixed_cost_rub)
+                
+                contract_cost_per_unit_rub = contract_total_cost_rub / quantity
+                contract_cost_per_unit_usd = contract_cost_per_unit_rub / self.currencies["usd_to_rub"]
+                
+                # Разница между обычной себестоимостью и себестоимостью под контракт
+                cost_difference_per_unit_rub = contract_cost_per_unit_rub - cost_per_unit_rub
+                cost_difference_total_rub = cost_difference_per_unit_rub * quantity
+                cost_difference_per_unit_usd = cost_difference_per_unit_rub / self.currencies["usd_to_rub"]
+                cost_difference_total_usd = cost_difference_total_rub / self.currencies["usd_to_rub"]
+                
+                # Формируем данные контракта
+                contract_cost_data = {
+                    "total": {
+                        "rub": round(contract_total_cost_rub, 2),
+                        "usd": round(contract_total_cost_rub / self.currencies["usd_to_rub"], 2)
+                    },
+                    "per_unit": {
+                        "rub": round(contract_cost_per_unit_rub, 2),
+                        "usd": round(contract_cost_per_unit_usd, 2)
+                    },
+                    "logistics_rate_usd": contract_logistics_rate_usd,
+                    "fixed_cost_rub": contract_fixed_cost_rub
+                }
+                
+                cost_difference_data = {
+                    "total": {
+                        "rub": round(cost_difference_total_rub, 2),
+                        "usd": round(cost_difference_total_usd, 2)
+                    },
+                    "per_unit": {
+                        "rub": round(cost_difference_per_unit_rub, 2),
+                        "usd": round(cost_difference_per_unit_usd, 2)
+                    }
+                }
         
         return {
             "product_name": product_name,
@@ -309,9 +520,33 @@ class PriceCalculator:
                     "rub": round(profit_per_unit_rub, 2)
                 }
             },
+            "contract_cost": contract_cost_data,
+            "cost_difference": cost_difference_data,
+            # Добавляем информацию по пошлинам для отображения в интерфейсе
+            "customs_info": {
+                "tnved_code": category.get('tnved_code', ''),
+                "duty_rate": category.get('duty_rate', ''),
+                "vat_rate": category.get('vat_rate', ''),
+                "certificates": category.get('certificates', [])
+            } if has_customs_data else None,
             "weight_kg": weight_kg,
-            "estimated_weight": weight_kg * quantity
+            "estimated_weight": weight_kg * quantity,
+            "product_url": product_url or ""
         }
+
+    def _get_synonym_mapping(self) -> Dict[str, Dict[str, List[str]]]:
+        """Формирует карту синонимов из конфигурации."""
+        mapping = {}
+        for category in getattr(self, 'categories', []):
+            name = category.get('category')
+            synonyms = category.get('synonyms', [])
+            if not name or not synonyms:
+                continue
+            mapping[name] = {
+                "exact": [syn.lower() for syn in synonyms],
+                "partial": []
+            }
+        return mapping
 
 # Тестовая функция
 if __name__ == "__main__":
@@ -326,7 +561,7 @@ if __name__ == "__main__":
         markup=1.7
     )
     
-    print("🧮 Пример расчета:")
+    print("Пример расчета:")
     print(f"Товар: {result['product_name']}")
     print(f"Категория: {result['category']}")
     print(f"Себестоимость за единицу: ${result['cost_price']['per_unit']['usd']} / {result['cost_price']['per_unit']['rub']} руб")

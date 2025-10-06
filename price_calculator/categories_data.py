@@ -1,2 +1,3355 @@
-# Встроенные категории товаров
-CATEGORIES = [{"category":"Карман для бейджа","material":"пластик, кожзам","density":397.99999999999994,"rates":{"rail_base":4.2,"air_base":6.3,"rail_density":4.2,"air_density":6.3}},{"category":"Картхолдер + ланьярд + ретрактор","material":"силикон, пластик, полиэстер","density":900.0,"rates":{"rail_base":7.2,"air_base":9.3,"rail_density":7.2,"air_density":9.3}},{"category":"Картхолдер, кардхолдер","material":"пластик, кожзам","density":200.0,"rates":{"rail_base":7.2,"air_base":9.3,"rail_density":7.2,"air_density":9.3}},{"category":"Картхолдер, кардхолдер","material":"кожа","density":287.6984126984127,"rates":{"rail_base":11.1,"air_base":13.2,"rail_density":11.1,"air_density":13.2}},{"category":"Рюкзаки кожа","material":"кожа","density":153.84738463431967,"rates":{"rail_base":11.0,"air_base":13.1,"rail_density":11.0,"air_density":13.1}},{"category":"Рюкзак","material":"Полиэстер, нейлон, хлопок, Оксфорд, ПВХ","density":171.8181818181818,"rates":{"rail_base":6.1,"air_base":8.2,"rail_density":6.1,"air_density":8.2}},{"category":"Поясная сумка","material":"ор","density":180.0,"rates":{"rail_base":6.1,"air_base":8.2,"rail_density":6.1,"air_density":8.2}},{"category":"Рюкзак мешок, гермомешок","material":"Полиэстер, нейлон, хлопок, Оксфорд, пвх","density":155.50488599348535,"rates":{"rail_base":6.1,"air_base":8.2,"rail_density":6.1,"air_density":8.2}},{"category":"Шоппер, сумка","material":"Полиэстер, нейлон, хлопок, Оксфорд","density":138.9111111188284,"rates":{"rail_base":6.1,"air_base":8.2,"rail_density":6.1,"air_density":8.2}},{"category":"Сумка для ноутбука, чехол","material":"Полиэстер, нейлон, хлопок, Оксфорд, плюш, фетр, акрил, кожзам","density":120.99827882960413,"rates":{"rail_base":6.1,"air_base":8.2,"rail_density":6.1,"air_density":8.2}},{"category":"Органайзер, несессер","material":"Полиэстер, нейлон, хлопок, Оксфорд, плюш, фетр, акрил, кожзам","density":208.33333333333334,"rates":{"rail_base":6.09999999999999,"air_base":8.2,"rail_density":6.09999999999999,"air_density":8.2}},{"category":"Органайзер - машина","material":"Полиэстер, нейлон, Оксфорд, кожзам","density":179.1044776119403,"rates":{"rail_base":6.09999999999999,"air_base":8.2,"rail_density":6.09999999999999,"air_density":8.2}},{"category":"Косметичка, пенал (без наполнения)","material":"Полиэстер, нейлон, хлопок, Оксфорд, плюш, акрил, кожзам","density":134.49122807017545,"rates":{"rail_base":6.09999999999999,"air_base":8.2,"rail_density":6.09999999999999,"air_density":8.2}},{"category":"Термосумка, сумка для еды, сумка курьера, сумка для ланчбокса, сумка холодильник","material":"полиэстер,алюминиевая фольга, спанбонд","density":45.713976574968214,"rates":{"rail_base":6.09999999999999,"air_base":8.2,"rail_density":6.09999999999999,"air_density":8.2}},{"category":"Авоськи","material":"акрил","density":200.0,"rates":{"rail_base":4.4,"air_base":6.5,"rail_density":4.4,"air_density":6.5}},{"category":"Чехлы для чемодана","material":"Полиэстер, нейлон, акрил","density":287.5,"rates":{"rail_base":5.5,"air_base":7.6,"rail_density":5.5,"air_density":7.6}},{"category":"Стикеры, наклейки","material":"бумага","density":200.0,"rates":{"rail_base":3.9,"air_base":6.0,"rail_density":3.9,"air_density":6.0}},{"category":"Стикеры, наклейки","material":"Виниловая пленка","density":200.0,"rates":{"rail_base":4.2,"air_base":6.3,"rail_density":4.2,"air_density":6.3}},{"category":"Ежедневники, блокноты","material":"бумага, кожа, кожзам, акрил","density":533.8235294117646,"rates":{"rail_base":4.1,"air_base":6.2,"rail_density":4.1,"air_density":6.2}},{"category":"Носки","material":"хлопок, акрил, полиэстер","density":123.8095238,"rates":{"rail_base":5.0,"air_base":7.1,"rail_density":5.0,"air_density":7.1}},{"category":"Шарфы, платки","material":"хлопок, акрил, полиэстер, нейлон, оксфорд","density":189.83644859813083,"rates":{"rail_base":11.8,"air_base":13.9,"rail_density":11.8,"air_density":13.9}},{"category":"Кепка, бейсболка","material":"хлопок, полиэстер, акрил","density":131.50000000000003,"rates":{"rail_base":5.0,"air_base":7.1,"rail_density":5.0,"air_density":7.1}},{"category":"Футболки","material":"хлопок, полиэстер, акрил","density":234.96240601503757,"rates":{"rail_base":9.5,"air_base":11.6,"rail_density":9.5,"air_density":11.6}},{"category":"Худи, толстовка","material":"хлопок, полиэстер, акрил","density":216.41274238227146,"rates":{"rail_base":9.3,"air_base":11.4,"rail_density":9.3,"air_density":11.4}},{"category":"Шапки","material":"хлопок, полиэстер, акрил","density":200.0,"rates":{"rail_base":5.0,"air_base":7.1,"rail_density":5.0,"air_density":7.1}},{"category":"Пледы","material":"хлопок, акрил, полиэстер, нейлон, оксфорд, фланель, флис, жаккард","density":134.43548387096774,"rates":{"rail_base":5.3,"air_base":7.4,"rail_density":5.3,"air_density":7.4}},{"category":"Тряпки","material":"акрил, полиэстер, нейлон, оксфорд","density":200.0,"rates":{"rail_base":5.3,"air_base":7.4,"rail_density":5.3,"air_density":7.4}},{"category":"Полотенца","material":"хлопок, микрофибра, бамбук","density":230.0,"rates":{"rail_base":7.2,"air_base":9.3,"rail_density":7.2,"air_density":9.3}},{"category":"Резиновая обувь","material":"резина","density":200.0,"rates":{"rail_base":5.0,"air_base":7.0,"rail_density":5.0,"air_density":7.0}},{"category":"Ланчбокс","material":"пластик","density":104.94016810535373,"rates":{"rail_base":4.3,"air_base":6.4,"rail_density":4.3,"air_density":6.4}},{"category":"Таблетницы","material":"пластик","density":229.48717948717947,"rates":{"rail_base":4.4,"air_base":6.5,"rail_density":4.4,"air_density":6.5}},{"category":"Бутылки, стаканы, одноразовые стаканы, складные","material":"пластик, тритан, полипропилен, PS, PP","density":98.34775767,"rates":{"rail_base":4.3,"air_base":6.4,"rail_density":4.3,"air_density":6.4}},{"category":"Бутылки","material":"стекло","density":216.12903225806454,"rates":{"rail_base":4.0,"air_base":6.1,"rail_density":4.0,"air_density":6.1}},{"category":"Термосы, термобутылки, термокружки, термостаканы, кофферы","material":"металл (нержавеющая сталь, алюминий)","density":189.14185639229422,"rates":{"rail_base":4.6,"air_base":6.7,"rail_density":4.6,"air_density":6.7}},{"category":"Посуда (тарелки и кружки)","material":"металл","density":70.41666666666666,"rates":{"rail_base":4.6,"air_base":6.7,"rail_density":4.6,"air_density":6.7}},{"category":"Посуда","material":"фарфор","density":183.9034482758621,"rates":{"rail_base":4.0,"air_base":6.1,"rail_density":4.0,"air_density":6.1}},{"category":"Посуда","material":"керамика","density":271.40133837309327,"rates":{"rail_base":4.0,"air_base":6.1,"rail_density":4.0,"air_density":6.1}},{"category":"Блендеры","material":"пластик, стекло \n\nТовар с аккумулятором","density":200.0,"rates":{"rail_base":5.0,"air_base":6.1,"rail_density":5.0,"air_density":6.1}},{"category":"Грелки","material":"пластик, металл\n\nТовар с аккумулятором","density":200.0,"rates":{"rail_base":4.9,"air_base":6.0,"rail_density":4.9,"air_density":6.0}},{"category":"Мыши","material":"пластик","density":200.0,"rates":{"rail_base":6.2,"air_base":8.3,"rail_density":6.2,"air_density":8.3}},{"category":"Массажеры","material":"металл, пластик\n\nТовар с аккумулятором","density":74.7863247863248,"rates":{"rail_base":5.4,"air_base":7.5,"rail_density":5.4,"air_density":7.5}},{"category":"Колонка","material":"Пластик \n\nТовар с аккумулятором","density":200.0,"rates":{"rail_base":5.0,"air_base":7.0,"rail_density":5.0,"air_density":7.0}},{"category":"Наушники (и капельки, и полноразмерные)","material":"Пластик \n\nТовар с аккумулятором","density":444.2105263157895,"rates":{"rail_base":7.8,"air_base":9.9,"rail_density":7.8,"air_density":9.9}},{"category":"Пауэрбанк, повербанк, павербанк, пзу, аккумулятор","material":"Пластик, металл\n\nЛитий-полимерная батарея\n\nТовар с аккумулятором","density":432.8095065335141,"rates":{"rail_base":5.4,"air_base":7.5,"rail_density":5.4,"air_density":7.5}},{"category":"Докстанция, док станция, беспроводная зарядка, мультизарядка","material":"пластик, металл\n\nТовар с аккумулятором","density":312.7753303964758,"rates":{"rail_base":4.8,"air_base":6.9,"rail_density":4.8,"air_density":6.9}},{"category":"Увлажнители, аромадиффузоры","material":"пластик\n\nТовар с аккумулятором","density":112.35955056179775,"rates":{"rail_base":5.5,"air_base":7.6,"rail_density":5.5,"air_density":7.6}},{"category":"Лампы настольные умные (с зарядкой)","material":"пластик\n\nТовар с аккумулятором","density":166.66666666666666,"rates":{"rail_base":5.1,"air_base":7.2,"rail_density":5.1,"air_density":7.2}},{"category":"Лампа проектор - звездного неба","material":"пластик\n\nТовар с аккумулятором","density":200.0,"rates":{"rail_base":5.1,"air_base":7.2,"rail_density":5.1,"air_density":7.2}},{"category":"Лампа ночник, светильник","material":"Пластик, пвх\n\nТовар с аккумулятором","density":232.36514522821577,"rates":{"rail_base":5.1,"air_base":7.2,"rail_density":5.1,"air_density":7.2}},{"category":"Фонарики","material":"металл, пластик","density":198.54961832061068,"rates":{"rail_base":4.2,"air_base":6.4,"rail_density":4.2,"air_density":6.4}},{"category":"Значки","material":"сталь,смола, латунь","density":604.9606775559589,"rates":{"rail_base":9.1,"air_base":11.2,"rail_density":9.1,"air_density":11.2}},{"category":"Брелки","material":"сталь,смола, железо, пвх","density":604.9606775559589,"rates":{"rail_base":9.1,"air_base":11.2,"rail_density":9.1,"air_density":11.2}},{"category":"Магниты","material":"металл","density":200.0,"rates":{"rail_base":4.4,"air_base":6.5,"rail_density":4.4,"air_density":6.5}},{"category":"Ремувка","material":"нейлон, металл, полиэстер","density":150.83798882681563,"rates":{"rail_base":9.1,"air_base":11.2,"rail_density":9.1,"air_density":11.2}},{"category":"Флешки","material":"металл, пластик","density":250.0,"rates":{"rail_base":37.4,"air_base":39.5,"rail_density":37.4,"air_density":39.5}},{"category":"Кабель, провода","material":"нейлон, акрил, резина\nфурнитура - металл, пластик","density":336.53846153846155,"rates":{"rail_base":5.6,"air_base":7.7,"rail_density":5.6,"air_density":7.7}},{"category":"Шнурок для телефона","material":"полиэстер, нейлон","density":222.1212121212121,"rates":{"rail_base":5.6,"air_base":7.8,"rail_density":5.6,"air_density":7.8}},{"category":"Ланьярд, ланъярд, лента для бейджа","material":"нейлон, полиэстер, хлопок, силикон, кожзам\nфурнитура - металл, пластик","density":201.21951219512195,"rates":{"rail_base":5.6,"air_base":7.6,"rail_density":5.6,"air_density":7.6}},{"category":"Часы","material":"металл, пластик, стекло","density":200.0,"rates":{"rail_base":4.4,"air_base":6.5,"rail_density":4.4,"air_density":6.5}},{"category":"Подушки","material":"полиэстер, резина, акрил","density":112.5,"rates":{"rail_base":5.5,"air_base":7.6,"rail_density":5.5,"air_density":7.6}},{"category":"Маска для сна","material":"полиэстер, акрил, хлопок, искуственный шелк, настоящий шелк, тенсел","density":96.96969696969697,"rates":{"rail_base":5.5,"air_base":7.6,"rail_density":5.5,"air_density":7.6}},{"category":"Елочная игрушка/шар","material":"фарфор, керамика","density":200.0,"rates":{"rail_base":4.4,"air_base":6.5,"rail_density":4.4,"air_density":6.5}},{"category":"Елочная игрушка/шар","material":"стекло","density":20.634920634920636,"rates":{"rail_base":4.4,"air_base":6.5,"rail_density":4.4,"air_density":6.5}},{"category":"Елочная игрушка/шар","material":"пластик","density":16.0,"rates":{"rail_base":4.4,"air_base":6.5,"rail_density":4.4,"air_density":6.5}},{"category":"Снежный шар","material":"Смола,стекло,пластик","density":200.0,"rates":{"rail_base":4.4,"air_base":6.5,"rail_density":4.4,"air_density":6.5}},{"category":"Конструктор - типа лего","material":"полиэстер, нейлон, акрил","density":120.0,"rates":{"rail_base":4.6,"air_base":6.7,"rail_density":4.6,"air_density":6.7}},{"category":"Мягкие игрушки","material":"плюш, синтепон","density":64.70588235294117,"rates":{"rail_base":4.7,"air_base":6.9,"rail_density":4.7,"air_density":6.9}},{"category":"Деревянный пазл","material":"дерево","density":98.88888888888889,"rates":{"rail_base":4.7,"air_base":6.8,"rail_density":4.7,"air_density":6.8}},{"category":"Игрушки головоломки - типа кубик рубика","material":"Пластик","density":175.0,"rates":{"rail_base":4.3,"air_base":6.4,"rail_density":4.3,"air_density":6.4}},{"category":"Шашки, шахматы, лото, нарды","material":"Дерево, пластик","density":268.75,"rates":{"rail_base":4.3,"air_base":6.4,"rail_density":4.3,"air_density":6.4}},{"category":"Надувной круг","material":"пвх","density":200.0,"rates":{"rail_base":4.4,"air_base":6.5,"rail_density":4.4,"air_density":6.5}},{"category":"Фитнес резинка","material":"Резина","density":200.0,"rates":{"rail_base":3.7,"air_base":5.8,"rail_density":3.7,"air_density":5.8}},{"category":"Скакалка","material":"Пластик","density":200.0,"rates":{"rail_base":3.7,"air_base":5.8,"rail_density":3.7,"air_density":5.8}},{"category":"Зонт складной","material":"полиэстер, Оксфорд, нейлон, эпонж","density":687.5,"rates":{"rail_base":4.7,"air_base":6.8,"rail_density":4.7,"air_density":6.8}},{"category":"Зонт трость","material":"полиэстер, Оксфорд, нейлон, эпонж","density":200.0,"rates":{"rail_base":4.7,"air_base":6.8,"rail_density":4.7,"air_density":6.8}},{"category":"Коробки","material":"картон","density":53.66269165247019,"rates":{"rail_base":3.9,"air_base":5.9,"rail_density":3.9,"air_density":5.9}},{"category":"коробка+ложемент","material":"картон + ева, паралон","density":45.0,"rates":{"rail_base":3.9,"air_base":5.9,"rail_density":3.9,"air_density":5.9}},{"category":"Автовизитки","material":"Пластик, ПВХ","density":200.0,"rates":{"rail_base":4.4,"air_base":6.5,"rail_density":4.4,"air_density":6.5}},{"category":"Проектор","material":"Пластик, ABC","density":200.0,"rates":{"rail_base":27.1,"air_base":29.2,"rail_density":27.1,"air_density":29.2}},{"category":"Фотоаппарат мгновенной печати","material":"Пластик","density":200.0,"rates":{"rail_base":28.9,"air_base":31.1,"rail_density":28.9,"air_density":31.1}},{"category":"Ручки","material":"Металл, пластик, бумага","density":92.3076923076923,"rates":{"rail_base":4.6,"air_base":6.7,"rail_density":4.6,"air_density":6.7}},{"category":"Тетрис","material":"Пластик","density":200.0,"rates":{"rail_base":13.0,"air_base":15.1,"rail_density":13.0,"air_density":15.1}},{"category":"Карандаши","material":"Дерево","density":415.2823920265781,"rates":{"rail_base":4.8,"air_base":6.9,"rail_density":4.8,"air_density":6.9}},{"category":"Попсокет","material":"Пластик","density":228.87323943661974,"rates":{"rail_base":4.4,"air_base":7.5,"rail_density":4.4,"air_density":7.5}},{"category":"Обложка для паспорта","material":"Кожзам, полиэстер","density":200.0,"rates":{"rail_base":6.9,"air_base":9.0,"rail_density":6.9,"air_density":9.0}},{"category":"Обложка для паспорта","material":"Кожа натуральная","density":200.0,"rates":{"rail_base":11.1,"air_base":13.2,"rail_density":11.1,"air_density":13.2}},{"category":"Чемодан","material":"Пластик","density":118.11023622047244,"rates":{"rail_base":6.1,"air_base":8.2,"rail_density":6.1,"air_density":8.2}},{"category":"Статуэтки, награды","material":"Металл, латунь, сталь","density":200.0,"rates":{"rail_base":5.2,"air_base":7.3,"rail_density":5.2,"air_density":7.3}},{"category":"Статуэтки, награды","material":"Акрил, смола","density":200.0,"rates":{"rail_base":4.3,"air_base":6.4,"rail_density":4.3,"air_density":6.4}},{"category":"Статуэтки, награды","material":"Стекло","density":200.0,"rates":{"rail_base":4.6,"air_base":6.7,"rail_density":4.6,"air_density":6.7}},{"category":"Панамы","material":"Хлопок, полиэстер","density":129.0909090909091,"rates":{"rail_base":5.1,"air_base":7.2,"rail_density":5.1,"air_density":7.2}},{"category":"Держатель \nгаджетов, проводов, автомобильный","material":"Пластик, металл, пвх, акрил, силикон","density":200.0,"rates":{"rail_base":4.4,"air_base":6.5,"rail_density":4.4,"air_density":6.5}},{"category":"Гирлянда","material":"Пластик, хлопок","density":200.0,"rates":{"rail_base":5.7,"air_base":7.8,"rail_density":5.7,"air_density":7.8}},{"category":"Шлем","material":"Пластик","density":200.0,"rates":{"rail_base":5.7,"air_base":7.8,"rail_density":5.7,"air_density":7.8}}]
+"""
+Обновленные категории товаров с диапазонами для рекомендаций  
+Всего: 108 категорий из CSV таблицы
+"""
+
+CATEGORIES_DATA = [
+    {
+        "category": "сумка",
+        "material": "Полиэстер, нейлон, хлопок, Оксфорд, плюш, фетр, акрил, кожзам",
+        "tnved_code": "4202929800",
+        "rates": {
+            "rail_base": 6.1,
+            "air_base": 8.2
+        },
+        "price_ranges": {
+            "price_rub_min": 134.0,
+            "price_rub_max": 1976.0,
+            "price_yuan_min": 2.8,
+            "price_yuan_max": 45.0
+        },
+        "weight_ranges": {
+            "weight_min": 96.5,
+            "weight_max": 310.9
+        },
+        "quantity_ranges": {
+            "quantity_min": 500.0,
+            "quantity_max": 7500.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.9,
+            "transport_max": 9.9
+        },
+        "median_price_rub": 511.0,
+        "median_price_yuan": 12.0,
+        "avg_quantity": 1500.0,
+        "density": 182.7
+    },
+    {
+        "category": "сумка",
+        "material": "кожа",
+        "tnved_code": "4202911000",
+        "rates": {
+            "rail_base": 11.0,
+            "air_base": 13.1
+        },
+        "price_ranges": {
+            "price_rub_min": 134.0,
+            "price_rub_max": 1976.0,
+            "price_yuan_min": 2.8,
+            "price_yuan_max": 45.0
+        },
+        "weight_ranges": {
+            "weight_min": 96.5,
+            "weight_max": 310.9
+        },
+        "quantity_ranges": {
+            "quantity_min": 500.0,
+            "quantity_max": 7500.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.9,
+            "transport_max": 9.9
+        },
+        "median_price_rub": 511.0,
+        "median_price_yuan": 12.0,
+        "avg_quantity": 1500.0,
+        "density": 182.7
+    },
+    {
+        "category": "кружка",
+        "material": "керамика, фарфор",
+        "tnved_code": "6912002100",
+        "rates": {
+            "rail_base": 4.0,
+            "air_base": 6.1
+        },
+        "price_ranges": {
+            "price_rub_min": 403.0,
+            "price_rub_max": 1973.0,
+            "price_yuan_min": 7.1,
+            "price_yuan_max": 45.0
+        },
+        "weight_ranges": {
+            "weight_min": 150.0,
+            "weight_max": 295.8
+        },
+        "quantity_ranges": {
+            "quantity_min": 300.0,
+            "quantity_max": 6750.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.5,
+            "transport_max": 7.8
+        },
+        "median_price_rub": 791.0,
+        "median_price_yuan": 17.2,
+        "avg_quantity": 752.0,
+        "density": 193.5
+    },
+    {
+        "category": "└─ кружка_термо",
+        "material": "металл (нержавеющая сталь, алюминий)",
+        "tnved_code": "9617000001",
+        "rates": {
+            "rail_base": 4.6,
+            "air_base": 6.7
+        },
+        "price_ranges": {
+            "price_rub_min": 689.0,
+            "price_rub_max": 2056.0,
+            "price_yuan_min": 15.1,
+            "price_yuan_max": 44.2
+        },
+        "weight_ranges": {
+            "weight_min": 141.1,
+            "weight_max": 256.9
+        },
+        "quantity_ranges": {
+            "quantity_min": 260.0,
+            "quantity_max": 5100.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.5,
+            "transport_max": 6.7
+        },
+        "median_price_rub": 927.0,
+        "median_price_yuan": 21.5,
+        "avg_quantity": 1125.0,
+        "density": 196.6
+    },
+    {
+        "category": "бутылка",
+        "material": "пластик, тритан, полипропилен, PS, PP",
+        "tnved_code": "3924100000",
+        "rates": {
+            "rail_base": 4.3,
+            "air_base": 6.4
+        },
+        "price_ranges": {
+            "price_rub_min": 374.0,
+            "price_rub_max": 1376.0,
+            "price_yuan_min": 6.5,
+            "price_yuan_max": 35.0
+        },
+        "weight_ranges": {
+            "weight_min": 60.0,
+            "weight_max": 307.6
+        },
+        "quantity_ranges": {
+            "quantity_min": 450.0,
+            "quantity_max": 7500.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.9,
+            "transport_max": 8.5
+        },
+        "median_price_rub": 728.0,
+        "median_price_yuan": 15.8,
+        "avg_quantity": 1500.0,
+        "density": 185.6
+    },
+    {
+        "category": "бутылка",
+        "material": "стекло ",
+        "tnved_code": "7013379900",
+        "rates": {
+            "rail_base": 4.0,
+            "air_base": 6.1
+        },
+        "price_ranges": {
+            "price_rub_min": 374.0,
+            "price_rub_max": 1376.0,
+            "price_yuan_min": 6.5,
+            "price_yuan_max": 35.0
+        },
+        "weight_ranges": {
+            "weight_min": 150.0,
+            "weight_max": 307.6
+        },
+        "quantity_ranges": {
+            "quantity_min": 450.0,
+            "quantity_max": 7500.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.9,
+            "transport_max": 8.5
+        },
+        "median_price_rub": 728.0,
+        "median_price_yuan": 15.8,
+        "avg_quantity": 1500.0,
+        "density": 185.6
+    },
+    {
+        "category": "бутылка",
+        "material": "металл (нержавеющая сталь, алюминий)",
+        "tnved_code": "9617000001",
+        "rates": {
+            "rail_base": 4.6,
+            "air_base": 6.7
+        },
+        "price_ranges": {
+            "price_rub_min": 374.0,
+            "price_rub_max": 1376.0,
+            "price_yuan_min": 6.5,
+            "price_yuan_max": 35.0
+        },
+        "weight_ranges": {
+            "weight_min": 150.0,
+            "weight_max": 307.6
+        },
+        "quantity_ranges": {
+            "quantity_min": 450.0,
+            "quantity_max": 7500.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.9,
+            "transport_max": 8.5
+        },
+        "median_price_rub": 728.0,
+        "median_price_yuan": 15.8,
+        "avg_quantity": 1500.0,
+        "density": 185.6
+    },
+    {
+        "category": "коффер",
+        "material": "металл (нержавеющая сталь, алюминий)",
+        "tnved_code": "9617000001",
+        "rates": {
+            "rail_base": 4.6,
+            "air_base": 6.7
+        },
+        "price_ranges": {
+            "price_rub_min": 600.0,
+            "price_rub_max": 1200.0,
+            "price_yuan_min": 13.0,
+            "price_yuan_max": 29.0
+        },
+        "weight_ranges": {
+            "weight_min": 100.0,
+            "weight_max": 200.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 150.0,
+            "quantity_max": 8820.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.4,
+            "transport_max": 9.0
+        },
+        "median_price_rub": 997.0,
+        "median_price_yuan": 20.0,
+        "avg_quantity": 2175.0,
+        "density": 184.5
+    },
+    {
+        "category": "термос",
+        "material": "металл (нержавеющая сталь, алюминий)",
+        "tnved_code": "9617000001",
+        "rates": {
+            "rail_base": 4.6,
+            "air_base": 6.7
+        },
+        "price_ranges": {
+            "price_rub_min": 725.0,
+            "price_rub_max": 2252.0,
+            "price_yuan_min": 13.5,
+            "price_yuan_max": 59.8
+        },
+        "weight_ranges": {
+            "weight_min": 130.1,
+            "weight_max": 255.9
+        },
+        "quantity_ranges": {
+            "quantity_min": 300.0,
+            "quantity_max": 3939.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.5,
+            "transport_max": 6.8
+        },
+        "median_price_rub": 1080.0,
+        "median_price_yuan": 23.8,
+        "avg_quantity": 1500.0,
+        "density": 217.7
+    },
+    {
+        "category": "ручка",
+        "material": "Металл, пластик, бумага",
+        "tnved_code": "9608101000",
+        "rates": {
+            "rail_base": 4.6,
+            "air_base": 6.7
+        },
+        "price_ranges": {
+            "price_rub_min": 31.0,
+            "price_rub_max": 1000.0,
+            "price_yuan_min": 0.7,
+            "price_yuan_max": 23.0
+        },
+        "weight_ranges": {
+            "weight_min": 170.0,
+            "weight_max": 465.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 750.0,
+            "quantity_max": 25188.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.5,
+            "transport_max": 8.0
+        },
+        "median_price_rub": 110.0,
+        "median_price_yuan": 2.6,
+        "avg_quantity": 5000.0,
+        "density": 376.8
+    },
+    {
+        "category": "лампа",
+        "material": "пластик, металл",
+        "tnved_code": "9405210013",
+        "rates": {
+            "rail_base": 5.1,
+            "air_base": 7.2
+        },
+        "price_ranges": {
+            "price_rub_min": 542.0,
+            "price_rub_max": 3501.0,
+            "price_yuan_min": 10.0,
+            "price_yuan_max": 88.0
+        },
+        "weight_ranges": {
+            "weight_min": 78.5,
+            "weight_max": 254.5
+        },
+        "quantity_ranges": {
+            "quantity_min": 371.0,
+            "quantity_max": 5259.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.0,
+            "transport_max": 11.4
+        },
+        "median_price_rub": 1369.0,
+        "median_price_yuan": 33.0,
+        "avg_quantity": 1500.0,
+        "density": 154.4
+    },
+    {
+        "category": "└─ лампа_ночная",
+        "material": "пластик, металл",
+        "tnved_code": "9405210013",
+        "rates": {
+            "rail_base": 5.1,
+            "air_base": 7.2
+        },
+        "price_ranges": {
+            "price_rub_min": 561.0,
+            "price_rub_max": 3217.0,
+            "price_yuan_min": 11.9,
+            "price_yuan_max": 75.1
+        },
+        "weight_ranges": {
+            "weight_min": 77.8,
+            "weight_max": 207.9
+        },
+        "quantity_ranges": {
+            "quantity_min": 378.0,
+            "quantity_max": 7500.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.0,
+            "transport_max": 13.0
+        },
+        "median_price_rub": 1422.0,
+        "median_price_yuan": 31.0,
+        "avg_quantity": 1128.0,
+        "density": 136.3
+    },
+    {
+        "category": "игрушка",
+        "material": "плюш, синтепон",
+        "tnved_code": "9503004100",
+        "rates": {
+            "rail_base": 4.7,
+            "air_base": 6.9
+        },
+        "price_ranges": {
+            "price_rub_min": 134.0,
+            "price_rub_max": 1525.0,
+            "price_yuan_min": 2.5,
+            "price_yuan_max": 35.7
+        },
+        "weight_ranges": {
+            "weight_min": 62.1,
+            "weight_max": 302.3
+        },
+        "quantity_ranges": {
+            "quantity_min": 450.0,
+            "quantity_max": 12750.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.0,
+            "transport_max": 10.2
+        },
+        "median_price_rub": 440.0,
+        "median_price_yuan": 9.5,
+        "avg_quantity": 1500.0,
+        "density": 165.1
+    },
+    {
+        "category": "кабель",
+        "material": "нейлон, акрил, резина\nфурнитура - металл, пластик",
+        "tnved_code": "8544429007",
+        "rates": {
+            "rail_base": 5.6,
+            "air_base": 7.7
+        },
+        "price_ranges": {
+            "price_rub_min": 158.0,
+            "price_rub_max": 1200.0,
+            "price_yuan_min": 3.6,
+            "price_yuan_max": 37.0
+        },
+        "weight_ranges": {
+            "weight_min": 154.7,
+            "weight_max": 406.9
+        },
+        "quantity_ranges": {
+            "quantity_min": 457.0,
+            "quantity_max": 5000.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.4,
+            "transport_max": 10.0
+        },
+        "median_price_rub": 465.0,
+        "median_price_yuan": 13.0,
+        "avg_quantity": 1500.0,
+        "density": 258.6
+    },
+    {
+        "category": "брелок",
+        "material": "сталь,смола, железо, пвх",
+        "tnved_code": "7117900000",
+        "rates": {
+            "rail_base": 9.1,
+            "air_base": 11.2
+        },
+        "price_ranges": {
+            "price_rub_min": 69.0,
+            "price_rub_max": 450.0,
+            "price_yuan_min": 1.5,
+            "price_yuan_max": 13.0
+        },
+        "weight_ranges": {
+            "weight_min": 60.0,
+            "weight_max": 324.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 1000.0,
+            "quantity_max": 15000.0
+        },
+        "transport_ranges": {
+            "transport_min": 8.1,
+            "transport_max": 13.1
+        },
+        "median_price_rub": 163.0,
+        "median_price_yuan": 4.0,
+        "avg_quantity": 3000.0,
+        "density": 291.7
+    },
+    {
+        "category": "чехол",
+        "material": "Полиэстер, нейлон, хлопок, Оксфорд, плюш, фетр, акрил, кожзам",
+        "tnved_code": "4202929800",
+        "rates": {
+            "rail_base": 6.1,
+            "air_base": 8.2
+        },
+        "price_ranges": {
+            "price_rub_min": 177.0,
+            "price_rub_max": 2206.0,
+            "price_yuan_min": 4.3,
+            "price_yuan_max": 47.9
+        },
+        "weight_ranges": {
+            "weight_min": 55.0,
+            "weight_max": 200.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 500.0,
+            "quantity_max": 4770.0
+        },
+        "transport_ranges": {
+            "transport_min": 6.0,
+            "transport_max": 11.2
+        },
+        "median_price_rub": 626.0,
+        "median_price_yuan": 16.0,
+        "avg_quantity": 1500.0,
+        "density": 215.5
+    },
+    {
+        "category": "чехол",
+        "material": "кожа",
+        "tnved_code": "4202911000",
+        "rates": {
+            "rail_base": 11.0,
+            "air_base": 13.1
+        },
+        "price_ranges": {
+            "price_rub_min": 177.0,
+            "price_rub_max": 2206.0,
+            "price_yuan_min": 4.3,
+            "price_yuan_max": 47.9
+        },
+        "weight_ranges": {
+            "weight_min": 55.0,
+            "weight_max": 200.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 500.0,
+            "quantity_max": 4770.0
+        },
+        "transport_ranges": {
+            "transport_min": 6.0,
+            "transport_max": 11.2
+        },
+        "median_price_rub": 626.0,
+        "median_price_yuan": 16.0,
+        "avg_quantity": 1500.0,
+        "density": 215.5
+    },
+    {
+        "category": "рюкзак",
+        "material": "Полиэстер, нейлон, хлопок, Оксфорд, плюш, фетр, акрил, кожзам",
+        "tnved_code": "4202929100",
+        "rates": {
+            "rail_base": 6.1,
+            "air_base": 8.2
+        },
+        "price_ranges": {
+            "price_rub_min": 550.0,
+            "price_rub_max": 3567.0,
+            "price_yuan_min": 13.9,
+            "price_yuan_max": 89.0
+        },
+        "weight_ranges": {
+            "weight_min": 71.9,
+            "weight_max": 194.5
+        },
+        "quantity_ranges": {
+            "quantity_min": 375.0,
+            "quantity_max": 4675.0
+        },
+        "transport_ranges": {
+            "transport_min": 6.0,
+            "transport_max": 9.9
+        },
+        "median_price_rub": 2001.0,
+        "median_price_yuan": 40.5,
+        "avg_quantity": 1350.0,
+        "density": 125.0
+    },
+    {
+        "category": "рюкзак",
+        "material": "кожа",
+        "tnved_code": "4202911000",
+        "rates": {
+            "rail_base": 11.0,
+            "air_base": 13.1
+        },
+        "price_ranges": {
+            "price_rub_min": 550.0,
+            "price_rub_max": 3567.0,
+            "price_yuan_min": 13.9,
+            "price_yuan_max": 89.0
+        },
+        "weight_ranges": {
+            "weight_min": 71.9,
+            "weight_max": 194.5
+        },
+        "quantity_ranges": {
+            "quantity_min": 375.0,
+            "quantity_max": 4675.0
+        },
+        "transport_ranges": {
+            "transport_min": 6.0,
+            "transport_max": 9.9
+        },
+        "median_price_rub": 2001.0,
+        "median_price_yuan": 40.5,
+        "avg_quantity": 1350.0,
+        "density": 125.0
+    },
+    {
+        "category": "аккумулятор",
+        "material": "Пауэрбанк, повербанк, павербанк, пзу, аккумулятор\nПластик, металл\nЛитий-полимерная батарея",
+        "tnved_code": "8507800009",
+        "rates": {
+            "rail_base": 5.4,
+            "air_base": 8.0
+        },
+        "price_ranges": {
+            "price_rub_min": 670.0,
+            "price_rub_max": 3090.0,
+            "price_yuan_min": 19.8,
+            "price_yuan_max": 93.1
+        },
+        "weight_ranges": {
+            "weight_min": 200.0,
+            "weight_max": 500.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 450.0,
+            "quantity_max": 4500.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.3,
+            "transport_max": 7.8
+        },
+        "median_price_rub": 1787.0,
+        "median_price_yuan": 48.0,
+        "avg_quantity": 1500.0,
+        "density": 424.3
+    },
+    {
+        "category": "аккумулятор (док станции)",
+        "material": "Докстанция, док станция, беспроводная зарядка, мультизарядка\nПластик, металл",
+        "tnved_code": "8504405500",
+        "rates": {
+            "rail_base": 4.8,
+            "air_base": 6.9
+        },
+        "price_ranges": {
+            "price_rub_min": 670.0,
+            "price_rub_max": 3090.0,
+            "price_yuan_min": 19.8,
+            "price_yuan_max": 93.1
+        },
+        "weight_ranges": {
+            "weight_min": 150.0,
+            "weight_max": 500.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 450.0,
+            "quantity_max": 4500.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.3,
+            "transport_max": 7.8
+        },
+        "median_price_rub": 1787.0,
+        "median_price_yuan": 48.0,
+        "avg_quantity": 1500.0,
+        "density": 424.3
+    },
+    {
+        "category": "косметичка",
+        "material": "Полиэстер, нейлон, хлопок, Оксфорд, плюш, фетр, акрил, кожзам",
+        "tnved_code": "4202929100",
+        "rates": {
+            "rail_base": 6.1,
+            "air_base": 8.2
+        },
+        "price_ranges": {
+            "price_rub_min": 149.0,
+            "price_rub_max": 994.0,
+            "price_yuan_min": 3.1,
+            "price_yuan_max": 27.6
+        },
+        "weight_ranges": {
+            "weight_min": 83.2,
+            "weight_max": 281.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 500.0,
+            "quantity_max": 15000.0
+        },
+        "transport_ranges": {
+            "transport_min": 6.0,
+            "transport_max": 8.2
+        },
+        "median_price_rub": 612.0,
+        "median_price_yuan": 13.5,
+        "avg_quantity": 1500.0,
+        "density": 170.1
+    },
+    {
+        "category": "косметичка",
+        "material": "кожа",
+        "tnved_code": "4202911000",
+        "rates": {
+            "rail_base": 11.0,
+            "air_base": 13.1
+        },
+        "price_ranges": {
+            "price_rub_min": 149.0,
+            "price_rub_max": 994.0,
+            "price_yuan_min": 3.1,
+            "price_yuan_max": 27.6
+        },
+        "weight_ranges": {
+            "weight_min": 83.2,
+            "weight_max": 281.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 500.0,
+            "quantity_max": 15000.0
+        },
+        "transport_ranges": {
+            "transport_min": 6.0,
+            "transport_max": 8.2
+        },
+        "median_price_rub": 612.0,
+        "median_price_yuan": 13.5,
+        "avg_quantity": 1500.0,
+        "density": 170.1
+    },
+    {
+        "category": "колонка",
+        "material": "",
+        "tnved_code": "8519814500",
+        "rates": {
+            "rail_base": 13.0,
+            "air_base": 15.1
+        },
+        "price_ranges": {
+            "price_rub_min": 600.0,
+            "price_rub_max": 3570.0,
+            "price_yuan_min": 13.0,
+            "price_yuan_max": 81.7
+        },
+        "weight_ranges": {
+            "weight_min": 167.0,
+            "weight_max": 379.1
+        },
+        "quantity_ranges": {
+            "quantity_min": 283.0,
+            "quantity_max": 5250.0
+        },
+        "transport_ranges": {
+            "transport_min": 7.0,
+            "transport_max": 14.0
+        },
+        "median_price_rub": 1477.0,
+        "median_price_yuan": 41.1,
+        "avg_quantity": 1500.0,
+        "density": 266.6
+    },
+    {
+        "category": "флешка",
+        "material": "",
+        "tnved_code": "8523511000",
+        "rates": {
+            "rail_base": 37.4,
+            "air_base": 39.5
+        },
+        "price_ranges": {
+            "price_rub_min": 378.0,
+            "price_rub_max": 900.0,
+            "price_yuan_min": 10.0,
+            "price_yuan_max": 23.0
+        },
+        "weight_ranges": {
+            "weight_min": 200.0,
+            "weight_max": 400.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 269.0,
+            "quantity_max": 5000.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.0,
+            "transport_max": 37.3
+        },
+        "median_price_rub": 825.0,
+        "median_price_yuan": 24.0,
+        "avg_quantity": 1500.0,
+        "density": 318.0
+    },
+    {
+        "category": "футболка",
+        "material": "хлопок, полиэстер, акрил",
+        "tnved_code": "6109100000",
+        "rates": {
+            "rail_base": 9.5,
+            "air_base": 11.6
+        },
+        "price_ranges": {
+            "price_rub_min": 418.0,
+            "price_rub_max": 2416.0,
+            "price_yuan_min": 8.7,
+            "price_yuan_max": 56.5
+        },
+        "weight_ranges": {
+            "weight_min": 126.6,
+            "weight_max": 316.9
+        },
+        "quantity_ranges": {
+            "quantity_min": 496.0,
+            "quantity_max": 5719.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.5,
+            "transport_max": 11.6
+        },
+        "median_price_rub": 1220.0,
+        "median_price_yuan": 25.5,
+        "avg_quantity": 1500.0,
+        "density": 198.6
+    },
+    {
+        "category": "плед",
+        "material": "хлопок, акрил, полиэстер, нейлон, оксфорд, фланель, флис, жаккард",
+        "tnved_code": "6301409000",
+        "rates": {
+            "rail_base": 5.3,
+            "air_base": 7.4
+        },
+        "price_ranges": {
+            "price_rub_min": 742.0,
+            "price_rub_max": 3906.0,
+            "price_yuan_min": 15.4,
+            "price_yuan_max": 90.8
+        },
+        "weight_ranges": {
+            "weight_min": 60.0,
+            "weight_max": 222.2
+        },
+        "quantity_ranges": {
+            "quantity_min": 300.0,
+            "quantity_max": 7500.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.7,
+            "transport_max": 9.5
+        },
+        "median_price_rub": 1842.0,
+        "median_price_yuan": 37.7,
+        "avg_quantity": 1500.0,
+        "density": 148.0
+    },
+    {
+        "category": "увлажнитель",
+        "material": "Пластик ",
+        "tnved_code": "8509800000",
+        "rates": {
+            "rail_base": 5.5,
+            "air_base": 7.6
+        },
+        "price_ranges": {
+            "price_rub_min": 675.0,
+            "price_rub_max": 2290.0,
+            "price_yuan_min": 19.4,
+            "price_yuan_max": 66.5
+        },
+        "weight_ranges": {
+            "weight_min": 104.3,
+            "weight_max": 268.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 375.0,
+            "quantity_max": 5000.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.5,
+            "transport_max": 8.0
+        },
+        "median_price_rub": 1273.0,
+        "median_price_yuan": 30.0,
+        "avg_quantity": 750.0,
+        "density": 151.9
+    },
+    {
+        "category": "зонт",
+        "material": "полиэстер, Оксфорд, нейлон, эпонж",
+        "tnved_code": "6601910000",
+        "rates": {
+            "rail_base": 4.7,
+            "air_base": 6.8
+        },
+        "price_ranges": {
+            "price_rub_min": 662.0,
+            "price_rub_max": 2292.0,
+            "price_yuan_min": 14.2,
+            "price_yuan_max": 53.8
+        },
+        "weight_ranges": {
+            "weight_min": 266.1,
+            "weight_max": 506.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 228.0,
+            "quantity_max": 2601.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.0,
+            "transport_max": 14.5
+        },
+        "median_price_rub": 1203.0,
+        "median_price_yuan": 26.1,
+        "avg_quantity": 750.0,
+        "density": 390.6
+    },
+    {
+        "category": "часы",
+        "material": "металл, пластик, стекло",
+        "tnved_code": "9105210000",
+        "rates": {
+            "rail_base": 4.4,
+            "air_base": 6.5
+        },
+        "price_ranges": {
+            "price_rub_min": 592.0,
+            "price_rub_max": 3600.0,
+            "price_yuan_min": 11.3,
+            "price_yuan_max": 75.0
+        },
+        "weight_ranges": {
+            "weight_min": 54.8,
+            "weight_max": 215.1
+        },
+        "quantity_ranges": {
+            "quantity_min": 134.0,
+            "quantity_max": 1870.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.0,
+            "transport_max": 13.1
+        },
+        "median_price_rub": 1422.0,
+        "median_price_yuan": 34.0,
+        "avg_quantity": 612.0,
+        "density": 163.9
+    },
+    {
+        "category": "подушка",
+        "material": "полиэстер, резина, акрил",
+        "tnved_code": "9404908000",
+        "rates": {
+            "rail_base": 5.5,
+            "air_base": 7.6
+        },
+        "price_ranges": {
+            "price_rub_min": 679.0,
+            "price_rub_max": 3138.0,
+            "price_yuan_min": 11.8,
+            "price_yuan_max": 73.0
+        },
+        "weight_ranges": {
+            "weight_min": 48.8,
+            "weight_max": 183.3
+        },
+        "quantity_ranges": {
+            "quantity_min": 450.0,
+            "quantity_max": 5625.0
+        },
+        "transport_ranges": {
+            "transport_min": 6.5,
+            "transport_max": 12.0
+        },
+        "median_price_rub": 1327.0,
+        "median_price_yuan": 23.5,
+        "avg_quantity": 1375.0,
+        "density": 123.5
+    },
+    {
+        "category": "коробка",
+        "material": "картон, ложемент ева/паралон",
+        "tnved_code": "4819500000",
+        "rates": {
+            "rail_base": 3.9,
+            "air_base": 5.9
+        },
+        "price_ranges": {
+            "price_rub_min": 137.0,
+            "price_rub_max": 1419.0,
+            "price_yuan_min": 2.6,
+            "price_yuan_max": 34.0
+        },
+        "weight_ranges": {
+            "weight_min": 68.8,
+            "weight_max": 496.8
+        },
+        "quantity_ranges": {
+            "quantity_min": 500.0,
+            "quantity_max": 15000.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.2,
+            "transport_max": 9.6
+        },
+        "median_price_rub": 393.0,
+        "median_price_yuan": 7.2,
+        "avg_quantity": 2250.0,
+        "density": 159.6
+    },
+    {
+        "category": "органайзер",
+        "material": "Полиэстер, нейлон, хлопок, Оксфорд, плюш, фетр, акрил, кожзам",
+        "tnved_code": "4202929100",
+        "rates": {
+            "rail_base": 6.1,
+            "air_base": 8.2
+        },
+        "price_ranges": {
+            "price_rub_min": 384.0,
+            "price_rub_max": 3453.0,
+            "price_yuan_min": 9.5,
+            "price_yuan_max": 64.0
+        },
+        "weight_ranges": {
+            "weight_min": 98.2,
+            "weight_max": 278.7
+        },
+        "quantity_ranges": {
+            "quantity_min": 450.0,
+            "quantity_max": 2970.0
+        },
+        "transport_ranges": {
+            "transport_min": 6.0,
+            "transport_max": 9.2
+        },
+        "median_price_rub": 1095.0,
+        "median_price_yuan": 26.5,
+        "avg_quantity": 1050.0,
+        "density": 166.7
+    },
+    {
+        "category": "органайзер",
+        "material": "кожа",
+        "tnved_code": "4202911000",
+        "rates": {
+            "rail_base": 11.0,
+            "air_base": 13.1
+        },
+        "price_ranges": {
+            "price_rub_min": 384.0,
+            "price_rub_max": 3453.0,
+            "price_yuan_min": 9.5,
+            "price_yuan_max": 64.0
+        },
+        "weight_ranges": {
+            "weight_min": 98.2,
+            "weight_max": 278.7
+        },
+        "quantity_ranges": {
+            "quantity_min": 450.0,
+            "quantity_max": 2970.0
+        },
+        "transport_ranges": {
+            "transport_min": 6.0,
+            "transport_max": 9.2
+        },
+        "median_price_rub": 1095.0,
+        "median_price_yuan": 26.5,
+        "avg_quantity": 1050.0,
+        "density": 166.7
+    },
+    {
+        "category": "пенал",
+        "material": "Полиэстер, нейлон, хлопок, Оксфорд, плюш, акрил, кожзам",
+        "tnved_code": "4202929100",
+        "rates": {
+            "rail_base": 6.1,
+            "air_base": 8.2
+        },
+        "price_ranges": {
+            "price_rub_min": 201.0,
+            "price_rub_max": 973.0,
+            "price_yuan_min": 4.6,
+            "price_yuan_max": 22.6
+        },
+        "weight_ranges": {
+            "weight_min": 103.1,
+            "weight_max": 270.9
+        },
+        "quantity_ranges": {
+            "quantity_min": 150.0,
+            "quantity_max": 4185.0
+        },
+        "transport_ranges": {
+            "transport_min": 6.0,
+            "transport_max": 10.6
+        },
+        "median_price_rub": 413.0,
+        "median_price_yuan": 8.8,
+        "avg_quantity": 1125.0,
+        "density": 169.0
+    },
+    {
+        "category": "бейдж",
+        "material": " пластик, кожзам",
+        "tnved_code": "3926909200",
+        "rates": {
+            "rail_base": 4.2,
+            "air_base": 6.3
+        },
+        "price_ranges": {
+            "price_rub_min": 59.0,
+            "price_rub_max": 366.0,
+            "price_yuan_min": 1.3,
+            "price_yuan_max": 9.6
+        },
+        "weight_ranges": {
+            "weight_min": 147.9,
+            "weight_max": 400.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 972.0,
+            "quantity_max": 13575.0
+        },
+        "transport_ranges": {
+            "transport_min": 6.0,
+            "transport_max": 11.2
+        },
+        "median_price_rub": 127.0,
+        "median_price_yuan": 3.9,
+        "avg_quantity": 2831.0,
+        "density": 419.5
+    },
+    {
+        "category": "наушники",
+        "material": "Пластик ",
+        "tnved_code": "8518309500",
+        "rates": {
+            "rail_base": 7.8,
+            "air_base": 9.9
+        },
+        "price_ranges": {
+            "price_rub_min": 637.0,
+            "price_rub_max": 2363.0,
+            "price_yuan_min": 15.2,
+            "price_yuan_max": 64.4
+        },
+        "weight_ranges": {
+            "weight_min": 120.7,
+            "weight_max": 414.6
+        },
+        "quantity_ranges": {
+            "quantity_min": 240.0,
+            "quantity_max": 4900.0
+        },
+        "transport_ranges": {
+            "transport_min": 6.8,
+            "transport_max": 10.0
+        },
+        "median_price_rub": 1323.0,
+        "median_price_yuan": 40.0,
+        "avg_quantity": 1500.0,
+        "density": 178.2
+    },
+    {
+        "category": "блокнот",
+        "material": "бумага, кожа, кожзам, акрил",
+        "tnved_code": "4820103000",
+        "rates": {
+            "rail_base": 4.1,
+            "air_base": 6.2
+        },
+        "price_ranges": {
+            "price_rub_min": 154.0,
+            "price_rub_max": 3327.0,
+            "price_yuan_min": 2.6,
+            "price_yuan_max": 109.2
+        },
+        "weight_ranges": {
+            "weight_min": 148.1,
+            "weight_max": 400.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 300.0,
+            "quantity_max": 10500.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.0,
+            "transport_max": 7.6
+        },
+        "median_price_rub": 589.0,
+        "median_price_yuan": 10.0,
+        "avg_quantity": 1250.0,
+        "density": 413.7
+    },
+    {
+        "category": "массажер",
+        "material": "",
+        "tnved_code": "9019101000",
+        "rates": {
+            "rail_base": 5.4,
+            "air_base": 7.5
+        },
+        "price_ranges": {
+            "price_rub_min": 536.0,
+            "price_rub_max": 3191.0,
+            "price_yuan_min": 14.2,
+            "price_yuan_max": 86.8
+        },
+        "weight_ranges": {
+            "weight_min": 113.2,
+            "weight_max": 417.2
+        },
+        "quantity_ranges": {
+            "quantity_min": 150.0,
+            "quantity_max": 2025.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.3,
+            "transport_max": 7.8
+        },
+        "median_price_rub": 1400.0,
+        "median_price_yuan": 33.8,
+        "avg_quantity": 750.0,
+        "density": 246.9
+    },
+    {
+        "category": "Посуда",
+        "material": "керамика",
+        "tnved_code": "6912002100",
+        "rates": {
+            "rail_base": 4.0,
+            "air_base": 6.1
+        },
+        "price_ranges": {
+            "price_rub_min": 534.0,
+            "price_rub_max": 1811.0,
+            "price_yuan_min": 10.5,
+            "price_yuan_max": 39.8
+        },
+        "weight_ranges": {
+            "weight_min": 150.0,
+            "weight_max": 300.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 288.0,
+            "quantity_max": 9000.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.5,
+            "transport_max": 6.8
+        },
+        "median_price_rub": 1159.0,
+        "median_price_yuan": 28.0,
+        "avg_quantity": 1088.0,
+        "density": 316.0
+    },
+    {
+        "category": "Посуда",
+        "material": "фарфор",
+        "tnved_code": "6911100000",
+        "rates": {
+            "rail_base": 4.0,
+            "air_base": 6.1
+        },
+        "price_ranges": {
+            "price_rub_min": 534.0,
+            "price_rub_max": 1811.0,
+            "price_yuan_min": 10.5,
+            "price_yuan_max": 39.8
+        },
+        "weight_ranges": {
+            "weight_min": 150.0,
+            "weight_max": 300.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 288.0,
+            "quantity_max": 9000.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.5,
+            "transport_max": 6.8
+        },
+        "median_price_rub": 1159.0,
+        "median_price_yuan": 28.0,
+        "avg_quantity": 1088.0,
+        "density": 316.0
+    },
+    {
+        "category": "проектор",
+        "material": "пластик",
+        "tnved_code": "8528699000",
+        "rates": {
+            "rail_base": 27.1,
+            "air_base": 29.2
+        },
+        "price_ranges": {
+            "price_rub_min": 2000.0,
+            "price_rub_max": 6000.0,
+            "price_yuan_min": 67.0,
+            "price_yuan_max": 200.0
+        },
+        "weight_ranges": {
+            "weight_min": 96.7,
+            "weight_max": 251.1
+        },
+        "quantity_ranges": {
+            "quantity_min": 150.0,
+            "quantity_max": 2550.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.0,
+            "transport_max": 16.0
+        },
+        "median_price_rub": 3094.0,
+        "median_price_yuan": 90.0,
+        "avg_quantity": 806.0,
+        "density": 155.0
+    },
+    {
+        "category": "кепка",
+        "material": "хлопок, полиэстер, акрил",
+        "tnved_code": "6505003000",
+        "rates": {
+            "rail_base": 5.0,
+            "air_base": 7.1
+        },
+        "price_ranges": {
+            "price_rub_min": 304.0,
+            "price_rub_max": 1336.0,
+            "price_yuan_min": 7.8,
+            "price_yuan_max": 29.4
+        },
+        "weight_ranges": {
+            "weight_min": 95.6,
+            "weight_max": 233.1
+        },
+        "quantity_ranges": {
+            "quantity_min": 480.0,
+            "quantity_max": 5250.0
+        },
+        "transport_ranges": {
+            "transport_min": 6.0,
+            "transport_max": 10.0
+        },
+        "median_price_rub": 549.0,
+        "median_price_yuan": 15.0,
+        "avg_quantity": 1305.0,
+        "density": 143.2
+    },
+    {
+        "category": "картхолдер",
+        "material": "силикон, пластик, полиэстер, кожзам",
+        "tnved_code": "4202321000",
+        "rates": {
+            "rail_base": 7.2,
+            "air_base": 9.3
+        },
+        "price_ranges": {
+            "price_rub_min": 109.0,
+            "price_rub_max": 1019.0,
+            "price_yuan_min": 3.1,
+            "price_yuan_max": 35.5
+        },
+        "weight_ranges": {
+            "weight_min": 100.0,
+            "weight_max": 300.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 750.0,
+            "quantity_max": 10912.0
+        },
+        "transport_ranges": {
+            "transport_min": 7.1,
+            "transport_max": 9.4
+        },
+        "median_price_rub": 293.0,
+        "median_price_yuan": 8.6,
+        "avg_quantity": 2250.0,
+        "density": 339.2
+    },
+    {
+        "category": "картхолдер",
+        "material": " кожа",
+        "tnved_code": "4202310000",
+        "rates": {
+            "rail_base": 11.1,
+            "air_base": 13.2
+        },
+        "price_ranges": {
+            "price_rub_min": 109.0,
+            "price_rub_max": 1019.0,
+            "price_yuan_min": 3.1,
+            "price_yuan_max": 35.5
+        },
+        "weight_ranges": {
+            "weight_min": 101.0,
+            "weight_max": 300.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 750.0,
+            "quantity_max": 10912.0
+        },
+        "transport_ranges": {
+            "transport_min": 7.1,
+            "transport_max": 9.4
+        },
+        "median_price_rub": 293.0,
+        "median_price_yuan": 8.6,
+        "avg_quantity": 2250.0,
+        "density": 339.2
+    },
+    {
+        "category": "шарф",
+        "material": "хлопок, акрил, полиэстер, нейлон, оксфорд",
+        "tnved_code": "6214300000",
+        "rates": {
+            "rail_base": 11.8,
+            "air_base": 13.9
+        },
+        "price_ranges": {
+            "price_rub_min": 600.0,
+            "price_rub_max": 1800.0,
+            "price_yuan_min": 10.0,
+            "price_yuan_max": 40.0
+        },
+        "weight_ranges": {
+            "weight_min": 89.3,
+            "weight_max": 274.5
+        },
+        "quantity_ranges": {
+            "quantity_min": 376.0,
+            "quantity_max": 14784.0
+        },
+        "transport_ranges": {
+            "transport_min": 6.7,
+            "transport_max": 19.5
+        },
+        "median_price_rub": 1147.0,
+        "median_price_yuan": 14.9,
+        "avg_quantity": 1500.0,
+        "density": 169.8
+    },
+    {
+        "category": "перчатки",
+        "material": "",
+        "tnved_code": "6216000000",
+        "rates": {
+            "rail_base": 5.9,
+            "air_base": 8.0
+        },
+        "price_ranges": {
+            "price_rub_min": 250.0,
+            "price_rub_max": 850.0,
+            "price_yuan_min": 5.0,
+            "price_yuan_max": 26.0
+        },
+        "weight_ranges": {
+            "weight_min": 80.0,
+            "weight_max": 300.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 492.0,
+            "quantity_max": 26250.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.9,
+            "transport_max": 15.6
+        },
+        "median_price_rub": 541.0,
+        "median_price_yuan": 14.5,
+        "avg_quantity": 1500.0,
+        "density": 135.4
+    },
+    {
+        "category": "дождевик",
+        "material": "дюспо, эва, полиэстер",
+        "tnved_code": "6202400009",
+        "rates": {
+            "rail_base": 11.0,
+            "air_base": 13.2
+        },
+        "price_ranges": {
+            "price_rub_min": 237.0,
+            "price_rub_max": 137.0,
+            "price_yuan_min": 5.0,
+            "price_yuan_max": 55.0
+        },
+        "weight_ranges": {
+            "weight_min": 187.0,
+            "weight_max": 311.8
+        },
+        "quantity_ranges": {
+            "quantity_min": 378.0,
+            "quantity_max": 6000.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.7,
+            "transport_max": 7.0
+        },
+        "median_price_rub": 979.0,
+        "median_price_yuan": 20.0,
+        "avg_quantity": 1500.0,
+        "density": 223.5
+    },
+    {
+        "category": "фонарь",
+        "material": "металл, пластик",
+        "tnved_code": "8513100000",
+        "rates": {
+            "rail_base": 4.2,
+            "air_base": 6.4
+        },
+        "price_ranges": {
+            "price_rub_min": 100.0,
+            "price_rub_max": 1200.0,
+            "price_yuan_min": 3.5,
+            "price_yuan_max": 35.0
+        },
+        "weight_ranges": {
+            "weight_min": 240.8,
+            "weight_max": 380.8
+        },
+        "quantity_ranges": {
+            "quantity_min": 298.0,
+            "quantity_max": 3883.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.2,
+            "transport_max": 7.8
+        },
+        "median_price_rub": 593.0,
+        "median_price_yuan": 16.8,
+        "avg_quantity": 1188.0,
+        "density": 284.9
+    },
+    {
+        "category": "гирлянда",
+        "material": "пластик",
+        "tnved_code": "9405310000",
+        "rates": {
+            "rail_base": 5.7,
+            "air_base": 7.8
+        },
+        "price_ranges": {
+            "price_rub_min": 80.0,
+            "price_rub_max": 1100.0,
+            "price_yuan_min": 2.0,
+            "price_yuan_max": 15.0
+        },
+        "weight_ranges": {
+            "weight_min": 200.0,
+            "weight_max": 400.2
+        },
+        "quantity_ranges": {
+            "quantity_min": 425.0,
+            "quantity_max": 22500.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.6,
+            "transport_max": 13.2
+        },
+        "median_price_rub": 553.0,
+        "median_price_yuan": 11.1,
+        "avg_quantity": 2850.0,
+        "density": 200.0
+    },
+    {
+        "category": "свеча",
+        "material": "воск",
+        "tnved_code": "3406000000",
+        "rates": {
+            "rail_base": 3.8,
+            "air_base": 5.9
+        },
+        "price_ranges": {
+            "price_rub_min": 70.0,
+            "price_rub_max": 900.0,
+            "price_yuan_min": 2.0,
+            "price_yuan_max": 15.0
+        },
+        "weight_ranges": {
+            "weight_min": 216.7,
+            "weight_max": 625.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 295.0,
+            "quantity_max": 18000.0
+        },
+        "transport_ranges": {
+            "transport_min": 3.8,
+            "transport_max": 8.0
+        },
+        "median_price_rub": 696.0,
+        "median_price_yuan": 13.4,
+        "avg_quantity": 750.0,
+        "density": 451.8
+    },
+    {
+        "category": "магнит",
+        "material": "металл",
+        "tnved_code": "8505110000",
+        "rates": {
+            "rail_base": 4.4,
+            "air_base": 6.5
+        },
+        "price_ranges": {
+            "price_rub_min": 10.0,
+            "price_rub_max": 250.0,
+            "price_yuan_min": 0.3,
+            "price_yuan_max": 8.0
+        },
+        "weight_ranges": {
+            "weight_min": 200.0,
+            "weight_max": 500.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 480.0,
+            "quantity_max": 16409.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.9,
+            "transport_max": 9.0
+        },
+        "median_price_rub": 224.0,
+        "median_price_yuan": 4.2,
+        "avg_quantity": 2500.0,
+        "density": 444.4
+    },
+    {
+        "category": "толстовка, худи",
+        "material": "хлопок, полиэстер, акрил",
+        "tnved_code": "6110209900",
+        "rates": {
+            "rail_base": 9.3,
+            "air_base": 11.4
+        },
+        "price_ranges": {
+            "price_rub_min": 1668.0,
+            "price_rub_max": 3135.0,
+            "price_yuan_min": 32.2,
+            "price_yuan_max": 103.8
+        },
+        "weight_ranges": {
+            "weight_min": 200.0,
+            "weight_max": 400.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 465.0,
+            "quantity_max": 1500.0
+        },
+        "transport_ranges": {
+            "transport_min": 9.2,
+            "transport_max": 11.5
+        },
+        "median_price_rub": 2574.0,
+        "median_price_yuan": 81.0,
+        "avg_quantity": 900.0,
+        "density": 426.1
+    },
+    {
+        "category": "конструктор",
+        "material": "пластик",
+        "tnved_code": "9503003500",
+        "rates": {
+            "rail_base": 4.6,
+            "air_base": 6.7
+        },
+        "price_ranges": {
+            "price_rub_min": 250.0,
+            "price_rub_max": 1700.0,
+            "price_yuan_min": 5.0,
+            "price_yuan_max": 32.0
+        },
+        "weight_ranges": {
+            "weight_min": 61.4,
+            "weight_max": 223.7
+        },
+        "quantity_ranges": {
+            "quantity_min": 450.0,
+            "quantity_max": 7548.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.7,
+            "transport_max": 10.1
+        },
+        "median_price_rub": 810.0,
+        "median_price_yuan": 17.7,
+        "avg_quantity": 2250.0,
+        "density": 142.3
+    },
+    {
+        "category": "таблетница",
+        "material": "пластик",
+        "tnved_code": "3926909709",
+        "rates": {
+            "rail_base": 4.4,
+            "air_base": 6.5
+        },
+        "price_ranges": {
+            "price_rub_min": 86.0,
+            "price_rub_max": 478.0,
+            "price_yuan_min": 2.3,
+            "price_yuan_max": 13.1
+        },
+        "weight_ranges": {
+            "weight_min": 182.4,
+            "weight_max": 359.4
+        },
+        "quantity_ranges": {
+            "quantity_min": 718.0,
+            "quantity_max": 5025.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.1,
+            "transport_max": 6.5
+        },
+        "median_price_rub": 229.0,
+        "median_price_yuan": 6.0,
+        "avg_quantity": 1500.0,
+        "density": 248.1
+    },
+    {
+        "category": "стикеры",
+        "material": "бумага",
+        "tnved_code": "4911990000",
+        "rates": {
+            "rail_base": 3.9,
+            "air_base": 6.0
+        },
+        "price_ranges": {
+            "price_rub_min": 35.0,
+            "price_rub_max": 355.0,
+            "price_yuan_min": 1.1,
+            "price_yuan_max": 8.5
+        },
+        "weight_ranges": {
+            "weight_min": 131.6,
+            "weight_max": 400.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 1500.0,
+            "quantity_max": 24425.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.0,
+            "transport_max": 14.4
+        },
+        "median_price_rub": 100.0,
+        "median_price_yuan": 3.0,
+        "avg_quantity": 5500.0,
+        "density": 289.4
+    },
+    {
+        "category": "стикеры",
+        "material": "Виниловая пленка",
+        "tnved_code": "3919900000",
+        "rates": {
+            "rail_base": 4.2,
+            "air_base": 6.3
+        },
+        "price_ranges": {
+            "price_rub_min": 35.0,
+            "price_rub_max": 355.0,
+            "price_yuan_min": 1.1,
+            "price_yuan_max": 8.5
+        },
+        "weight_ranges": {
+            "weight_min": 131.6,
+            "weight_max": 400.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 1500.0,
+            "quantity_max": 24425.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.0,
+            "transport_max": 14.4
+        },
+        "median_price_rub": 100.0,
+        "median_price_yuan": 3.0,
+        "avg_quantity": 5500.0,
+        "density": 289.4
+    },
+    {
+        "category": "мышь",
+        "material": "пластик",
+        "tnved_code": "8471607000",
+        "rates": {
+            "rail_base": 6.2,
+            "air_base": 8.3
+        },
+        "price_ranges": {
+            "price_rub_min": 300.0,
+            "price_rub_max": 1700.0,
+            "price_yuan_min": 8.0,
+            "price_yuan_max": 55.0
+        },
+        "weight_ranges": {
+            "weight_min": 130.7,
+            "weight_max": 325.1
+        },
+        "quantity_ranges": {
+            "quantity_min": 412.0,
+            "quantity_max": 2425.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.2,
+            "transport_max": 10.0
+        },
+        "median_price_rub": 1430.0,
+        "median_price_yuan": 44.0,
+        "avg_quantity": 1250.0,
+        "density": 236.0
+    },
+    {
+        "category": "носки",
+        "material": "хлопок, акрил, полиэстер",
+        "tnved_code": "6115950000",
+        "rates": {
+            "rail_base": 5.0,
+            "air_base": 7.1
+        },
+        "price_ranges": {
+            "price_rub_min": 130.0,
+            "price_rub_max": 600.0,
+            "price_yuan_min": 2.9,
+            "price_yuan_max": 13.0
+        },
+        "weight_ranges": {
+            "weight_min": 110.0,
+            "weight_max": 150.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 795.0,
+            "quantity_max": 6750.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.2,
+            "transport_max": 14.8
+        },
+        "median_price_rub": 261.0,
+        "median_price_yuan": 6.5,
+        "avg_quantity": 2250.0,
+        "density": 143.0
+    },
+    {
+        "category": "снежный_шар",
+        "material": "Смола,стекло,пластик ",
+        "tnved_code": "9505101000",
+        "rates": {
+            "rail_base": 4.4,
+            "air_base": 6.5
+        },
+        "price_ranges": {
+            "price_rub_min": 372.0,
+            "price_rub_max": 1295.0,
+            "price_yuan_min": 10.7,
+            "price_yuan_max": 30.3
+        },
+        "weight_ranges": {
+            "weight_min": 205.7,
+            "weight_max": 455.5
+        },
+        "quantity_ranges": {
+            "quantity_min": 578.0,
+            "quantity_max": 750.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.7,
+            "transport_max": 5.2
+        },
+        "median_price_rub": 680.0,
+        "median_price_yuan": 15.2,
+        "avg_quantity": 675.0,
+        "density": 360.2
+    },
+    {
+        "category": "ремувка",
+        "material": "нейлон, металл, полиэстер",
+        "tnved_code": "7117900000",
+        "rates": {
+            "rail_base": 9.1,
+            "air_base": 11.2
+        },
+        "price_ranges": {
+            "price_rub_min": 46.0,
+            "price_rub_max": 141.0,
+            "price_yuan_min": 1.3,
+            "price_yuan_max": 3.3
+        },
+        "weight_ranges": {
+            "weight_min": 230.1,
+            "weight_max": 500.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 2375.0,
+            "quantity_max": 7650.0
+        },
+        "transport_ranges": {
+            "transport_min": 9.0,
+            "transport_max": 11.2
+        },
+        "median_price_rub": 93.0,
+        "median_price_yuan": 2.2,
+        "avg_quantity": 5000.0,
+        "density": 333.3
+    },
+    {
+        "category": "скакалка",
+        "material": "Пластик",
+        "tnved_code": "9506919000",
+        "rates": {
+            "rail_base": 3.7,
+            "air_base": 5.8
+        },
+        "price_ranges": {
+            "price_rub_min": 70.0,
+            "price_rub_max": 320.0,
+            "price_yuan_min": 1.5,
+            "price_yuan_max": 5.0
+        },
+        "weight_ranges": {
+            "weight_min": 236.8,
+            "weight_max": 356.7
+        },
+        "quantity_ranges": {
+            "quantity_min": 1338.0,
+            "quantity_max": 3015.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.4,
+            "transport_max": 5.8
+        },
+        "median_price_rub": 1145.0,
+        "median_price_yuan": 28.0,
+        "avg_quantity": 3015.0,
+        "density": 350.3
+    },
+    {
+        "category": "Пакет, пакет фольгированный",
+        "material": "пластик, полиетилен",
+        "tnved_code": "3923210000",
+        "rates": {
+            "rail_base": 4.5,
+            "air_base": 6.7
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 300.0,
+            "weight_max": 300.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Поясная сумка",
+        "material": "Полиэстер, нейлон, хлопок, Оксфорд, плюш",
+        "tnved_code": "4202929800",
+        "rates": {
+            "rail_base": 6.1,
+            "air_base": 8.2
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 120.0,
+            "weight_max": 120.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "мешок, гермомешок",
+        "material": "Полиэстер, нейлон, хлопок, Оксфорд, пвх",
+        "tnved_code": "4202929100",
+        "rates": {
+            "rail_base": 6.1,
+            "air_base": 8.2
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 160.0,
+            "weight_max": 160.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Термосумка, сумка для еды, сумка курьера, сумка для ланчбокса, сумка холодильник",
+        "material": "полиэстер,алюминиевая фольга, спанбонд",
+        "tnved_code": "4202929800",
+        "rates": {
+            "rail_base": 6.1,
+            "air_base": 8.2
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 170.0,
+            "weight_max": 170.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Авоськи",
+        "material": "акрил",
+        "tnved_code": "5608900000",
+        "rates": {
+            "rail_base": 4.4,
+            "air_base": 6.5
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 200.0,
+            "weight_max": 200.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Чехлы для чемодана",
+        "material": "Полиэстер, нейлон, акрил",
+        "tnved_code": "6307909800",
+        "rates": {
+            "rail_base": 5.5,
+            "air_base": 7.6
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 225.0,
+            "weight_max": 225.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Шапки",
+        "material": "хлопок, полиэстер, акрил",
+        "tnved_code": "6505009000",
+        "rates": {
+            "rail_base": 5.0,
+            "air_base": 7.1
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 100.0,
+            "weight_max": 100.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Тряпки",
+        "material": "акрил, полиэстер, нейлон, оксфорд",
+        "tnved_code": "6307109000",
+        "rates": {
+            "rail_base": 5.3,
+            "air_base": 7.4
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 150.0,
+            "weight_max": 150.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Полотенца",
+        "material": "хлопок, микрофибра, бамбук",
+        "tnved_code": "6302939000",
+        "rates": {
+            "rail_base": 7.2,
+            "air_base": 9.3
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 250.0,
+            "weight_max": 250.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Ланчбокс",
+        "material": "пластик",
+        "tnved_code": "3924100000",
+        "rates": {
+            "rail_base": 4.3,
+            "air_base": 6.4
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 170.0,
+            "weight_max": 170.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Посуда (тарелки и кружки)",
+        "material": "металл",
+        "tnved_code": "7323930000",
+        "rates": {
+            "rail_base": 4.6,
+            "air_base": 6.7
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 140.0,
+            "weight_max": 140.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Блендеры",
+        "material": "пластик, стекло ",
+        "tnved_code": "8509400000",
+        "rates": {
+            "rail_base": 5.0,
+            "air_base": 6.1
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 170.0,
+            "weight_max": 170.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Грелки",
+        "material": "пластик, металл",
+        "tnved_code": "8516797000",
+        "rates": {
+            "rail_base": 4.9,
+            "air_base": 6.0
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 250.0,
+            "weight_max": 250.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Лампа проектор - звездного неба",
+        "material": "пластик",
+        "tnved_code": "9405210013",
+        "rates": {
+            "rail_base": 5.1,
+            "air_base": 7.2
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 160.0,
+            "weight_max": 160.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Значки",
+        "material": "сталь,смола, латунь",
+        "tnved_code": "7117900000",
+        "rates": {
+            "rail_base": 9.1,
+            "air_base": 11.2
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 300.0,
+            "weight_max": 300.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Шнурок для телефона",
+        "material": "полиэстер, нейлон",
+        "tnved_code": "6307909800",
+        "rates": {
+            "rail_base": 5.6,
+            "air_base": 7.8
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 300.0,
+            "weight_max": 300.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Ланьярд, ланъярд, лента для бейджа",
+        "material": "нейлон, полиэстер, хлопок, силикон, кожзам\nфурнитура - металл, пластик",
+        "tnved_code": "6307909800",
+        "rates": {
+            "rail_base": 5.6,
+            "air_base": 7.6
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 230.0,
+            "weight_max": 230.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Маска для сна",
+        "material": "полиэстер, акрил, хлопок, искуственный шелк, настоящий шелк, тенсел",
+        "tnved_code": "6307909800",
+        "rates": {
+            "rail_base": 5.5,
+            "air_base": 7.6
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 90.0,
+            "weight_max": 90.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Елочная игрушка/шар",
+        "material": "фарфор, керамика, стекло, пластик",
+        "tnved_code": "9505109000",
+        "rates": {
+            "rail_base": 4.4,
+            "air_base": 6.5
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 200.0,
+            "weight_max": 200.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Деревянный пазл",
+        "material": "дерево",
+        "tnved_code": "9503006100",
+        "rates": {
+            "rail_base": 4.7,
+            "air_base": 6.8
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 400.0,
+            "weight_max": 400.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "головоломки, кубик рубика",
+        "material": "Пластик",
+        "tnved_code": "9503006900",
+        "rates": {
+            "rail_base": 4.3,
+            "air_base": 6.4
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 340.0,
+            "weight_max": 340.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Шашки, шахматы, лото, нарды",
+        "material": "Дерево, пластик",
+        "tnved_code": "9504908009",
+        "rates": {
+            "rail_base": 4.3,
+            "air_base": 6.4
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 315.0,
+            "weight_max": 315.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Надувной круг",
+        "material": "пвх",
+        "tnved_code": "9506290000",
+        "rates": {
+            "rail_base": 4.4,
+            "air_base": 6.5
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 280.0,
+            "weight_max": 280.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Фитнес резинка",
+        "material": "Резина",
+        "tnved_code": "9506919000",
+        "rates": {
+            "rail_base": 3.7,
+            "air_base": 5.8
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 350.0,
+            "weight_max": 350.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Автовизитка",
+        "material": "Пластик, ПВХ",
+        "tnved_code": "3926909709",
+        "rates": {
+            "rail_base": 4.4,
+            "air_base": 6.5
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 170.0,
+            "weight_max": 170.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Фотоаппарат мгновенной печати",
+        "material": "Пластик",
+        "tnved_code": "9006400000",
+        "rates": {
+            "rail_base": 28.9,
+            "air_base": 31.1
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 250.0,
+            "weight_max": 250.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Тетрис",
+        "material": "Пластик",
+        "tnved_code": "9504500002",
+        "rates": {
+            "rail_base": 13.0,
+            "air_base": 15.1
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 200.0,
+            "weight_max": 200.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Карандаши",
+        "material": "Дерево",
+        "tnved_code": "9609101000",
+        "rates": {
+            "rail_base": 4.8,
+            "air_base": 6.9
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 300.0,
+            "weight_max": 300.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Попсокет",
+        "material": "Пластик",
+        "tnved_code": "3926909709",
+        "rates": {
+            "rail_base": 4.4,
+            "air_base": 7.5
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 270.0,
+            "weight_max": 270.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Обложка для паспорта",
+        "material": "Кожзам, полиэстер",
+        "tnved_code": "3926909200",
+        "rates": {
+            "rail_base": 4.1,
+            "air_base": 6.3
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 270.0,
+            "weight_max": 270.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Обложка для паспорта",
+        "material": "Кожа натуральная",
+        "tnved_code": "4202310000",
+        "rates": {
+            "rail_base": 11.1,
+            "air_base": 13.2
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 300.0,
+            "weight_max": 300.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Чемодан",
+        "material": "Пластик",
+        "tnved_code": "4202121900",
+        "rates": {
+            "rail_base": 6.1,
+            "air_base": 8.2
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 50.0,
+            "weight_max": 50.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Статуэтки, награды",
+        "material": "Металл, латунь, сталь",
+        "tnved_code": "8306290009",
+        "rates": {
+            "rail_base": 5.2,
+            "air_base": 7.3
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 300.0,
+            "weight_max": 300.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Статуэтки, награды",
+        "material": "Акрил, смола",
+        "tnved_code": "3926400000",
+        "rates": {
+            "rail_base": 4.3,
+            "air_base": 6.4
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 250.0,
+            "weight_max": 250.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Статуэтки, награды",
+        "material": "Стекло ",
+        "tnved_code": "7018909000",
+        "rates": {
+            "rail_base": 4.6,
+            "air_base": 6.7
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 600.0,
+            "weight_max": 600.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Панама",
+        "material": "Хлопок, полиэстер",
+        "tnved_code": "6505009000",
+        "rates": {
+            "rail_base": 5.1,
+            "air_base": 7.2
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 100.0,
+            "weight_max": 100.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Держатель \nгаджетов, проводов, автомобильный",
+        "material": "Пластик, металл, пвх, акрил, силикон",
+        "tnved_code": "3926909709",
+        "rates": {
+            "rail_base": 4.4,
+            "air_base": 6.5
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 150.0,
+            "weight_max": 150.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "Шлем",
+        "material": "Пластик",
+        "tnved_code": "6506101000",
+        "rates": {
+            "rail_base": 5.7,
+            "air_base": 7.8
+        },
+        "price_ranges": {
+            "price_rub_min": None,
+            "price_rub_max": None,
+            "price_yuan_min": None,
+            "price_yuan_max": None
+        },
+        "weight_ranges": {
+            "weight_min": 80.0,
+            "weight_max": 80.0
+        },
+        "quantity_ranges": {
+            "quantity_min": None,
+            "quantity_max": None
+        },
+        "transport_ranges": {
+            "transport_min": None,
+            "transport_max": None
+        },
+        "median_price_rub": None,
+        "median_price_yuan": None,
+        "avg_quantity": None,
+        "density": None
+    },
+    {
+        "category": "контейнер, ланчбокс",
+        "material": "",
+        "tnved_code": "3924100000",
+        "rates": {
+            "rail_base": 4.3,
+            "air_base": 6.4
+        },
+        "price_ranges": {
+            "price_rub_min": 256.0,
+            "price_rub_max": 2364.0,
+            "price_yuan_min": 4.6,
+            "price_yuan_max": 35.7
+        },
+        "weight_ranges": {
+            "weight_min": 87.0,
+            "weight_max": 262.9
+        },
+        "quantity_ranges": {
+            "quantity_min": 645.0,
+            "quantity_max": 19650.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.6,
+            "transport_max": 9.2
+        },
+        "median_price_rub": 629.0,
+        "median_price_yuan": 10.7,
+        "avg_quantity": 4500.0,
+        "density": 180.8
+    },
+    {
+        "category": "ваза (керамика)",
+        "material": "",
+        "tnved_code": "6913909800",
+        "rates": {
+            "rail_base": 4.0,
+            "air_base": 6.1
+        },
+        "price_ranges": {
+            "price_rub_min": 925.0,
+            "price_rub_max": 2433.0,
+            "price_yuan_min": 14.9,
+            "price_yuan_max": 64.5
+        },
+        "weight_ranges": {
+            "weight_min": 84.1,
+            "weight_max": 266.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 160.0,
+            "quantity_max": 1001.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.0,
+            "transport_max": 7.0
+        },
+        "median_price_rub": 1558.0,
+        "median_price_yuan": 31.7,
+        "avg_quantity": 375.0,
+        "density": 187.5
+    },
+    {
+        "category": "папка (Пластик)",
+        "material": "",
+        "tnved_code": "3926100000",
+        "rates": {
+            "rail_base": 4.0,
+            "air_base": 6.1
+        },
+        "price_ranges": {
+            "price_rub_min": 57.0,
+            "price_rub_max": 2729.0,
+            "price_yuan_min": 1.1,
+            "price_yuan_max": 77.6
+        },
+        "weight_ranges": {
+            "weight_min": 166.7,
+            "weight_max": 291.0
+        },
+        "quantity_ranges": {
+            "quantity_min": 535.0,
+            "quantity_max": 15000.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.7,
+            "transport_max": 8.2
+        },
+        "median_price_rub": 519.0,
+        "median_price_yuan": 9.0,
+        "avg_quantity": 2700.0,
+        "density": 213.2
+    },
+    {
+        "category": "карабин",
+        "material": "",
+        "tnved_code": "7326909807",
+        "rates": {
+            "rail_base": 4.1,
+            "air_base": 6.2
+        },
+        "price_ranges": {
+            "price_rub_min": 42.0,
+            "price_rub_max": 631.0,
+            "price_yuan_min": 0.6,
+            "price_yuan_max": 13.3
+        },
+        "weight_ranges": {
+            "weight_min": 290.7,
+            "weight_max": 726.1
+        },
+        "quantity_ranges": {
+            "quantity_min": 762.0,
+            "quantity_max": 11300.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.7,
+            "transport_max": 8.9
+        },
+        "median_price_rub": 78.0,
+        "median_price_yuan": 2.2,
+        "avg_quantity": 2500.0,
+        "density": 480.3
+    },
+    {
+        "category": "головоломка",
+        "material": "Пластик",
+        "tnved_code": "",
+        "rates": {
+            "rail_base": 4.3,
+            "air_base": 6.4
+        },
+        "price_ranges": {
+            "price_rub_min": 162.0,
+            "price_rub_max": 1595.0,
+            "price_yuan_min": 3.3,
+            "price_yuan_max": 46.7
+        },
+        "weight_ranges": {
+            "weight_min": 203.0,
+            "weight_max": 472.1
+        },
+        "quantity_ranges": {
+            "quantity_min": 450.0,
+            "quantity_max": 41250.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.3,
+            "transport_max": 10.0
+        },
+        "median_price_rub": 445.0,
+        "median_price_yuan": 8.0,
+        "avg_quantity": 975.0,
+        "density": 352.1
+    },
+    {
+        "category": "зеркало",
+        "material": "кожзам",
+        "tnved_code": "7009920000",
+        "rates": {
+            "rail_base": 5.4,
+            "air_base": 7.5
+        },
+        "price_ranges": {
+            "price_rub_min": 117.0,
+            "price_rub_max": 750.0,
+            "price_yuan_min": 2.0,
+            "price_yuan_max": 22.0
+        },
+        "weight_ranges": {
+            "weight_min": 116.7,
+            "weight_max": 506.5
+        },
+        "quantity_ranges": {
+            "quantity_min": 750.0,
+            "quantity_max": 25500.0
+        },
+        "transport_ranges": {
+            "transport_min": 5.5,
+            "transport_max": 7.5
+        },
+        "median_price_rub": 160.0,
+        "median_price_yuan": 3.7,
+        "avg_quantity": 4000.0,
+        "density": 380.1
+    },
+    {
+        "category": "чайник",
+        "material": "керамика, фарфор",
+        "tnved_code": "",
+        "rates": {
+            "rail_base": 4.0,
+            "air_base": 6.1
+        },
+        "price_ranges": {
+            "price_rub_min": 856.0,
+            "price_rub_max": 5178.0,
+            "price_yuan_min": 17.4,
+            "price_yuan_max": 114.8
+        },
+        "weight_ranges": {
+            "weight_min": 175.7,
+            "weight_max": 364.4
+        },
+        "quantity_ranges": {
+            "quantity_min": 158.0,
+            "quantity_max": 1500.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.5,
+            "transport_max": 14.7
+        },
+        "median_price_rub": 2628.0,
+        "median_price_yuan": 61.2,
+        "avg_quantity": 352.0,
+        "density": 231.6
+    },
+    {
+        "category": "чайная_пара",
+        "material": "керамика, фарфор",
+        "tnved_code": "6911100000",
+        "rates": {
+            "rail_base": 4.0,
+            "air_base": 6.1
+        },
+        "price_ranges": {
+            "price_rub_min": 1031.0,
+            "price_rub_max": 1277.0,
+            "price_yuan_min": 23.1,
+            "price_yuan_max": 42.0
+        },
+        "weight_ranges": {
+            "weight_min": None,
+            "weight_max": None
+        },
+        "quantity_ranges": {
+            "quantity_min": 750.0,
+            "quantity_max": 4417.0
+        },
+        "transport_ranges": {
+            "transport_min": 4.5,
+            "transport_max": 6.1
+        },
+        "median_price_rub": 1162.0,
+        "median_price_yuan": 34.5,
+        "avg_quantity": 945.0,
+        "density": 248.1
+    }
+]

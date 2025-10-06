@@ -11,70 +11,106 @@ _db_type = None
 _connection_lock = threading.Lock()
 
 def get_database_connection() -> Tuple[any, str]:
-    """Возвращает единое переиспользуемое подключение к БД (PostgreSQL или SQLite)"""
+    """Возвращает подключение к БД с автоматическим переподключением"""
     global _db_connection, _db_type, _connection_lock
     
     with _connection_lock:
-        # Если подключение уже существует и активно, возвращаем его
+        # Проверяем существующее подключение
         if _db_connection is not None and _db_type is not None:
             try:
-                # Проверяем активность подключения
+                # Тестируем подключение
                 if _db_type == 'postgres':
-                    _db_connection.cursor().execute('SELECT 1')
+                    cursor = _db_connection.cursor()
+                    cursor.execute('SELECT 1')
+                    cursor.close()
+                    if not _db_connection.closed:
+                        return _db_connection, _db_type
                 else:
                     _db_connection.cursor().execute('SELECT 1').fetchone()
-                return _db_connection, _db_type
-            except:
-                # Подключение неактивно, создаем новое
+                    return _db_connection, _db_type
+            except Exception as e:
+                print(f"⚠️ Подключение к БД неактивно: {e}")
+                # Закрываем старое подключение
+                try:
+                    _db_connection.close()
+                except:
+                    pass
                 _db_connection = None
                 _db_type = None
         
         # Создаем новое подключение
-        print(f"🔌 Создание единого подключения к БД...")
+        print("🔌 Создание нового подключения к БД...")
         
-        # Сначала пробуем PUBLIC URL (более надежный на Railway)
-        database_public_url = os.environ.get('DATABASE_PUBLIC_URL')
-        if database_public_url:
-            try:
-                import psycopg2
-                print(f"🔗 PostgreSQL через PUBLIC URL")
-                
-                # Преобразуем URL для psycopg2
-                if database_public_url.startswith('postgres://'):
-                    database_public_url = database_public_url.replace('postgres://', 'postgresql://', 1)
-                
-                _db_connection = psycopg2.connect(database_public_url)
-                _db_type = 'postgres'
-                print("✅ PostgreSQL подключен успешно")
-                return _db_connection, _db_type
-            except Exception as e:
-                print(f"❌ Ошибка PostgreSQL PUBLIC URL: {e}")
-        
-        # Fallback на обычный DATABASE_URL
-        database_url = os.environ.get('DATABASE_URL')
-        if database_url:
-            try:
-                import psycopg2
-                print(f"🔗 PostgreSQL через DATABASE_URL (fallback)")
-                
-                # Преобразуем URL для psycopg2
-                if database_url.startswith('postgres://'):
-                    database_url = database_url.replace('postgres://', 'postgresql://', 1)
-                
-                _db_connection = psycopg2.connect(database_url)
-                _db_type = 'postgres'
-                print("✅ PostgreSQL подключен успешно")
-                return _db_connection, _db_type
-            except Exception as e:
-                print(f"❌ Ошибка PostgreSQL DATABASE_URL: {e}")
-                print("⚠️ Переключаемся на SQLite")
+        # Пробуем PostgreSQL (Railway)
+        for url_env in ['DATABASE_PUBLIC_URL', 'DATABASE_URL']:
+            database_url = os.environ.get(url_env)
+            if database_url:
+                try:
+                    import psycopg2
+                    from psycopg2.extras import RealDictCursor
+                    
+                    print(f"🐘 Попытка подключения PostgreSQL через {url_env}")
+                    
+                    # Преобразуем URL для psycopg2
+                    if database_url.startswith('postgres://'):
+                        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+                    
+                    # Создаем подключение с настройками для Railway
+                    _db_connection = psycopg2.connect(
+                        database_url,
+                        cursor_factory=RealDictCursor,
+                        connect_timeout=10,
+                        application_name='price_calculator'
+                    )
+                    
+                    # Настройки для стабильного соединения
+                    _db_connection.autocommit = False
+                    
+                    _db_type = 'postgres'
+                    print(f"✅ PostgreSQL подключен успешно через {url_env}")
+                    return _db_connection, _db_type
+                    
+                except Exception as e:
+                    print(f"❌ Ошибка PostgreSQL {url_env}: {e}")
+                    continue
         
         # Fallback к SQLite
-        import sqlite3
-        _db_connection = sqlite3.connect('calculations.db', check_same_thread=False)
-        _db_type = 'sqlite'
-        print("✅ SQLite подключен")
-        return _db_connection, _db_type
+        print("⚠️ PostgreSQL недоступен, переключаемся на SQLite")
+        try:
+            import sqlite3
+            _db_connection = sqlite3.connect(
+                'calculations.db', 
+                check_same_thread=False,
+                timeout=20.0
+            )
+            _db_connection.row_factory = sqlite3.Row  # Для совместимости с PostgreSQL
+            _db_type = 'sqlite'
+            print("✅ SQLite подключен")
+            return _db_connection, _db_type
+        except Exception as e:
+            print(f"❌ Критическая ошибка SQLite: {e}")
+            raise Exception(f"Не удалось подключиться ни к PostgreSQL, ни к SQLite: {e}")
+
+def close_database_connection():
+    """Принудительно закрывает текущее подключение"""
+    global _db_connection, _db_type, _connection_lock
+    
+    with _connection_lock:
+        if _db_connection:
+            try:
+                _db_connection.close()
+                print("🔌 Подключение к БД закрыто")
+            except:
+                pass
+            finally:
+                _db_connection = None
+                _db_type = None
+
+def reconnect_database():
+    """Принудительно переподключается к БД"""
+    print("🔄 Принудительное переподключение к БД...")
+    close_database_connection()
+    return get_database_connection()
 
 def init_database():
     """Инициализирует таблицы в БД"""
@@ -103,6 +139,15 @@ def init_database():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS categories (
+                id SERIAL PRIMARY KEY,
+                category TEXT NOT NULL,
+                material TEXT NOT NULL,
+                data JSONB NOT NULL,
+                UNIQUE (category, material)
+            )
+        ''')
     else:
         # SQLite синтаксис
         cursor.execute('''
@@ -125,91 +170,351 @@ def init_database():
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS categories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                category TEXT NOT NULL,
+                material TEXT NOT NULL,
+                data TEXT NOT NULL,
+                UNIQUE (category, material)
+            )
+        ''')
     
     conn.commit()
+    
+    # Миграция: добавляем отсутствующие столбцы если их нет
+    migrate_database_schema(conn, cursor, db_type)
+    
     # НЕ закрываем подключение - переиспользуем его
-    print(f"✅ Таблицы инициализированы ({db_type})")
+    print(f"Таблицы инициализированы ({db_type})")
+
+def migrate_database_schema(conn, cursor, db_type):
+    """Добавляет отсутствующие столбцы в базу данных"""
+    try:
+        # Список новых столбцов для добавления
+        new_columns = [
+            ('calculation_type', 'TEXT DEFAULT "quick"'),
+            ('packing_units_per_box', 'INTEGER'),
+            ('packing_box_weight', 'REAL'),
+            ('packing_box_length', 'REAL'),
+            ('packing_box_width', 'REAL'),
+            ('packing_box_height', 'REAL'),
+            ('packing_total_boxes', 'INTEGER'),
+            ('packing_total_volume', 'REAL'),
+            ('packing_total_weight', 'REAL'),
+            ('tnved_code', 'TEXT'),
+            ('duty_rate', 'TEXT'),
+            ('vat_rate', 'TEXT'),
+            ('duty_amount_usd', 'REAL'),
+            ('vat_amount_usd', 'REAL'),
+            ('total_customs_cost_usd', 'REAL'),
+            ('certificates', 'TEXT'),
+            ('customs_notes', 'TEXT'),
+            ('density_warning_message', 'TEXT'),
+            ('calculated_density', 'REAL'),
+            ('category_density', 'REAL')
+        ]
+        
+        for column_name, column_type in new_columns:
+            try:
+                if db_type == 'postgres':
+                    cursor.execute(f'ALTER TABLE calculations ADD COLUMN {column_name} {column_type}')
+                else:
+                    cursor.execute(f'ALTER TABLE calculations ADD COLUMN {column_name} {column_type}')
+                print(f"✅ Добавлен столбец: {column_name}")
+            except Exception as e:
+                # Столбец уже существует или другая ошибка
+                if "already exists" in str(e).lower() or "duplicate column" in str(e).lower():
+                    continue  # Столбец уже есть, это нормально
+                else:
+                    print(f"⚠️  Не удалось добавить столбец {column_name}: {e}")
+        
+        conn.commit()
+        print("Миграция базы данных завершена")
+    except Exception as e:
+        print(f"❌ Ошибка миграции: {e}")
+        # Продолжаем работу - это не критично
 
 def save_calculation_to_db(data: Dict[str, Any]) -> int:
     """Сохраняет расчет в БД"""
-    conn, db_type = get_database_connection()  # Переиспользуем единое подключение
+    try:
+        conn, db_type = get_database_connection()  # Переиспользуем единое подключение
+        cursor = conn.cursor()
+        
+        print(f"💾 Сохранение расчета в БД ({db_type}): {data['product_name']}")
+        
+        if db_type == 'postgres':
+            cursor.execute('''
+                INSERT INTO calculations 
+                (product_name, category, price_yuan, weight_kg, quantity, markup, custom_rate, 
+                 product_url, cost_price_rub, cost_price_usd, sale_price_rub, sale_price_usd, 
+                 profit_rub, profit_usd, calculation_type,
+                 packing_units_per_box, packing_box_weight, packing_box_length, packing_box_width, packing_box_height,
+                 packing_total_boxes, packing_total_volume, packing_total_weight,
+                 tnved_code, duty_rate, vat_rate, duty_amount_usd, vat_amount_usd, total_customs_cost_usd,
+                 certificates, customs_notes, density_warning_message, calculated_density, category_density) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
+                RETURNING id
+            ''', (
+                data['product_name'], data['category'], data['price_yuan'], data['weight_kg'],
+                data['quantity'], data['markup'], data.get('custom_rate'), data.get('product_url'),
+                data['cost_price_total_rub'], data['cost_price_total_usd'],
+                data['sale_price_total_rub'], data['sale_price_total_usd'],
+                data['profit_total_rub'], data['profit_total_usd'],
+                data.get('calculation_type', 'quick'),
+                data.get('packing_units_per_box'), data.get('packing_box_weight'), 
+                data.get('packing_box_length'), data.get('packing_box_width'), data.get('packing_box_height'),
+                data.get('packing_total_boxes'), data.get('packing_total_volume'), data.get('packing_total_weight'),
+                # Данные о пошлинах
+                data.get('tnved_code'), data.get('duty_rate'), data.get('vat_rate'),
+                data.get('duty_amount_usd'), data.get('vat_amount_usd'), data.get('total_customs_cost_usd'),
+                data.get('certificates'), data.get('customs_notes'),
+                # Данные о предупреждениях плотности
+                data.get('density_warning_message'), data.get('calculated_density'), data.get('category_density')
+            ))
+            result = cursor.fetchone()
+            calculation_id = result['id'] if isinstance(result, dict) else result[0]
+            print(f"✅ PostgreSQL: Расчет сохранен с ID {calculation_id}")
+        else:
+            cursor.execute('''
+                INSERT INTO calculations 
+                (product_name, category, price_yuan, weight_kg, quantity, markup, custom_rate, 
+                 product_url, cost_price_rub, cost_price_usd, sale_price_rub, sale_price_usd, 
+                 profit_rub, profit_usd, calculation_type,
+                 packing_units_per_box, packing_box_weight, packing_box_length, packing_box_width, packing_box_height,
+                 packing_total_boxes, packing_total_volume, packing_total_weight,
+                 tnved_code, duty_rate, vat_rate, duty_amount_usd, vat_amount_usd, total_customs_cost_usd,
+                 certificates, customs_notes, density_warning_message, calculated_density, category_density) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                data['product_name'], data['category'], data['price_yuan'], data['weight_kg'],
+                data['quantity'], data['markup'], data.get('custom_rate'), data.get('product_url'),
+                data['cost_price_total_rub'], data['cost_price_total_usd'],
+                data['sale_price_total_rub'], data['sale_price_total_usd'],
+                data['profit_total_rub'], data['profit_total_usd'],
+                data.get('calculation_type', 'quick'),
+                data.get('packing_units_per_box'), data.get('packing_box_weight'), 
+                data.get('packing_box_length'), data.get('packing_box_width'), data.get('packing_box_height'),
+                data.get('packing_total_boxes'), data.get('packing_total_volume'), data.get('packing_total_weight'),
+                # Данные о пошлинах
+                data.get('tnved_code'), data.get('duty_rate'), data.get('vat_rate'),
+                data.get('duty_amount_usd'), data.get('vat_amount_usd'), data.get('total_customs_cost_usd'),
+                data.get('certificates'), data.get('customs_notes'),
+                # Данные о предупреждениях плотности
+                data.get('density_warning_message'), data.get('calculated_density'), data.get('category_density')
+            ))
+            calculation_id = cursor.lastrowid
+            print(f"✅ SQLite: Расчет сохранен с ID {calculation_id}")
+        
+        # КРИТИЧНО: Коммитим изменения
+        conn.commit()
+        print(f"✅ COMMIT выполнен успешно для ID {calculation_id}")
+        
+        # НЕ закрываем подключение - переиспользуем его
+        cursor.close()
+        return calculation_id
+        
+    except Exception as e:
+        print(f"❌ ОШИБКА сохранения в БД: {e}")
+        import traceback
+        traceback.print_exc()
+        # Откатываем транзакцию при ошибке
+        try:
+            conn.rollback()
+            print("⚠️ ROLLBACK выполнен")
+        except:
+            pass
+        raise e
+
+
+def upsert_category(category_data: Dict[str, Any]) -> None:
+    """Сохраняет или обновляет категорию в таблице categories"""
+    conn, db_type = get_database_connection()
     cursor = conn.cursor()
-    
+
+    category = category_data.get('category')
+    material = category_data.get('material', '')
+
+    serialized = json.dumps(category_data, ensure_ascii=False)
+
     if db_type == 'postgres':
         cursor.execute('''
-            INSERT INTO calculations 
-            (product_name, category, price_yuan, weight_kg, quantity, markup, custom_rate, 
-             product_url, cost_price_rub, cost_price_usd, sale_price_rub, sale_price_usd, 
-             profit_rub, profit_usd) 
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
-            RETURNING id
-        ''', (
-            data['product_name'], data['category'], data['price_yuan'], data['weight_kg'],
-            data['quantity'], data['markup'], data.get('custom_rate'), data.get('product_url'),
-            data['cost_price_total_rub'], data['cost_price_total_usd'],
-            data['sale_price_total_rub'], data['sale_price_total_usd'],
-            data['profit_total_rub'], data['profit_total_usd']
-        ))
-        calculation_id = cursor.fetchone()[0]
+            INSERT INTO categories (category, material, data)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (category, material) DO UPDATE SET data = EXCLUDED.data
+        ''', (category, material, serialized))
     else:
         cursor.execute('''
-            INSERT INTO calculations 
-            (product_name, category, price_yuan, weight_kg, quantity, markup, custom_rate, 
-             product_url, cost_price_rub, cost_price_usd, sale_price_rub, sale_price_usd, 
-             profit_rub, profit_usd) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            data['product_name'], data['category'], data['price_yuan'], data['weight_kg'],
-            data['quantity'], data['markup'], data.get('custom_rate'), data.get('product_url'),
-            data['cost_price_total_rub'], data['cost_price_total_usd'],
-            data['sale_price_total_rub'], data['sale_price_total_usd'],
-            data['profit_total_rub'], data['profit_total_usd']
-        ))
-        calculation_id = cursor.lastrowid
-    
+            INSERT INTO categories (category, material, data)
+            VALUES (?, ?, ?)
+            ON CONFLICT(category, material) DO UPDATE SET data = ?
+        ''', (category, material, serialized, serialized))
+
     conn.commit()
-    # НЕ закрываем подключение - переиспользуем его
-    return calculation_id
+
+
+def load_categories_from_db() -> List[Dict[str, Any]]:
+    """Загружает все категории из таблицы categories"""
+    conn, db_type = get_database_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT data FROM categories ORDER BY category')
+    rows = cursor.fetchall()
+
+    categories = []
+    for row in rows:
+        try:
+            # Универсальный способ получения данных
+            if db_type == 'postgres':
+                # PostgreSQL с RealDictCursor - доступ по ключу
+                raw = row['data'] if isinstance(row, dict) else row[0]
+            else:
+                # SQLite с row_factory - доступ по ключу или индексу
+                raw = row['data'] if hasattr(row, 'keys') else row[0]
+
+            # JSONB в Postgres приходит как dict, а в SQLite — как str/bytes
+            if isinstance(raw, (dict, list)):
+                categories.append(raw)
+                continue
+
+            if isinstance(raw, bytes):
+                raw = raw.decode('utf-8')
+
+            if isinstance(raw, str):
+                try:
+                    categories.append(json.loads(raw))
+                except json.JSONDecodeError:
+                    continue
+                    
+        except (KeyError, IndexError, TypeError) as e:
+            print(f"⚠️ Ошибка обработки строки категории: {e}")
+            continue
+
+    return categories
 
 def get_calculation_history() -> List[Dict[str, Any]]:
-    """Получает историю расчетов из БД"""
-    conn, db_type = get_database_connection()  # Переиспользуем единое подключение
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        SELECT id, product_name, category, price_yuan, weight_kg, quantity, markup, 
-               custom_rate, product_url, cost_price_rub, cost_price_usd, 
-               sale_price_rub, sale_price_usd, profit_rub, profit_usd, created_at 
-        FROM calculations 
-        ORDER BY created_at DESC 
-        LIMIT 50
-    ''')
-    
-    rows = cursor.fetchall()
-    # НЕ закрываем подключение - переиспользуем его
-    
-    history = []
-    for row in rows:
-        history.append({
-            'id': row[0],
-            'product_name': row[1],
-            'category': row[2],
-            'price_yuan': row[3],
-            'weight_kg': row[4],
-            'quantity': row[5],
-            'markup': row[6],
-            'custom_rate': row[7],
-            'product_url': row[8],
-            'cost_price_rub': row[9],
-            'cost_price_usd': row[10],
-            'sale_price_rub': row[11],
-            'sale_price_usd': row[12],
-            'profit_rub': row[13],
-            'profit_usd': row[14],
-            'created_at': str(row[15])
-        })
-    
-    return history
+    """Получает историю расчетов из БД с автоматическим переподключением"""
+    try:
+        conn, db_type = get_database_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT id, product_name, category, price_yuan, weight_kg, quantity, markup, 
+                   custom_rate, product_url, cost_price_rub, cost_price_usd, 
+                   sale_price_rub, sale_price_usd, profit_rub, profit_usd, created_at,
+                   calculation_type,
+                   packing_units_per_box, packing_box_weight, packing_box_length, packing_box_width, packing_box_height,
+                   packing_total_boxes, packing_total_volume, packing_total_weight
+            FROM calculations 
+            ORDER BY created_at DESC 
+            LIMIT 50
+        ''')
+        
+        rows = cursor.fetchall()
+        cursor.close()
+        
+        history = []
+        for row in rows:
+            if db_type == 'postgres':
+                # PostgreSQL с RealDictCursor возвращает dict-like объекты
+                history.append(dict(row))
+            else:
+                # SQLite с row_factory = sqlite3.Row
+                history.append(dict(row))
+        
+        print(f"✅ История загружена: {len(history)} записей")
+        return history
+        
+    except Exception as e:
+        print(f"❌ Ошибка загрузки истории: {e}")
+        # Пробуем переподключиться один раз
+        try:
+            print("🔄 Попытка переподключения к БД...")
+            conn, db_type = reconnect_database()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT id, product_name, category, price_yuan, weight_kg, quantity, markup, 
+                       custom_rate, product_url, cost_price_rub, cost_price_usd, 
+                       sale_price_rub, sale_price_usd, profit_rub, profit_usd, created_at,
+                       calculation_type,
+                       packing_units_per_box, packing_box_weight, packing_box_length, packing_box_width, packing_box_height,
+                       packing_total_boxes, packing_total_volume, packing_total_weight
+                FROM calculations 
+                ORDER BY created_at DESC 
+                LIMIT 50
+            ''')
+            
+            rows = cursor.fetchall()
+            cursor.close()
+            
+            history = []
+            for row in rows:
+                history.append(dict(row))
+            
+            print(f"✅ История загружена после переподключения: {len(history)} записей")
+            return history
+            
+        except Exception as retry_error:
+            print(f"❌ Повторная ошибка загрузки истории: {retry_error}")
+            return []
+
+def update_calculation(calculation_id: int, data: dict):
+    """Обновляет существующий расчет в базе данных"""
+    try:
+        conn, db_type = get_database_connection()
+        cursor = conn.cursor()
+        
+        # Обновляем запись
+        if db_type == 'postgres':
+            cursor.execute('''
+                UPDATE calculations 
+                SET product_name = %s, category = %s, price_yuan = %s, weight_kg = %s, 
+                    quantity = %s, markup = %s, custom_rate = %s, product_url = %s,
+                    cost_price_rub = %s, cost_price_usd = %s, sale_price_rub = %s, 
+                    sale_price_usd = %s, profit_rub = %s, profit_usd = %s
+                WHERE id = %s
+                RETURNING id
+            ''', (
+                data['product_name'], data['category'], data['price_yuan'], data['weight_kg'],
+                data['quantity'], data['markup'], data.get('custom_rate'),
+                data.get('product_url', ''), data['cost_price_rub'], data['cost_price_usd'],
+                data['sale_price_rub'], data['sale_price_usd'], data['profit_rub'],
+                data['profit_usd'], calculation_id
+            ))
+            
+            if not cursor.fetchone():
+                raise ValueError("Расчет не найден")
+            
+        else:  # SQLite
+            cursor.execute('''
+                UPDATE calculations 
+                SET product_name = ?, category = ?, price_yuan = ?, weight_kg = ?, 
+                    quantity = ?, markup = ?, custom_rate = ?, product_url = ?,
+                    cost_price_rub = ?, cost_price_usd = ?, sale_price_rub = ?, 
+                    sale_price_usd = ?, profit_rub = ?, profit_usd = ?
+                WHERE id = ?
+            ''', (
+                data['product_name'], data['category'], data['price_yuan'], data['weight_kg'],
+                data['quantity'], data['markup'], data.get('custom_rate'),
+                data.get('product_url', ''), data['cost_price_rub'], data['cost_price_usd'],
+                data['sale_price_rub'], data['sale_price_usd'], data['profit_rub'],
+                data['profit_usd'], calculation_id
+            ))
+            
+            if cursor.rowcount == 0:
+                raise ValueError("Расчет не найден")
+        
+        conn.commit()
+        print(f"✅ Расчет {calculation_id} обновлен")
+        return True
+        
+    except ValueError as e:
+        print(f"❌ {e}")
+        raise
+    except Exception as e:
+        print(f"❌ Ошибка обновления расчета: {e}")
+        raise
 
 def restore_from_backup():
     """Восстанавливает данные из бэкапа при пустой БД"""
