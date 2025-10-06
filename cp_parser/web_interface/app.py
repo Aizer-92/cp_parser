@@ -13,14 +13,17 @@ import sys
 # Добавляем путь к модулям проекта
 sys.path.append(str(Path(__file__).parent.parent))
 
-# КРИТИЧЕСКИ ВАЖНО: Импортируем fix_pg_types ПЕРВЫМ, до SQLAlchemy!
-from database import fix_pg_types
+# КРИТИЧЕСКИ ВАЖНО: Импортируем database пакет ПЕРВЫМ!
+# При импорте database/__init__.py автоматически регистрируются типы PostgreSQL
+import database  # Это вызовет __init__.py и зарегистрирует типы!
 
 from flask import Flask, render_template, jsonify, send_from_directory, request
 from database.postgresql_manager import db_manager
 from database.models import Project, Product, PriceOffer, ProductImage
 from sqlalchemy import or_, func
 import math
+
+print("✅ [APP] Database пакет импортирован, типы должны быть зарегистрированы")
 
 app = Flask(__name__)
 
