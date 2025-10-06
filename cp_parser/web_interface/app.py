@@ -6,6 +6,23 @@
 Готов для деплоя в интернет
 """
 
+# КРИТИЧЕСКИ ВАЖНО: Импортируем psycopg2 САМЫМ ПЕРВЫМ!
+# Как в promo_calculator - это решает проблему с типами
+import psycopg2
+import psycopg2.extensions
+
+# Регистрируем типы СРАЗУ после импорта psycopg2
+TEXT_OID = psycopg2.extensions.new_type((25,), "TEXT", psycopg2.STRING)
+psycopg2.extensions.register_type(TEXT_OID)
+
+VARCHAR_OID = psycopg2.extensions.new_type((1043,), "VARCHAR", psycopg2.STRING)
+psycopg2.extensions.register_type(VARCHAR_OID)
+
+BPCHAR_OID = psycopg2.extensions.new_type((1042,), "BPCHAR", psycopg2.STRING)
+psycopg2.extensions.register_type(BPCHAR_OID)
+
+print("✅ [APP] psycopg2 типы зарегистрированы ДО всех импортов (как в promo_calculator)")
+
 import os
 from pathlib import Path
 import sys
@@ -13,17 +30,11 @@ import sys
 # Добавляем путь к модулям проекта
 sys.path.append(str(Path(__file__).parent.parent))
 
-# КРИТИЧЕСКИ ВАЖНО: Импортируем database пакет ПЕРВЫМ!
-# При импорте database/__init__.py автоматически регистрируются типы PostgreSQL
-import database  # Это вызовет __init__.py и зарегистрирует типы!
-
 from flask import Flask, render_template, jsonify, send_from_directory, request
 from database.postgresql_manager import db_manager
 from database.models import Project, Product, PriceOffer, ProductImage
 from sqlalchemy import or_, func
 import math
-
-print("✅ [APP] Database пакет импортирован, типы должны быть зарегистрированы")
 
 app = Flask(__name__)
 
