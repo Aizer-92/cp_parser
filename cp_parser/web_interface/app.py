@@ -530,7 +530,7 @@ def product_detail(product_id):
         # Получаем товар
         product_sql = text("""
             SELECT id, project_id, name, description, article_number, 
-                   sample_price, sample_delivery_time, row_number
+                   sample_price, sample_delivery_time, row_number, custom_field
             FROM products 
             WHERE id = :product_id
         """)
@@ -548,6 +548,16 @@ def product_detail(product_id):
         product.sample_price = float(product_row[5]) if product_row[5] is not None else None
         product.sample_delivery_time = int(product_row[6]) if product_row[6] is not None else None
         product.row_number = int(product_row[7]) if product_row[7] is not None else None
+        product.custom_field = product_row[8]  # Дизайн
+        
+        # Получаем информацию о проекте
+        project_sql = text("SELECT id, project_name, table_id FROM projects WHERE id = :project_id")
+        project_row_data = session.execute(project_sql, {"project_id": product.project_id}).fetchone()
+        if project_row_data:
+            product.project = Project()
+            product.project.id = project_row_data[0]
+            product.project.project_name = project_row_data[1]
+            product.project.table_id = project_row_data[2]
         
         # Получаем все ценовые предложения
         offers_sql = text("""
