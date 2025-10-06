@@ -67,6 +67,8 @@ from config import (
 
 # image_proxy не нужен - изображения публично доступны в S3
 
+from datetime import datetime
+
 @app.route('/')
 def index():
     """Главная страница с общей статистикой"""
@@ -122,8 +124,9 @@ def index():
                 project.manager_name = row[4]
                 project.total_products_found = row[5]
                 project.total_images_found = row[6]
-                project.updated_at = row[7]
-                project.created_at = row[8]
+                # Преобразуем строки в datetime объекты
+                project.updated_at = datetime.fromisoformat(str(row[7])) if row[7] else None
+                project.created_at = datetime.fromisoformat(str(row[8])) if row[8] else None
                 recent_projects.append(project)
             
             print(f"✅ [DEBUG] Получено проектов через RAW SQL: {len(recent_projects)}")
@@ -304,8 +307,9 @@ def projects_list():
             project.total_products_found = int(row[5]) if row[5] is not None else 0
             project.total_images_found = int(row[6]) if row[6] is not None else 0
             project.parsing_status = row[7]
-            project.updated_at = row[8]
-            project.created_at = row[9]
+            # Преобразуем строки в datetime объекты
+            project.updated_at = datetime.fromisoformat(str(row[8])) if row[8] else None
+            project.created_at = datetime.fromisoformat(str(row[9])) if row[9] else None
             projects.append(project)
         
         # Вычисляем данные для пагинации
@@ -356,8 +360,9 @@ def project_detail(project_id):
         project.total_products_found = int(project_row[5]) if project_row[5] is not None else 0
         project.total_images_found = int(project_row[6]) if project_row[6] is not None else 0
         project.parsing_status = project_row[7]
-        project.updated_at = project_row[8]
-        project.created_at = project_row[9]
+        # Преобразуем строки в datetime объекты
+        project.updated_at = datetime.fromisoformat(str(project_row[8])) if project_row[8] else None
+        project.created_at = datetime.fromisoformat(str(project_row[9])) if project_row[9] else None
         
         # Получаем товары проекта с пагинацией
         page = request.args.get('page', 1, type=int)
