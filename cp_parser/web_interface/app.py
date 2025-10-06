@@ -30,7 +30,7 @@ import sys
 # Добавляем путь к модулям проекта
 sys.path.append(str(Path(__file__).parent.parent))
 
-from flask import Flask, render_template, jsonify, send_from_directory, request
+from flask import Flask, render_template, jsonify, send_from_directory, request, session, redirect, url_for
 
 # Патчим SQLAlchemy dialect ДО импорта моделей
 try:
@@ -52,6 +52,7 @@ from sqlalchemy import or_, func
 import math
 
 app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')  # Для сессий
 
 # Добавляем функцию в контекст шаблонов
 @app.context_processor
@@ -64,12 +65,51 @@ from config import (
     PRODUCTS_PER_PAGE, PROJECTS_PER_PAGE, IMAGES_DIR,
     get_image_url
 )
+from auth import AUTH_USERNAME, AUTH_PASSWORD, SECRET_KEY, create_session_token, check_session, login_required
 
 # image_proxy не нужен - изображения публично доступны в S3
 
 from datetime import datetime
 
+# ===== АВТОРИЗАЦИЯ =====
+
+@app.route('/login')
+def login_page():
+    """Страница входа"""
+    return render_template('login.html')
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    """API endpoint для авторизации"""
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        
+        # Проверка credentials
+        if username == AUTH_USERNAME and password == AUTH_PASSWORD:
+            # Создаем новую сессию
+            session_token = create_session_token()
+            session['session_token'] = session_token
+            session['username'] = username
+            
+            return jsonify({"success": True, "message": "Успешная авторизация"})
+        else:
+            return jsonify({"success": False, "message": "Неверный логин или пароль"}), 401
+    
+    except Exception as e:
+        return jsonify({"success": False, "message": "Ошибка сервера"}), 500
+
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    """API endpoint для выхода"""
+    session.clear()
+    return jsonify({"success": True, "message": "Вы вышли из системы"})
+
+# ===== ОСНОВНЫЕ РОУТЫ =====
+
 @app.route('/')
+@login_required
 def index():
     """Главная страница с общей статистикой"""
     try:
@@ -148,6 +188,7 @@ def index():
         return f"Ошибка: {e}", 500
 
 @app.route('/products')
+@login_required
 def products_list():
     """Список товаров с пагинацией и поиском"""
     from sqlalchemy import text
@@ -280,6 +321,7 @@ def products_list():
                              search=search)
 
 @app.route('/projects')
+@login_required
 def projects_list():
     """Список проектов с пагинацией"""
     from sqlalchemy import text
@@ -366,6 +408,7 @@ def projects_list():
                              search=search)
 
 @app.route('/project/<int:project_id>')
+@login_required
 def project_detail(project_id):
     """Детальная информация о проекте"""
     from sqlalchemy import text
@@ -522,6 +565,7 @@ def project_detail(project_id):
                              project_stats=project_stats)
 
 @app.route('/product/<int:product_id>')
+@login_required
 def product_detail(product_id):
     """Детальная информация о товаре"""
     from sqlalchemy import text
@@ -615,6 +659,7 @@ def serve_image(filename):
         return send_from_directory(IMAGES_DIR, filename)
 
 @app.route('/api/stats')
+@login_required
 def api_stats():
     """API для получения статистики"""
     with db_manager.get_session() as session:
@@ -630,6 +675,7 @@ def api_stats():
         return jsonify(stats)
 
 @app.route('/api/search')
+@login_required
 def api_search():
     """API для поиска товаров"""
     query = request.args.get('q', '', type=str)
