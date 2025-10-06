@@ -12,7 +12,8 @@ COPY cp_parser/ /app/
 
 # Отладка - показываем структуру
 RUN echo "=== Содержимое /app ===" && ls -la /app/ && \
-    echo "=== Содержимое /app/web_interface ===" && ls -la /app/web_interface/ || echo "web_interface не найден!"
+    echo "=== Содержимое /app/web_interface ===" && ls -la /app/web_interface/ && \
+    echo "=== Проверка app.py ===" && test -f /app/web_interface/app.py && echo "app.py найден!" || echo "app.py НЕ найден!"
 
 # Создаем директорию для изображений
 RUN mkdir -p /app/web_interface/storage/images
