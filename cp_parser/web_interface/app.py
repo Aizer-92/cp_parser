@@ -33,8 +33,7 @@ from config import (
     get_image_url
 )
 
-# Импортируем прокси для изображений
-from image_proxy import serve_image_proxy, generate_presigned_url
+# image_proxy не нужен - изображения публично доступны в S3
 
 @app.route('/')
 def index():
