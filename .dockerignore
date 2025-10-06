@@ -1,0 +1,19 @@
+# Игнорируем только ненужное для Docker
+.git
+.gitignore
+*.md
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist/
+build/
+*.log
+
+# НЕ игнорируем web_interface - он нужен!
+!cp_parser/web_interface/
