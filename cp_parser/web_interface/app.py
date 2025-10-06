@@ -426,6 +426,9 @@ def project_detail(project_id):
             """)
             offer_rows = session.execute(offers_sql, {"product_id": product.id}).fetchall()
             product.price_offers = []
+            
+            print(f"🔍 [DEBUG] Товар ID {product.id}: найдено {len(offer_rows)} ценовых предложений")
+            
             for offer_row in offer_rows:
                 offer = PriceOffer()
                 offer.id = offer_row[0]
@@ -434,6 +437,8 @@ def project_detail(project_id):
                 offer.price_rub = float(offer_row[3]) if offer_row[3] is not None else None
                 offer.delivery_time_days = int(offer_row[4]) if offer_row[4] is not None else None
                 product.price_offers.append(offer)
+                
+            print(f"✅ [DEBUG] Товар ID {product.id}: добавлено {len(product.price_offers)} предложений в объект")
             
             products.append(product)
         
