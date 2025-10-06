@@ -6,16 +6,11 @@
 """
 
 import os
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, event
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.pool import QueuePool
-from sqlalchemy.dialects import postgresql
 from contextlib import contextmanager
 import logging
-
-# Регистрируем типы PostgreSQL для правильной работы
-from sqlalchemy.dialects.postgresql import base as pg_base
-pg_base.ischema_names['text'] = postgresql.TEXT
 
 # Настройки PostgreSQL
 # Railway предоставляет DATABASE_URL или DATABASE_PUBLIC_URL
@@ -41,8 +36,18 @@ class PostgreSQLManager:
                 max_overflow=10,
                 pool_pre_ping=True,
                 pool_recycle=3600,
-                echo=False  # Устанавливаем True для отладки
+                echo=False,  # Устанавливаем True для отладки
+                connect_args={
+                    "options": "-c client_encoding=utf8"
+                }
             )
+            
+            # Регистрируем обработчик для неизвестных типов PostgreSQL
+            @event.listens_for(self.engine, "connect")
+            def receive_connect(dbapi_conn, connection_record):
+                # Регистрируем адаптеры для psycopg2
+                import psycopg2.extensions
+                psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
             
             # Создаем фабрику сессий
             self.SessionLocal = scoped_session(
