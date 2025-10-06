@@ -53,24 +53,28 @@ class PostgreSQLManager:
         """Настраивает подключение к PostgreSQL"""
         try:
             # Создаем engine с оптимизациями для Railway
+            # КРИТИЧЕСКИ ВАЖНО: Используем специальный URL с параметрами
+            # Добавляем ?client_encoding=utf8 в URL для правильной работы с типами
+            connection_url = self.database_url
+            if '?' not in connection_url:
+                connection_url += '?client_encoding=utf8'
+            
             self.engine = create_engine(
-                self.database_url,
+                connection_url,
                 poolclass=QueuePool,
                 pool_size=5,
                 max_overflow=10,
                 pool_pre_ping=True,
                 pool_recycle=3600,
-                echo=False,  # Устанавливаем True для отладки
-                connect_args={
-                    "options": "-c client_encoding=utf8"
-                },
-                # Критически важно: отключаем все нативные типы PostgreSQL
+                echo=False,
+                # КРИТИЧЕСКИ ВАЖНО: Отключаем ВСЕ нативные типы PostgreSQL
                 use_native_hstore=False,
-                # Явно указываем execution_options
-                execution_options={
-                    "postgresql_readonly": False,
-                    "postgresql_insert_executemany_returning": False
-                }
+                # Явно указываем, что НЕ используем prepared statements
+                connect_args={
+                    "options": "-c client_encoding=utf8",
+                },
+                # Отключаем автоматическое определение типов
+                isolation_level="AUTOCOMMIT"
             )
             
             # Регистрируем обработчик для КАЖДОГО соединения в пуле

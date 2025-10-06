@@ -31,6 +31,21 @@ import sys
 sys.path.append(str(Path(__file__).parent.parent))
 
 from flask import Flask, render_template, jsonify, send_from_directory, request
+
+# Патчим SQLAlchemy dialect ДО импорта моделей
+try:
+    from sqlalchemy.dialects.postgresql import base as pg_base
+    from sqlalchemy import String, Text
+    
+    # Заменяем все TEXT типы на String в ischema_names
+    pg_base.ischema_names['text'] = String
+    pg_base.ischema_names['varchar'] = String
+    pg_base.ischema_names['bpchar'] = String
+    
+    print("✅ [APP] SQLAlchemy dialect пропатчен - все TEXT типы заменены на String")
+except Exception as e:
+    print(f"❌ [APP] Ошибка патча dialect: {e}")
+
 from database.postgresql_manager import db_manager
 from database.models import Project, Product, PriceOffer, ProductImage
 from sqlalchemy import or_, func
