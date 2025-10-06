@@ -217,3 +217,4 @@ def test_product_images_insert():
 if __name__ == "__main__":
     test_price_offers_insert()
     test_product_images_insert()
+

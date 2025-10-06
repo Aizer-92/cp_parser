@@ -35,3 +35,4 @@ def fix_column_type():
 
 if __name__ == "__main__":
     fix_column_type()
+

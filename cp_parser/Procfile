@@ -1,1 +1,1 @@
-web: cd web_interface && gunicorn -c gunicorn_config.py app:app
+web: python run.py

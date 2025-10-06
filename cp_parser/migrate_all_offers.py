@@ -128,3 +128,4 @@ def migrate_price_offers_continuous():
 
 if __name__ == "__main__":
     migrate_price_offers_continuous()
+

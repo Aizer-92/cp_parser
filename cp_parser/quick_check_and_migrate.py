@@ -233,3 +233,4 @@ if __name__ == "__main__":
     print("ФИНАЛЬНАЯ ПРОВЕРКА")
     print("=" * 80)
     check_counts()
+

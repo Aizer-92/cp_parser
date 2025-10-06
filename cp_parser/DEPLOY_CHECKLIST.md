@@ -75,3 +75,4 @@ SECRET_KEY=your-random-secret-key-here
 - База данных: Railway PostgreSQL (centerbeam.proxy.rlwy.net:26590)
 - Изображения: Beget S3 (s3.ru1.storage.beget.cloud)
 - Калькулятор: https://promo-calculator-production.up.railway.app/
+

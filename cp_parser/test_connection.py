@@ -37,3 +37,4 @@ except Exception as e:
     print(f"\n❌ ОШИБКА за {time.time()-start:.2f}с: {e}")
     import traceback
     traceback.print_exc()
+
