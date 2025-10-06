@@ -200,9 +200,9 @@ def products_list():
             product.name = row[2]
             product.description = row[3]
             product.article_number = row[4]
-            product.sample_price = row[5]
-            product.sample_delivery_time = row[6]
-            product.row_number = row[7]
+            product.sample_price = float(row[5]) if row[5] is not None else None
+            product.sample_delivery_time = int(row[6]) if row[6] is not None else None
+            product.row_number = int(row[7]) if row[7] is not None else None
             
             # Получаем изображения для товара
             images_sql = text("""
@@ -301,8 +301,8 @@ def projects_list():
             project.file_name = row[2]
             project.google_sheets_url = row[3]
             project.manager_name = row[4]
-            project.total_products_found = row[5]
-            project.total_images_found = row[6]
+            project.total_products_found = int(row[5]) if row[5] is not None else 0
+            project.total_images_found = int(row[6]) if row[6] is not None else 0
             project.parsing_status = row[7]
             project.updated_at = row[8]
             project.created_at = row[9]
@@ -353,8 +353,8 @@ def project_detail(project_id):
         project.file_name = project_row[2]
         project.google_sheets_url = project_row[3]
         project.manager_name = project_row[4]
-        project.total_products_found = project_row[5]
-        project.total_images_found = project_row[6]
+        project.total_products_found = int(project_row[5]) if project_row[5] is not None else 0
+        project.total_images_found = int(project_row[6]) if project_row[6] is not None else 0
         project.parsing_status = project_row[7]
         project.updated_at = project_row[8]
         project.created_at = project_row[9]
@@ -392,9 +392,9 @@ def project_detail(project_id):
             product.name = row[2]
             product.description = row[3]
             product.article_number = row[4]
-            product.sample_price = row[5]
-            product.sample_delivery_time = row[6]
-            product.row_number = row[7]
+            product.sample_price = float(row[5]) if row[5] is not None else None
+            product.sample_delivery_time = int(row[6]) if row[6] is not None else None
+            product.row_number = int(row[7]) if row[7] is not None else None
             
             # Получаем изображения
             images_sql = text("""
@@ -424,10 +424,10 @@ def project_detail(project_id):
             for offer_row in offer_rows:
                 offer = PriceOffer()
                 offer.id = offer_row[0]
-                offer.quantity = offer_row[1]
-                offer.price_usd = offer_row[2]
-                offer.price_rub = offer_row[3]
-                offer.delivery_time_days = offer_row[4]
+                offer.quantity = int(offer_row[1]) if offer_row[1] is not None else None
+                offer.price_usd = float(offer_row[2]) if offer_row[2] is not None else None
+                offer.price_rub = float(offer_row[3]) if offer_row[3] is not None else None
+                offer.delivery_time_days = int(offer_row[4]) if offer_row[4] is not None else None
                 product.price_offers.append(offer)
             
             products.append(product)
@@ -501,9 +501,9 @@ def product_detail(product_id):
         product.name = product_row[2]
         product.description = product_row[3]
         product.article_number = product_row[4]
-        product.sample_price = product_row[5]
-        product.sample_delivery_time = product_row[6]
-        product.row_number = product_row[7]
+        product.sample_price = float(product_row[5]) if product_row[5] is not None else None
+        product.sample_delivery_time = int(product_row[6]) if product_row[6] is not None else None
+        product.row_number = int(product_row[7]) if product_row[7] is not None else None
         
         # Получаем все ценовые предложения
         offers_sql = text("""
@@ -518,10 +518,10 @@ def product_detail(product_id):
         for row in offer_rows:
             offer = PriceOffer()
             offer.id = row[0]
-            offer.quantity = row[1]
-            offer.price_usd = row[2]
-            offer.price_rub = row[3]
-            offer.delivery_time_days = row[4]
+            offer.quantity = int(row[1]) if row[1] is not None else None
+            offer.price_usd = float(row[2]) if row[2] is not None else None
+            offer.price_rub = float(row[3]) if row[3] is not None else None
+            offer.delivery_time_days = int(row[4]) if row[4] is not None else None
             offer.route = row[5]
             price_offers.append(offer)
         
@@ -539,8 +539,8 @@ def product_detail(product_id):
             img = ProductImage()
             img.id = row[0]
             img.image_filename = row[1]
-            img.is_main_image = row[2]
-            img.display_order = row[3]
+            img.is_main_image = bool(row[2]) if row[2] is not None else False
+            img.display_order = int(row[3]) if row[3] is not None else 1
             images.append(img)
         
         return render_template('product_detail.html', 
