@@ -244,6 +244,19 @@ def products_list():
                 offer.delivery_time_days = int(offer_row[4]) if offer_row[4] is not None else None
                 product.price_offers.append(offer)
             
+            # Получаем информацию о проекте
+            project_sql = text("""
+                SELECT id, project_name
+                FROM projects 
+                WHERE id = :project_id
+            """)
+            project_row = session.execute(project_sql, {"project_id": product.project_id}).fetchone()
+            
+            if project_row:
+                product.project = Project()
+                product.project.id = project_row[0]
+                product.project.project_name = project_row[1]
+            
             products.append(product)
         
         # Вычисляем данные для пагинации
