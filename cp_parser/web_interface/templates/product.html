@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ product.name }} - Детали товара</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .back-btn {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.9);
+            color: #2c3e50;
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .back-btn:hover {
+            background: white;
+            transform: translateY(-2px);
+        }
+        
+        .product-header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .product-title {
+            font-size: 2.5em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        
+        .product-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .meta-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .meta-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        
+        .meta-value {
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+        
+        .section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .section-title {
+            font-size: 1.5em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .images-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+        }
+        
+        .image-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .image-card img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .image-info {
+            font-size: 0.9em;
+        }
+        
+        .image-position {
+            color: #3498db;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .image-coords {
+            color: #7f8c8d;
+        }
+        
+        .offers-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .offers-table th,
+        .offers-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .offers-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .price-usd { color: #27ae60; font-weight: 600; }
+        .price-rub { color: #e74c3c; font-weight: 600; }
+        .route { color: #8e44ad; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-btn">← Назад к списку</a>
+        
+        <div class="product-header">
+            <h1 class="product-title">{{ product.name }}</h1>
+            <div class="product-meta">
+                <div class="meta-item">
+                    <div class="meta-label">ID товара</div>
+                    <div class="meta-value">{{ product.id }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Таблица</div>
+                    <div class="meta-value">{{ product.table_id }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Строка</div>
+                    <div class="meta-value">{{ product.row_number }}{% if product.row_number_end and product.row_number_end != product.row_number %} - {{ product.row_number_end }}{% endif %}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Лист Excel</div>
+                    <div class="meta-value">{{ product.sheet_name or 'Не указан' }}</div>
+                </div>
+            </div>
+            
+            {% if product.description %}
+            <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                <strong>Описание:</strong> {{ product.description }}
+            </div>
+            {% endif %}
+            
+            {% if product.custom_field %}
+            <div style="margin-top: 15px; padding: 15px; background: #e8f4fd; border-radius: 8px;">
+                <strong>Кастом поле:</strong> {{ product.custom_field }}
+            </div>
+            {% endif %}
+        </div>
+        
+        {% if product.images %}
+        <div class="section">
+            <h2 class="section-title">📷 Изображения ({{ product.images|length }})</h2>
+            <div class="images-gallery">
+                {% for image in product.images %}
+                <div class="image-card">
+                    <img src="/images/{{ image.image_filename }}" alt="Изображение {{ image.cell_position }}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDE1MCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxNTAiIGhlaWdodD0iMTIwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik00MCA1MEw2MCA3MEw4MCA1MEw5MCA4MEgzMEw0MCA1MFoiIGZpbGw9IiNEMUQ1REIiLz4KPGNpcmNsZSBjeD0iNTAiIGN5PSI1NSIgcj0iOCIgZmlsbD0iI0QxRDVEQiIvPgo8L3N2Zz4K'">
+                    <div class="image-info">
+                        <div class="image-position">{{ image.cell_position }}</div>
+                        <div class="image-coords">
+                            Строка: {{ image.row_number }}, Столбец: {{ image.column_number }}
+                        </div>
+                        {% if image.width_px and image.height_px %}
+                        <div class="image-coords">
+                            {{ image.width_px }}×{{ image.height_px }} px
+                        </div>
+                        {% endif %}
+                        {% if image.file_size_kb %}
+                        <div class="image-coords">
+                            {{ "%.1f"|format(image.file_size_kb) }} КБ
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if product.price_offers %}
+        <div class="section">
+            <h2 class="section-title">💰 Ценовые предложения ({{ product.price_offers|length }})</h2>
+            <table class="offers-table">
+                <thead>
+                    <tr>
+                        <th>Тираж</th>
+                        <th>Цена USD</th>
+                        <th>Цена RUB</th>
+                        <th>Маршрут</th>
+                        <th>Срок доставки</th>
+                        <th>Позиция</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for offer in product.price_offers %}
+                    <tr>
+                        <td><strong>{{ offer.quantity }} {{ offer.quantity_unit }}</strong></td>
+                        <td class="price-usd">{% if offer.price_usd %}<strong>${{ "%.2f"|format(offer.price_usd) }}</strong>{% else %}-{% endif %}</td>
+                        <td class="price-rub">{% if offer.price_rub %}<strong>{{ "%.0f"|format(offer.price_rub) }} ₽</strong>{% else %}-{% endif %}</td>
+                        <td class="route">{{ offer.route or '-' }}</td>
+                        <td>{% if offer.delivery_time_days %}{{ offer.delivery_time_days }} дн.{% else %}-{% endif %}</td>
+                        <td>{{ offer.row_position or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+        
+        {% if product.sample_price or product.sample_delivery_time %}
+        <div class="section">
+            <h2 class="section-title">🎯 Образец</h2>
+            <div class="product-meta">
+                {% if product.sample_price %}
+                <div class="meta-item">
+                    <div class="meta-label">Цена образца</div>
+                    <div class="meta-value price-rub">{{ "%.0f"|format(product.sample_price) }} ₽</div>
+                </div>
+                {% endif %}
+                {% if product.sample_delivery_time %}
+                <div class="meta-item">
+                    <div class="meta-label">Срок образца</div>
+                    <div class="meta-value">{{ product.sample_delivery_time }} дн.</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
+
+
+

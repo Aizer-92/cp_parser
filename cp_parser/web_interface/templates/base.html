@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru" class="h-full bg-white">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Парсер коммерческих предложений{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Дополнительные стили для плавных переходов */
+        .transition-all { transition: all 0.3s ease; }
+        .hover-scale:hover { transform: scale(1.02); }
+    </style>
+</head>
+<body class="h-full">
+    <div class="min-h-full">
+        <!-- Навигация -->
+        <nav class="border-b border-gray-200 bg-white">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="flex h-16 justify-between">
+                    <div class="flex">
+                        <div class="flex flex-shrink-0 items-center">
+                            <a href="/" class="text-xl font-bold text-gray-900">Парсер КП</a>
+                        </div>
+                        <div class="hidden sm:-my-px sm:ml-6 sm:flex sm:space-x-8">
+                            <a href="/" class="{% if request.endpoint == 'index' %}border-indigo-500 text-gray-900{% else %}border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700{% endif %} inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium">
+                                Главная
+                            </a>
+                            <a href="/products" class="{% if request.endpoint == 'products_list' %}border-indigo-500 text-gray-900{% else %}border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700{% endif %} inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium">
+                                Товары
+                            </a>
+                            <a href="/projects" class="{% if request.endpoint == 'projects_list' %}border-indigo-500 text-gray-900{% else %}border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700{% endif %} inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium">
+                                Проекты
+                            </a>
+                            <a href="https://promo-calculator-production.up.railway.app/" target="_blank" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium">
+                                Сырые расчеты
+                                <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Основной контент -->
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Футер -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            <p class="text-center text-sm text-gray-500">
+                Парсер коммерческих предложений - Анализ данных
+            </p>
+        </div>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

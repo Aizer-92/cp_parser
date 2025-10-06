@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Все проекты - Парсер коммерческих предложений</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .nav-buttons {
+            margin-top: 20px;
+        }
+        
+        .nav-buttons a {
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            margin-right: 10px;
+            display: inline-block;
+        }
+        
+        .nav-buttons a:hover {
+            background: #2980b9;
+        }
+        
+        .filters {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filter-item label {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .filter-item select, .filter-item input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .projects-table {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .status {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        
+        .status.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .region {
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        
+        .region.rf {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        
+        .region.uae {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        
+        .region.intl {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.8em;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .btn:hover {
+            opacity: 0.8;
+        }
+        
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .stats-info {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            .header h1 { font-size: 2em; }
+            .filter-row { flex-direction: column; align-items: stretch; }
+            .stats-row { flex-direction: column; align-items: stretch; }
+            .action-buttons { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📁 Все проекты</h1>
+            <p>Полный список коммерческих предложений</p>
+            
+            <div class="nav-buttons">
+                <a href="/">🏠 Главная</a>
+                <a href="/projects">📁 Все проекты</a>
+            </div>
+        </div>
+        
+        <div class="filters">
+            <div class="filter-row">
+                <div class="filter-item">
+                    <label>Статус:</label>
+                    <select id="statusFilter">
+                        <option value="">Все</option>
+                        <option value="completed">Обработано</option>
+                        <option value="pending">Ожидает</option>
+                        <option value="error">Ошибка</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>Регион:</label>
+                    <select id="regionFilter">
+                        <option value="">Все</option>
+                        <option value="РФ">РФ</option>
+                        <option value="ОАЭ">ОАЭ</option>
+                        <option value="Международная">Международная</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>Поиск:</label>
+                    <input type="text" id="searchFilter" placeholder="Название или клиент...">
+                </div>
+            </div>
+        </div>
+        
+        <div class="projects-table">
+            <div class="stats-row">
+                <h2 style="color: #2c3e50;">Проекты ({{ projects|length }})</h2>
+                <div class="stats-info">
+                    Обработано: {{ projects|selectattr("parsing_status", "equalto", "completed")|list|length }} | 
+                    Ожидает: {{ projects|selectattr("parsing_status", "equalto", "pending")|list|length }} | 
+                    Ошибок: {{ projects|selectattr("parsing_status", "equalto", "error")|list|length }}
+                </div>
+            </div>
+            
+            <table id="projectsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Название проекта</th>
+                        <th>Клиент</th>
+                        <th>Регион</th>
+                        <th>Статус</th>
+                        <th>Товары</th>
+                        <th>Изображения</th>
+                        <th>Обновлен</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project in projects %}
+                    <tr data-status="{{ project.parsing_status }}" data-region="{{ project.region }}" data-search="{{ (project.project_name + ' ' + project.client_name)|lower }}">
+                        <td><strong>{{ project.id }}</strong></td>
+                        <td>
+                            <div style="max-width: 300px;">
+                                <strong>{{ project.project_name[:50] }}{% if project.project_name|length > 50 %}...{% endif %}</strong>
+                                <br><small style="color: #7f8c8d;">{{ project.file_name[:40] }}{% if project.file_name|length > 40 %}...{% endif %}</small>
+                            </div>
+                        </td>
+                        <td>{{ project.client_name }}</td>
+                        <td>
+                            <span class="region {% if project.region == 'РФ' %}rf{% elif project.region == 'ОАЭ' %}uae{% else %}intl{% endif %}">
+                                {{ project.region }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status {{ project.parsing_status }}">
+                                {% if project.parsing_status == 'completed' %}✅ Готово
+                                {% elif project.parsing_status == 'pending' %}⏳ Ожидает
+                                {% elif project.parsing_status == 'error' %}❌ Ошибка
+                                {% else %}{{ project.parsing_status }}{% endif %}
+                            </span>
+                        </td>
+                        <td>{{ project.total_products_found or 0 }}</td>
+                        <td>{{ project.total_images_found or 0 }}</td>
+                        <td>
+                            <small>{{ project.updated_at.strftime('%d.%m.%Y %H:%M') if project.updated_at else '-' }}</small>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="/project/{{ project.id }}" class="btn btn-primary">👁️ Детали</a>
+                                {% if project.google_sheets_url %}
+                                <a href="{{ project.google_sheets_url }}" target="_blank" class="btn btn-success">📊 Sheets</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        // Фильтрация таблицы
+        function filterTable() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const regionFilter = document.getElementById('regionFilter').value;
+            const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+            const rows = document.querySelectorAll('#projectsTable tbody tr');
+            
+            rows.forEach(row => {
+                const status = row.dataset.status;
+                const region = row.dataset.region;
+                const searchText = row.dataset.search;
+                
+                const statusMatch = !statusFilter || status === statusFilter;
+                const regionMatch = !regionFilter || region === regionFilter;
+                const searchMatch = !searchFilter || searchText.includes(searchFilter);
+                
+                row.style.display = statusMatch && regionMatch && searchMatch ? '' : 'none';
+            });
+        }
+        
+        document.getElementById('statusFilter').addEventListener('change', filterTable);
+        document.getElementById('regionFilter').addEventListener('change', filterTable);
+        document.getElementById('searchFilter').addEventListener('input', filterTable);
+    </script>
+</body>
+</html>
+
