@@ -76,6 +76,9 @@ class PriceCalculator:
             }
             self.load_categories_legacy()
             self.formula_config = None
+        
+        # Загружаем таблицу надбавок за плотность
+        self.density_surcharges = self.load_density_surcharges()
     
     def load_categories_legacy(self):
         """Загружает категории товаров"""
