@@ -37,6 +37,7 @@ class PostgreSQLManager:
                 pool_pre_ping=True,
                 pool_recycle=3600,
                 echo=False,  # Устанавливаем True для отладки
+                use_native_hstore=False,  # Отключаем нативные типы
                 connect_args={
                     "options": "-c client_encoding=utf8"
                 }
@@ -45,10 +46,18 @@ class PostgreSQLManager:
             # Регистрируем обработчик для неизвестных типов PostgreSQL
             @event.listens_for(self.engine, "connect")
             def receive_connect(dbapi_conn, connection_record):
-                # Регистрируем TEXT тип (OID 25) как строку
+                # Регистрируем все базовые типы PostgreSQL
                 cursor = dbapi_conn.cursor()
-                cursor.execute("SELECT NULL::text")
+                # Выполняем простой запрос для инициализации типов
+                cursor.execute("SELECT 1")
                 cursor.close()
+                
+                # Патчим psycopg2 для игнорирования неизвестных типов
+                import psycopg2.extensions
+                # Регистрируем TEXT (OID 25) как STRING
+                psycopg2.extensions.register_type(
+                    psycopg2.extensions.new_type((25,), "TEXT", psycopg2.STRING)
+                )
             
             # Создаем фабрику сессий
             self.SessionLocal = scoped_session(
