@@ -17,12 +17,24 @@ def register_pg_types(dbapi_conn, connection_record):
     """Регистрирует TEXT и другие типы PostgreSQL для каждого соединения в пуле"""
     try:
         import psycopg2.extensions
+        import psycopg2
+        
         # Регистрируем TEXT (OID 25) как STRING для ЭТОГО соединения
         TEXT = psycopg2.extensions.new_type((25,), "TEXT", psycopg2.STRING)
         psycopg2.extensions.register_type(TEXT, dbapi_conn)
-        logging.debug(f"✅ TEXT тип зарегистрирован для соединения {id(dbapi_conn)}")
+        
+        # Также регистрируем VARCHAR (OID 1043) на всякий случай
+        VARCHAR = psycopg2.extensions.new_type((1043,), "VARCHAR", psycopg2.STRING)
+        psycopg2.extensions.register_type(VARCHAR, dbapi_conn)
+        
+        # Отключаем автоматическую конвертацию типов, которые могут вызывать проблемы
+        cursor = dbapi_conn.cursor()
+        cursor.execute("SET SESSION client_encoding TO 'UTF8'")
+        cursor.close()
+        
+        logging.info(f"✅ Типы зарегистрированы для соединения {id(dbapi_conn)}")
     except Exception as e:
-        logging.warning(f"⚠️ Не удалось зарегистрировать TEXT тип для соединения: {e}")
+        logging.error(f"❌ Ошибка регистрации типов для соединения: {e}")
 
 # Настройки PostgreSQL
 # Railway предоставляет DATABASE_URL или DATABASE_PUBLIC_URL
@@ -49,9 +61,15 @@ class PostgreSQLManager:
                 pool_pre_ping=True,
                 pool_recycle=3600,
                 echo=False,  # Устанавливаем True для отладки
-                use_native_hstore=False,  # Отключаем нативные типы
                 connect_args={
                     "options": "-c client_encoding=utf8"
+                },
+                # Критически важно: отключаем все нативные типы PostgreSQL
+                use_native_hstore=False,
+                # Явно указываем execution_options
+                execution_options={
+                    "postgresql_readonly": False,
+                    "postgresql_insert_executemany_returning": False
                 }
             )
             
