@@ -9,8 +9,13 @@ import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.pool import QueuePool
+from sqlalchemy.dialects import postgresql
 from contextlib import contextmanager
 import logging
+
+# Регистрируем типы PostgreSQL для правильной работы
+from sqlalchemy.dialects.postgresql import base as pg_base
+pg_base.ischema_names['text'] = postgresql.TEXT
 
 # Настройки PostgreSQL
 # Railway предоставляет DATABASE_URL или DATABASE_PUBLIC_URL
