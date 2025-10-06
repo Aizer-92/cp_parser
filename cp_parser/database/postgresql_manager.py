@@ -45,9 +45,10 @@ class PostgreSQLManager:
             # Регистрируем обработчик для неизвестных типов PostgreSQL
             @event.listens_for(self.engine, "connect")
             def receive_connect(dbapi_conn, connection_record):
-                # Регистрируем адаптеры для psycopg2
-                import psycopg2.extensions
-                psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
+                # Регистрируем TEXT тип (OID 25) как строку
+                cursor = dbapi_conn.cursor()
+                cursor.execute("SELECT NULL::text")
+                cursor.close()
             
             # Создаем фабрику сессий
             self.SessionLocal = scoped_session(
