@@ -12,15 +12,37 @@ from sqlalchemy.pool import QueuePool
 from contextlib import contextmanager
 import logging
 
-# Регистрируем TEXT тип ГЛОБАЛЬНО перед любыми операциями с БД
+# Патчим SQLAlchemy dialect для обработки неизвестных типов PostgreSQL
 try:
-    import psycopg2.extensions
-    # Регистрируем TEXT (OID 25) как STRING глобально
-    TEXT = psycopg2.extensions.new_type((25,), "TEXT", psycopg2.STRING)
-    psycopg2.extensions.register_type(TEXT)
-    logging.info("✅ TEXT тип (OID 25) зарегистрирован глобально")
+    from sqlalchemy.dialects.postgresql import base as pg_base
+    from sqlalchemy import String
+    
+    # Добавляем TEXT в ischema_names
+    if 'text' not in pg_base.ischema_names:
+        pg_base.ischema_names['text'] = String
+    
+    # Патчим _get_column_info для игнорирования неизвестных типов
+    original_get_column_info = pg_base.PGDialect._get_column_info
+    
+    def patched_get_column_info(self, name, format_type, default, notnull, domains, enums, schema, comment, generated, identity):
+        try:
+            return original_get_column_info(self, name, format_type, default, notnull, domains, enums, schema, comment, generated, identity)
+        except Exception as e:
+            if "Unknown PG numeric type" in str(e):
+                # Возвращаем String для неизвестных типов
+                return {
+                    'name': name,
+                    'type': String(),
+                    'nullable': not notnull,
+                    'default': default,
+                    'comment': comment
+                }
+            raise
+    
+    pg_base.PGDialect._get_column_info = patched_get_column_info
+    logging.info("✅ SQLAlchemy dialect пропатчен для обработки неизвестных типов")
 except Exception as e:
-    logging.warning(f"⚠️ Не удалось зарегистрировать TEXT тип: {e}")
+    logging.warning(f"⚠️ Не удалось пропатчить dialect: {e}")
 
 # Настройки PostgreSQL
 # Railway предоставляет DATABASE_URL или DATABASE_PUBLIC_URL
