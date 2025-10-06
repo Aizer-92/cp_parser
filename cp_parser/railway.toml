@@ -2,7 +2,7 @@
 builder = "NIXPACKS"
 
 [deploy]
-startCommand = "bash start.sh"
+startCommand = "cd web_interface && python -m gunicorn -w 4 -b 0.0.0.0:$PORT app:app"
 healthcheckPath = "/"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
