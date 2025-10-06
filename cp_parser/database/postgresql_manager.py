@@ -12,6 +12,16 @@ from sqlalchemy.pool import QueuePool
 from contextlib import contextmanager
 import logging
 
+# Регистрируем TEXT тип ГЛОБАЛЬНО перед любыми операциями с БД
+try:
+    import psycopg2.extensions
+    # Регистрируем TEXT (OID 25) как STRING глобально
+    TEXT = psycopg2.extensions.new_type((25,), "TEXT", psycopg2.STRING)
+    psycopg2.extensions.register_type(TEXT)
+    logging.info("✅ TEXT тип (OID 25) зарегистрирован глобально")
+except Exception as e:
+    logging.warning(f"⚠️ Не удалось зарегистрировать TEXT тип: {e}")
+
 # Настройки PostgreSQL
 # Railway предоставляет DATABASE_URL или DATABASE_PUBLIC_URL
 POSTGRESQL_URL = os.getenv('DATABASE_PUBLIC_URL') or os.getenv('DATABASE_URL', "postgresql://postgres:wpqIxsBFYwmaNBFmCtBahhIMVSSskeiB@centerbeam.proxy.rlwy.net:26590/railway")
@@ -43,21 +53,7 @@ class PostgreSQLManager:
                 }
             )
             
-            # Регистрируем обработчик для неизвестных типов PostgreSQL
-            @event.listens_for(self.engine, "connect")
-            def receive_connect(dbapi_conn, connection_record):
-                # Регистрируем все базовые типы PostgreSQL
-                cursor = dbapi_conn.cursor()
-                # Выполняем простой запрос для инициализации типов
-                cursor.execute("SELECT 1")
-                cursor.close()
-                
-                # Патчим psycopg2 для игнорирования неизвестных типов
-                import psycopg2.extensions
-                # Регистрируем TEXT (OID 25) как STRING
-                psycopg2.extensions.register_type(
-                    psycopg2.extensions.new_type((25,), "TEXT", psycopg2.STRING)
-                )
+            # TEXT тип уже зарегистрирован глобально при импорте модуля
             
             # Создаем фабрику сессий
             self.SessionLocal = scoped_session(
