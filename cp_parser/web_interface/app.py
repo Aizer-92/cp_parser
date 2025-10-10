@@ -190,50 +190,68 @@ def index():
 @app.route('/products')
 @login_required
 def products_list():
-    """Список товаров с пагинацией и поиском"""
+    """Список товаров с пагинацией, поиском и фильтрами"""
     from sqlalchemy import text
     
     page = request.args.get('page', 1, type=int)
     search = request.args.get('search', '', type=str)
+    max_quantity = request.args.get('max_quantity', type=int)  # Фильтр по тиражу (до)
+    min_price = request.args.get('min_price', type=float)  # Фильтр по мин. цене RUB
+    max_price = request.args.get('max_price', type=float)  # Фильтр по макс. цене RUB
     
     with db_manager.get_session() as session:
-        # Подсчитываем общее количество с поиском
+        # Строим динамический WHERE для фильтров
+        where_conditions = []
+        params = {}
+        
         if search.strip():
-            count_sql = text("""
-                SELECT COUNT(*) FROM products 
-                WHERE name ILIKE :search OR description ILIKE :search
-            """)
-            total = session.execute(count_sql, {"search": f"%{search.strip()}%"}).scalar()
+            where_conditions.append("(p.name ILIKE :search OR p.description ILIKE :search)")
+            params["search"] = f"%{search.strip()}%"
+        
+        # Фильтры по цене и тиражу требуют JOIN с price_offers
+        needs_price_join = max_quantity is not None or min_price is not None or max_price is not None
+        
+        if needs_price_join:
+            # Добавляем подзапрос для фильтрации по ценовым предложениям
+            price_filters = []
+            if max_quantity is not None:
+                price_filters.append("po.quantity <= :max_quantity")
+                params["max_quantity"] = max_quantity
+            if min_price is not None:
+                price_filters.append("po.price_rub >= :min_price")
+                params["min_price"] = min_price
+            if max_price is not None:
+                price_filters.append("po.price_rub <= :max_price")
+                params["max_price"] = max_price
             
-            # Получаем товары с поиском
-            products_sql = text("""
-                SELECT id, project_id, name, description, article_number, 
-                       sample_price, sample_delivery_time, row_number
-                FROM products 
-                WHERE name ILIKE :search OR description ILIKE :search
-                ORDER BY id DESC 
-                LIMIT :limit OFFSET :offset
-            """)
-            rows = session.execute(products_sql, {
-                "search": f"%{search.strip()}%",
-                "limit": PRODUCTS_PER_PAGE,
-                "offset": (page - 1) * PRODUCTS_PER_PAGE
-            }).fetchall()
-        else:
-            # Без поиска
-            total = session.execute(text("SELECT COUNT(*) FROM products")).scalar()
-            
-            products_sql = text("""
-                SELECT id, project_id, name, description, article_number, 
-                       sample_price, sample_delivery_time, row_number
-                FROM products 
-                ORDER BY id DESC 
-                LIMIT :limit OFFSET :offset
-            """)
-            rows = session.execute(products_sql, {
-                "limit": PRODUCTS_PER_PAGE,
-                "offset": (page - 1) * PRODUCTS_PER_PAGE
-            }).fetchall()
+            price_where = " AND ".join(price_filters)
+            where_conditions.append(f"p.id IN (SELECT DISTINCT product_id FROM price_offers po WHERE {price_where})")
+        
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        
+        # Подсчитываем общее количество с фильтрами
+        count_sql = text(f"""
+            SELECT COUNT(DISTINCT p.id) 
+            FROM products p
+            LEFT JOIN projects pr ON p.project_id = pr.id
+            WHERE {where_clause}
+        """)
+        total = session.execute(count_sql, params).scalar()
+        
+        # Получаем товары с фильтрами
+        products_sql = text(f"""
+            SELECT DISTINCT p.id, p.project_id, p.name, p.description, p.article_number, 
+                   p.sample_price, p.sample_delivery_time, p.row_number, pr.region
+            FROM products p
+            LEFT JOIN projects pr ON p.project_id = pr.id
+            WHERE {where_clause}
+            ORDER BY p.id DESC 
+            LIMIT :limit OFFSET :offset
+        """)
+        params["limit"] = PRODUCTS_PER_PAGE
+        params["offset"] = (page - 1) * PRODUCTS_PER_PAGE
+        
+        rows = session.execute(products_sql, params).fetchall()
         
         # Преобразуем в объекты Product
         products = []
@@ -247,6 +265,7 @@ def products_list():
             product.sample_price = float(row[5]) if row[5] is not None else None
             product.sample_delivery_time = int(row[6]) if row[6] is not None else None
             product.row_number = int(row[7]) if row[7] is not None else None
+            product.region = row[8] if len(row) > 8 else None  # Регион проекта
             
             # Получаем изображения для товара
             images_sql = text("""
@@ -318,7 +337,10 @@ def products_list():
         return render_template('products_list.html', 
                              products=products, 
                              pagination=pagination, 
-                             search=search)
+                             search=search,
+                             max_quantity=max_quantity,
+                             min_price=min_price,
+                             max_price=max_price)
 
 @app.route('/projects')
 @login_required
@@ -338,14 +360,16 @@ def projects_list():
             """)
             total = session.execute(count_sql, {"search": f"%{search.strip()}%"}).scalar()
             
-            # Получаем проекты с поиском
+            # Получаем проекты с поиском (считаем товары на лету)
             projects_sql = text("""
-                SELECT id, project_name, file_name, google_sheets_url, 
-                       manager_name, total_products_found, total_images_found,
-                       parsing_status, updated_at, created_at
-                FROM projects 
-                WHERE project_name ILIKE :search OR table_id ILIKE :search
-                ORDER BY id DESC 
+                SELECT p.id, p.project_name, p.file_name, p.google_sheets_url, 
+                       p.manager_name, 
+                       (SELECT COUNT(*) FROM products WHERE project_id = p.id) as total_products_found,
+                       p.total_images_found,
+                       p.parsing_status, p.updated_at, p.created_at
+                FROM projects p
+                WHERE p.project_name ILIKE :search OR p.table_id ILIKE :search
+                ORDER BY p.id DESC 
                 LIMIT :limit OFFSET :offset
             """)
             rows = session.execute(projects_sql, {
@@ -358,11 +382,13 @@ def projects_list():
             total = session.execute(text("SELECT COUNT(*) FROM projects")).scalar()
             
             projects_sql = text("""
-                SELECT id, project_name, file_name, google_sheets_url, 
-                       manager_name, total_products_found, total_images_found,
-                       parsing_status, updated_at, created_at
-                FROM projects 
-                ORDER BY id DESC 
+                SELECT p.id, p.project_name, p.file_name, p.google_sheets_url, 
+                       p.manager_name,
+                       (SELECT COUNT(*) FROM products WHERE project_id = p.id) as total_products_found,
+                       p.total_images_found,
+                       p.parsing_status, p.updated_at, p.created_at
+                FROM projects p
+                ORDER BY p.id DESC 
                 LIMIT :limit OFFSET :offset
             """)
             rows = session.execute(projects_sql, {
@@ -418,7 +444,7 @@ def project_detail(project_id):
         project_sql = text("""
             SELECT id, table_id, project_name, file_name, google_sheets_url, 
                    manager_name, total_products_found, total_images_found,
-                   parsing_status, updated_at, created_at
+                   parsing_status, region, updated_at, created_at
             FROM projects 
             WHERE id = :project_id
         """)
@@ -437,9 +463,10 @@ def project_detail(project_id):
         project.total_products_found = int(project_row[6]) if project_row[6] is not None else 0
         project.total_images_found = int(project_row[7]) if project_row[7] is not None else 0
         project.parsing_status = project_row[8]
+        project.region = project_row[9]
         # Преобразуем строки в datetime объекты
-        project.updated_at = datetime.fromisoformat(str(project_row[9])) if project_row[9] else None
-        project.created_at = datetime.fromisoformat(str(project_row[10])) if project_row[10] else None
+        project.updated_at = datetime.fromisoformat(str(project_row[10])) if project_row[10] else None
+        project.created_at = datetime.fromisoformat(str(project_row[11])) if project_row[11] else None
         
         # Получаем товары проекта с пагинацией
         page = request.args.get('page', 1, type=int)
@@ -450,13 +477,14 @@ def project_detail(project_id):
             {"project_id": project_id}
         ).scalar()
         
-        # Получаем товары
+        # Получаем товары (с регионом)
         products_sql = text("""
-            SELECT id, project_id, name, description, article_number, 
-                   sample_price, sample_delivery_time, row_number
-            FROM products 
-            WHERE project_id = :project_id
-            ORDER BY id DESC 
+            SELECT p.id, p.project_id, p.name, p.description, p.article_number, 
+                   p.sample_price, p.sample_delivery_time, p.row_number, pr.region
+            FROM products p
+            LEFT JOIN projects pr ON p.project_id = pr.id
+            WHERE p.project_id = :project_id
+            ORDER BY p.id DESC 
             LIMIT :limit OFFSET :offset
         """)
         rows = session.execute(products_sql, {
@@ -477,6 +505,7 @@ def project_detail(project_id):
             product.sample_price = float(row[5]) if row[5] is not None else None
             product.sample_delivery_time = int(row[6]) if row[6] is not None else None
             product.row_number = int(row[7]) if row[7] is not None else None
+            product.region = row[8] if len(row) > 8 else None  # Регион проекта
             
             # Получаем изображения
             images_sql = text("""
@@ -571,12 +600,13 @@ def product_detail(product_id):
     from sqlalchemy import text
     
     with db_manager.get_session() as session:
-        # Получаем товар
+        # Получаем товар (с регионом)
         product_sql = text("""
-            SELECT id, project_id, name, description, article_number, 
-                   sample_price, sample_delivery_time, row_number, custom_field
-            FROM products 
-            WHERE id = :product_id
+            SELECT p.id, p.project_id, p.name, p.description, p.article_number, 
+                   p.sample_price, p.sample_delivery_time, p.row_number, p.custom_field, pr.region
+            FROM products p
+            LEFT JOIN projects pr ON p.project_id = pr.id
+            WHERE p.id = :product_id
         """)
         product_row = session.execute(product_sql, {"product_id": product_id}).fetchone()
         
@@ -593,6 +623,7 @@ def product_detail(product_id):
         product.sample_delivery_time = int(product_row[6]) if product_row[6] is not None else None
         product.row_number = int(product_row[7]) if product_row[7] is not None else None
         product.custom_field = product_row[8]  # Дизайн
+        product.region = product_row[9] if len(product_row) > 9 else None  # Регион проекта
         
         # Получаем информацию о проекте
         project_sql = text("SELECT id, project_name, table_id FROM projects WHERE id = :project_id")

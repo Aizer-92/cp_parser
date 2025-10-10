@@ -2,6 +2,11 @@
 
 {% block title %}Товары - Парсер коммерческих предложений{% endblock %}
 
+<!-- Макрос для создания URL с параметрами фильтрации -->
+{% macro filter_url(page_num) -%}
+?page={{ page_num }}{% if search %}&search={{ search }}{% endif %}{% if max_quantity %}&max_quantity={{ max_quantity }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}
+{%- endmacro %}
+
 {% block content %}
 <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
     <!-- Заголовок и поиск -->
@@ -15,9 +20,10 @@
             </div>
         </div>
         
-        <!-- Поиск -->
+        <!-- Поиск и фильтры -->
         <div class="mt-6">
-            <form method="GET" class="max-w-2xl">
+            <form method="GET" class="space-y-4">
+                <!-- Поиск по тексту -->
                 <div class="flex gap-2">
                     <div class="relative flex-grow">
                         <input type="text" 
@@ -26,14 +32,87 @@
                                placeholder="Поиск товаров по названию или описанию..." 
                                class="block w-full rounded-lg border-2 border-gray-300 px-4 py-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition-all">
                     </div>
-                <button type="submit" 
-                        class="inline-flex items-center rounded-lg bg-gray-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all">
-                    <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    Найти
-                </button>
+                    <button type="submit" 
+                            class="inline-flex items-center rounded-lg bg-gray-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all">
+                        Найти
+                    </button>
                 </div>
+                
+                <!-- Фильтры -->
+                <div class="flex flex-wrap gap-3 items-end">
+                    <!-- Тираж до -->
+                    <div class="flex-1 min-w-[150px]">
+                        <label for="max_quantity" class="block text-xs font-medium text-gray-700 mb-1">
+                            Тираж до (шт):
+                        </label>
+                        <input type="number" 
+                               name="max_quantity" 
+                               id="max_quantity"
+                               value="{{ max_quantity or '' }}" 
+                               placeholder="например: 1000"
+                               class="block w-full rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                    </div>
+                    
+                    <!-- Цена от -->
+                    <div class="flex-1 min-w-[150px]">
+                        <label for="min_price" class="block text-xs font-medium text-gray-700 mb-1">
+                            Цена от (₽):
+                        </label>
+                        <input type="number" 
+                               name="min_price" 
+                               id="min_price"
+                               value="{{ min_price or '' }}" 
+                               step="0.01"
+                               placeholder="например: 500"
+                               class="block w-full rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                    </div>
+                    
+                    <!-- Цена до -->
+                    <div class="flex-1 min-w-[150px]">
+                        <label for="max_price" class="block text-xs font-medium text-gray-700 mb-1">
+                            Цена до (₽):
+                        </label>
+                        <input type="number" 
+                               name="max_price" 
+                               id="max_price"
+                               value="{{ max_price or '' }}" 
+                               step="0.01"
+                               placeholder="например: 2000"
+                               class="block w-full rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                    </div>
+                    
+                    <!-- Кнопка сброса фильтров -->
+                    {% if max_quantity or min_price or max_price %}
+                    <div>
+                        <a href="/products{% if search %}?search={{ search }}{% endif %}" 
+                           class="inline-flex items-center rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-all">
+                            Сбросить фильтры
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Активные фильтры -->
+                {% if max_quantity or min_price or max_price %}
+                <div class="flex flex-wrap gap-2 pt-2 border-t border-gray-200">
+                    <span class="text-xs font-medium text-gray-500">Активные фильтры:</span>
+                    {% if max_quantity %}
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        Тираж до {{ max_quantity }} шт
+                    </span>
+                    {% endif %}
+                    {% if min_price %}
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Цена от ₽{{ "%.2f"|format(min_price) }}
+                    </span>
+                    {% endif %}
+                    {% if max_price %}
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Цена до ₽{{ "%.2f"|format(max_price) }}
+                    </span>
+                    {% endif %}
+                </div>
+                {% endif %}
             </form>
         </div>
     </div>
@@ -54,7 +133,16 @@
                 </div>
                 {% endif %}
             </div>
-            <h3 class="mt-4 text-sm text-gray-700 line-clamp-2">{{ product.name or 'Без названия' }}</h3>
+            <div class="mt-4 flex items-start gap-2">
+                <h3 class="text-sm text-gray-700 line-clamp-2 flex-1">{{ product.name or 'Без названия' }}</h3>
+                
+                <!-- Лейбл региона (только ОАЭ) -->
+                {% if product.region == 'ОАЭ' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 bg-amber-100 text-amber-800">
+                    🇦🇪
+                </span>
+                {% endif %}
+            </div>
             
             <!-- Цены -->
             {% if product.price_offers %}
@@ -114,7 +202,7 @@
                 <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
                     <!-- Предыдущая страница -->
                     {% if pagination.has_prev %}
-                    <a href="?page={{ pagination.prev_num }}{% if search %}&search={{ search }}{% endif %}" 
+                    <a href="{{ filter_url(pagination.prev_num) }}" 
                        class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">
                         <span class="sr-only">Предыдущая</span>
                         <span class="text-sm">←</span>
@@ -130,7 +218,7 @@
                     {% set end_page = [pagination.total_pages, pagination.page + 2]|min %}
                     
                     {% if start_page > 1 %}
-                    <a href="?page=1{% if search %}&search={{ search }}{% endif %}" 
+                    <a href="{{ filter_url(1) }}" 
                        class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">1</a>
                     {% if start_page > 2 %}
                     <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 focus:outline-offset-0">...</span>
@@ -141,7 +229,7 @@
                     {% if page_num == pagination.page %}
                     <span class="relative z-10 inline-flex items-center bg-indigo-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">{{ page_num }}</span>
                     {% else %}
-                    <a href="?page={{ page_num }}{% if search %}&search={{ search }}{% endif %}" 
+                    <a href="{{ filter_url(page_num) }}" 
                        class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">{{ page_num }}</a>
                     {% endif %}
                     {% endfor %}
@@ -150,13 +238,13 @@
                     {% if end_page < pagination.total_pages - 1 %}
                     <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 focus:outline-offset-0">...</span>
                     {% endif %}
-                    <a href="?page={{ pagination.total_pages }}{% if search %}&search={{ search }}{% endif %}" 
+                    <a href="{{ filter_url(pagination.total_pages) }}" 
                        class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">{{ pagination.total_pages }}</a>
                     {% endif %}
 
                     <!-- Следующая страница -->
                     {% if pagination.has_next %}
-                    <a href="?page={{ pagination.next_num }}{% if search %}&search={{ search }}{% endif %}" 
+                    <a href="{{ filter_url(pagination.next_num) }}" 
                        class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">
                         <span class="sr-only">Следующая</span>
                         <span class="text-sm">→</span>

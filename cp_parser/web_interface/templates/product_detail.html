@@ -68,7 +68,16 @@
 
         <!-- Информация о товаре -->
         <div class="mt-10 px-4 sm:px-0 sm:mt-16 lg:mt-0">
-            <h1 class="text-3xl font-bold tracking-tight text-gray-900">{{ product.name or 'Без названия' }}</h1>
+            <div class="flex items-center gap-3 mb-2">
+                <h1 class="text-3xl font-bold tracking-tight text-gray-900">{{ product.name or 'Без названия' }}</h1>
+                
+                <!-- Лейбл региона (только ОАЭ) -->
+                {% if product.region == 'ОАЭ' %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+                    🇦🇪 ОАЭ
+                </span>
+                {% endif %}
+            </div>
 
             <!-- Проект -->
             {% if product.project %}
@@ -91,22 +100,32 @@
             </div>
             {% endif %}
 
-            <!-- Описание -->
+            <!-- Описание и Характеристики -->
             {% if product.description %}
-            <div class="mt-6">
-                <h3 class="sr-only">Описание</h3>
-                <div class="text-base text-gray-700">
-                    <p>{{ product.description }}</p>
+            <div class="mt-6 bg-gray-50 rounded-lg p-5 border border-gray-200">
+                <h3 class="text-base font-semibold text-gray-900 mb-3">Характеристики товара</h3>
+                <div class="space-y-2">
+                    {% for line in product.description.split('\n') %}
+                        {% if line.strip() %}
+                        <div class="text-base text-gray-700 leading-relaxed">
+                            {{ line.strip() }}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
                 </div>
             </div>
             {% endif %}
             
             <!-- Дизайн -->
             {% if product.custom_field %}
-            <div class="mt-6 border-t border-gray-200 pt-6">
-                <h3 class="text-sm font-medium text-gray-900">Дизайн</h3>
-                <div class="mt-2 text-sm text-gray-600">
-                    <p>{{ product.custom_field }}</p>
+            <div class="mt-6 bg-gray-100 rounded-lg p-5 border border-gray-300">
+                <h3 class="text-base font-semibold text-gray-800 mb-3">Дизайн</h3>
+                <div class="space-y-2">
+                    {% for line in product.custom_field.split('\n') %}
+                        {% if line.strip() %}
+                        <p class="text-base text-gray-700 leading-relaxed">{{ line.strip() }}</p>
+                        {% endif %}
+                    {% endfor %}
                 </div>
             </div>
             {% endif %}
