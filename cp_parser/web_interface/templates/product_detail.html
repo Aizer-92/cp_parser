@@ -97,6 +97,11 @@
                     </a>
                     {% endif %}
                 </p>
+                {% if product.project.manager_name %}
+                <p class="text-sm text-gray-500">
+                    Исполнители: <span class="font-medium text-gray-700">{{ product.project.manager_name }}</span>
+                </p>
+                {% endif %}
                 {% if product.project.offer_creation_date %}
                 <p class="text-sm text-gray-500">
                     Дата создания КП: <span class="font-medium text-gray-700">{{ product.project.offer_creation_date }}</span>

@@ -664,7 +664,7 @@ def product_detail(product_id):
         product.region = product_row[9] if len(product_row) > 9 else None  # Регион проекта
         
         # Получаем информацию о проекте
-        project_sql = text("SELECT id, project_name, table_id, offer_creation_date FROM projects WHERE id = :project_id")
+        project_sql = text("SELECT id, project_name, table_id, offer_creation_date, manager_name FROM projects WHERE id = :project_id")
         project_row_data = session.execute(project_sql, {"project_id": product.project_id}).fetchone()
         if project_row_data:
             product.project = Project()
@@ -672,6 +672,7 @@ def product_detail(product_id):
             product.project.project_name = project_row_data[1]
             product.project.table_id = project_row_data[2]
             product.project.offer_creation_date = project_row_data[3]
+            product.project.manager_name = project_row_data[4]
         
         # Получаем все ценовые предложения
         offers_sql = text("""
