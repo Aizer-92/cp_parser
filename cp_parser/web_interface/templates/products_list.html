@@ -110,20 +110,51 @@
                     </div>
                 </details>
                 
-                <!-- Сортировка -->
-                <div class="bg-gray-50 rounded-lg border border-gray-300 px-4 py-3">
-                    <div class="flex items-center gap-3">
-                        <label for="sort_by" class="text-sm font-medium text-gray-700">Сортировка:</label>
-                        <select name="sort_by" 
-                                id="sort_by"
-                                onchange="this.form.submit()"
-                                class="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
-                            <option value="">По умолчанию (новые первые)</option>
-                            <option value="date_asc" {% if sort_by == 'date_asc' %}selected{% endif %}>Дата КП (старые первые)</option>
-                            <option value="date_desc" {% if sort_by == 'date_desc' %}selected{% endif %}>Дата КП (новые первые)</option>
-                            <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>Цена (дешевле первые)</option>
-                            <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>Цена (дороже первые)</option>
-                        </select>
+                <!-- Сортировка (минималистичные табы) -->
+                <div class="flex items-center gap-2 text-sm">
+                    <span class="text-gray-500">Сортировка:</span>
+                    <div class="flex items-center gap-1">
+                        <!-- По умолчанию -->
+                        <a href="/products?{% if search %}search={{ search }}&{% endif %}{% if max_quantity %}max_quantity={{ max_quantity }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}{% if max_delivery_days %}max_delivery_days={{ max_delivery_days }}&{% endif %}{% if region_uae %}region_uae=on{% endif %}"
+                           class="px-3 py-1.5 rounded-md {% if not sort_by %}bg-indigo-100 text-indigo-700 font-medium{% else %}text-gray-600 hover:bg-gray-100{% endif %}">
+                            По умолчанию
+                        </a>
+                        
+                        <!-- По дате КП (с подменю) -->
+                        <div class="relative group">
+                            <button type="button"
+                                    class="px-3 py-1.5 rounded-md {% if sort_by in ['date_asc', 'date_desc'] %}bg-indigo-100 text-indigo-700 font-medium{% else %}text-gray-600 hover:bg-gray-100{% endif %}">
+                                По дате КП ▾
+                            </button>
+                            <div class="hidden group-hover:block absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-10 min-w-[160px]">
+                                <a href="/products?sort_by=date_desc{% if search %}&search={{ search }}{% endif %}{% if max_quantity %}&max_quantity={{ max_quantity }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}{% if max_delivery_days %}&max_delivery_days={{ max_delivery_days }}{% endif %}{% if region_uae %}&region_uae=on{% endif %}"
+                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 {% if sort_by == 'date_desc' %}bg-indigo-50 text-indigo-700 font-medium{% endif %}">
+                                    Новые первые
+                                </a>
+                                <a href="/products?sort_by=date_asc{% if search %}&search={{ search }}{% endif %}{% if max_quantity %}&max_quantity={{ max_quantity }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}{% if max_delivery_days %}&max_delivery_days={{ max_delivery_days }}{% endif %}{% if region_uae %}&region_uae=on{% endif %}"
+                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 {% if sort_by == 'date_asc' %}bg-indigo-50 text-indigo-700 font-medium{% endif %}">
+                                    Старые первые
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- По цене (с подменю) -->
+                        <div class="relative group">
+                            <button type="button"
+                                    class="px-3 py-1.5 rounded-md {% if sort_by in ['price_asc', 'price_desc'] %}bg-indigo-100 text-indigo-700 font-medium{% else %}text-gray-600 hover:bg-gray-100{% endif %}">
+                                По цене ▾
+                            </button>
+                            <div class="hidden group-hover:block absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-10 min-w-[160px]">
+                                <a href="/products?sort_by=price_asc{% if search %}&search={{ search }}{% endif %}{% if max_quantity %}&max_quantity={{ max_quantity }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}{% if max_delivery_days %}&max_delivery_days={{ max_delivery_days }}{% endif %}{% if region_uae %}&region_uae=on{% endif %}"
+                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 {% if sort_by == 'price_asc' %}bg-indigo-50 text-indigo-700 font-medium{% endif %}">
+                                    Дешевле первые
+                                </a>
+                                <a href="/products?sort_by=price_desc{% if search %}&search={{ search }}{% endif %}{% if max_quantity %}&max_quantity={{ max_quantity }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}{% if max_delivery_days %}&max_delivery_days={{ max_delivery_days }}{% endif %}{% if region_uae %}&region_uae=on{% endif %}"
+                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 {% if sort_by == 'price_desc' %}bg-indigo-50 text-indigo-700 font-medium{% endif %}">
+                                    Дороже первые
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
