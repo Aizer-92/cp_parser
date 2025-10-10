@@ -213,6 +213,7 @@ def products_list():
     max_quantity = request.args.get('max_quantity', type=int)  # Фильтр по тиражу (до)
     min_price = request.args.get('min_price', type=float)  # Фильтр по мин. цене RUB
     max_price = request.args.get('max_price', type=float)  # Фильтр по макс. цене RUB
+    region_uae = request.args.get('region_uae')  # Фильтр по ОАЭ (checkbox)
     
     with db_manager.get_session() as session:
         # Строим динамический WHERE для фильтров
@@ -222,6 +223,10 @@ def products_list():
         if search.strip():
             where_conditions.append("(p.name ILIKE :search OR p.description ILIKE :search)")
             params["search"] = f"%{search.strip()}%"
+        
+        # Фильтр по региону ОАЭ
+        if region_uae:
+            where_conditions.append("pr.region = 'ОАЭ'")
         
         # Фильтры по цене и тиражу требуют JOIN с price_offers
         needs_price_join = max_quantity is not None or min_price is not None or max_price is not None
@@ -356,7 +361,8 @@ def products_list():
                              search=search,
                              max_quantity=max_quantity,
                              min_price=min_price,
-                             max_price=max_price)
+                             max_price=max_price,
+                             region_uae=region_uae)
 
 @app.route('/projects')
 @login_required

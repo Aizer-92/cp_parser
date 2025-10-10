@@ -4,7 +4,7 @@
 
 <!-- Макрос для создания URL с параметрами фильтрации -->
 {% macro filter_url(page_num) -%}
-?page={{ page_num }}{% if search %}&search={{ search }}{% endif %}{% if max_quantity %}&max_quantity={{ max_quantity }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}
+?page={{ page_num }}{% if search %}&search={{ search }}{% endif %}{% if max_quantity %}&max_quantity={{ max_quantity }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}{% if region_uae %}&region_uae=on{% endif %}
 {%- endmacro %}
 
 {% block content %}
@@ -38,65 +38,81 @@
                     </button>
                 </div>
                 
-                <!-- Фильтры -->
-                <div class="bg-white p-4 rounded-lg border-2 border-gray-300 shadow-sm">
-                    <h3 class="text-sm font-semibold text-gray-900 mb-3">Фильтры</h3>
-                    <div class="flex flex-wrap gap-3 items-end">
-                        <!-- Тираж до -->
-                        <div class="flex-1 min-w-[150px]">
-                            <label for="max_quantity" class="block text-sm font-medium text-gray-900 mb-1">
-                                Тираж до (шт):
-                            </label>
-                            <input type="number" 
-                                   name="max_quantity" 
-                                   id="max_quantity"
-                                   value="{{ max_quantity or '' }}" 
-                                   placeholder="например: 1000"
-                                   class="block w-full rounded-md border-2 border-gray-400 px-3 py-2.5 text-sm font-medium shadow-sm focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500">
+                <!-- Фильтры (collapsible) -->
+                <details class="bg-white rounded-lg border-2 border-gray-300 shadow-sm" {% if max_quantity or min_price or max_price or region_uae %}open{% endif %}>
+                    <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-50 rounded-lg transition-colors select-none">
+                        🔍 Фильтры {% if max_quantity or min_price or max_price or region_uae %}({{ [max_quantity, min_price, max_price, region_uae]|select|list|length }} активны){% endif %}
+                    </summary>
+                    <div class="p-4 border-t border-gray-200">
+                        <div class="flex flex-wrap gap-3 items-end">
+                            <!-- Тираж до -->
+                            <div class="flex-1 min-w-[150px]">
+                                <label for="max_quantity" class="block text-sm font-medium text-gray-900 mb-1">
+                                    Тираж до (шт):
+                                </label>
+                                <input type="number" 
+                                       name="max_quantity" 
+                                       id="max_quantity"
+                                       value="{{ max_quantity or '' }}" 
+                                       placeholder="например: 1000"
+                                       class="block w-full rounded-md border-2 border-gray-400 px-3 py-2.5 text-sm font-medium shadow-sm focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            
+                            <!-- Цена от -->
+                            <div class="flex-1 min-w-[150px]">
+                                <label for="min_price" class="block text-sm font-medium text-gray-900 mb-1">
+                                    Цена от (₽):
+                                </label>
+                                <input type="number" 
+                                       name="min_price" 
+                                       id="min_price"
+                                       value="{{ min_price or '' }}" 
+                                       step="0.01"
+                                       placeholder="например: 500"
+                                       class="block w-full rounded-md border-2 border-gray-400 px-3 py-2.5 text-sm font-medium shadow-sm focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            
+                            <!-- Цена до -->
+                            <div class="flex-1 min-w-[150px]">
+                                <label for="max_price" class="block text-sm font-medium text-gray-900 mb-1">
+                                    Цена до (₽):
+                                </label>
+                                <input type="number" 
+                                       name="max_price" 
+                                       id="max_price"
+                                       value="{{ max_price or '' }}" 
+                                       step="0.01"
+                                       placeholder="например: 2000"
+                                       class="block w-full rounded-md border-2 border-gray-400 px-3 py-2.5 text-sm font-medium shadow-sm focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            
+                            <!-- Фильтр по ОАЭ -->
+                            <div class="flex items-center">
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" 
+                                           name="region_uae" 
+                                           id="region_uae"
+                                           {% if region_uae %}checked{% endif %}
+                                           class="w-5 h-5 text-amber-600 border-2 border-gray-400 rounded focus:ring-2 focus:ring-amber-500">
+                                    <span class="ml-2 text-sm font-medium text-gray-900">Только ОАЭ 🇦🇪</span>
+                                </label>
+                            </div>
+                            
+                            <!-- Кнопка сброса фильтров -->
+                            {% if max_quantity or min_price or max_price or region_uae %}
+                            <div>
+                                <a href="/products{% if search %}?search={{ search }}{% endif %}" 
+                                   class="inline-flex items-center rounded-md bg-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-300 transition-all border-2 border-gray-400">
+                                    Сбросить фильтры
+                                </a>
+                            </div>
+                            {% endif %}
                         </div>
-                        
-                        <!-- Цена от -->
-                        <div class="flex-1 min-w-[150px]">
-                            <label for="min_price" class="block text-sm font-medium text-gray-900 mb-1">
-                                Цена от (₽):
-                            </label>
-                            <input type="number" 
-                                   name="min_price" 
-                                   id="min_price"
-                                   value="{{ min_price or '' }}" 
-                                   step="0.01"
-                                   placeholder="например: 500"
-                                   class="block w-full rounded-md border-2 border-gray-400 px-3 py-2.5 text-sm font-medium shadow-sm focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500">
-                        </div>
-                        
-                        <!-- Цена до -->
-                        <div class="flex-1 min-w-[150px]">
-                            <label for="max_price" class="block text-sm font-medium text-gray-900 mb-1">
-                                Цена до (₽):
-                            </label>
-                            <input type="number" 
-                                   name="max_price" 
-                                   id="max_price"
-                                   value="{{ max_price or '' }}" 
-                                   step="0.01"
-                                   placeholder="например: 2000"
-                                   class="block w-full rounded-md border-2 border-gray-400 px-3 py-2.5 text-sm font-medium shadow-sm focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500">
-                        </div>
-                        
-                        <!-- Кнопка сброса фильтров -->
-                        {% if max_quantity or min_price or max_price %}
-                        <div>
-                            <a href="/products{% if search %}?search={{ search }}{% endif %}" 
-                               class="inline-flex items-center rounded-md bg-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-300 transition-all border-2 border-gray-400">
-                                Сбросить фильтры
-                            </a>
-                        </div>
-                        {% endif %}
                     </div>
-                </div>
+                </details>
                 
                 <!-- Активные фильтры -->
-                {% if max_quantity or min_price or max_price %}
+                {% if max_quantity or min_price or max_price or region_uae %}
                 <div class="flex flex-wrap gap-2 pt-2 border-t border-gray-200">
                     <span class="text-xs font-medium text-gray-500">Активные фильтры:</span>
                     {% if max_quantity %}
@@ -112,6 +128,11 @@
                     {% if max_price %}
                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         Цена до ₽{{ "%.2f"|format(max_price) }}
+                    </span>
+                    {% endif %}
+                    {% if region_uae %}
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                        Только ОАЭ 🇦🇪
                     </span>
                     {% endif %}
                 </div>
