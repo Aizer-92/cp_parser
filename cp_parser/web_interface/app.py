@@ -213,6 +213,7 @@ def products_list():
     max_quantity = request.args.get('max_quantity', type=int)  # Фильтр по тиражу (до)
     min_price = request.args.get('min_price', type=float)  # Фильтр по мин. цене RUB
     max_price = request.args.get('max_price', type=float)  # Фильтр по макс. цене RUB
+    max_delivery_days = request.args.get('max_delivery_days', type=int)  # Фильтр по сроку доставки (до)
     region_uae = request.args.get('region_uae')  # Фильтр по ОАЭ (checkbox)
     
     with db_manager.get_session() as session:
@@ -228,8 +229,8 @@ def products_list():
         if region_uae:
             where_conditions.append("pr.region = 'ОАЭ'")
         
-        # Фильтры по цене и тиражу требуют JOIN с price_offers
-        needs_price_join = max_quantity is not None or min_price is not None or max_price is not None
+        # Фильтры по цене, тиражу и сроку требуют JOIN с price_offers
+        needs_price_join = max_quantity is not None or min_price is not None or max_price is not None or max_delivery_days is not None
         
         if needs_price_join:
             # Добавляем подзапрос для фильтрации по ценовым предложениям
@@ -244,6 +245,9 @@ def products_list():
             if max_price is not None:
                 price_filters.append("CAST(po.price_rub AS NUMERIC) <= :max_price")
                 params["max_price"] = max_price
+            if max_delivery_days is not None:
+                price_filters.append("po.delivery_time_days <= :max_delivery_days")
+                params["max_delivery_days"] = max_delivery_days
             
             price_where = " AND ".join(price_filters)
             where_conditions.append(f"p.id IN (SELECT DISTINCT product_id FROM price_offers po WHERE {price_where})")
@@ -362,6 +366,7 @@ def products_list():
                              max_quantity=max_quantity,
                              min_price=min_price,
                              max_price=max_price,
+                             max_delivery_days=max_delivery_days,
                              region_uae=region_uae)
 
 @app.route('/projects')

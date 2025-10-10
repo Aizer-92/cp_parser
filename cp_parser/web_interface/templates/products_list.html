@@ -4,7 +4,7 @@
 
 <!-- Макрос для создания URL с параметрами фильтрации -->
 {% macro filter_url(page_num) -%}
-?page={{ page_num }}{% if search %}&search={{ search }}{% endif %}{% if max_quantity %}&max_quantity={{ max_quantity }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}{% if region_uae %}&region_uae=on{% endif %}
+?page={{ page_num }}{% if search %}&search={{ search }}{% endif %}{% if max_quantity %}&max_quantity={{ max_quantity }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}{% if max_delivery_days %}&max_delivery_days={{ max_delivery_days }}{% endif %}{% if region_uae %}&region_uae=on{% endif %}
 {%- endmacro %}
 
 {% block content %}
@@ -39,9 +39,9 @@
                 </div>
                 
                 <!-- Фильтры (collapsible) -->
-                <details class="bg-white rounded-lg border border-gray-300" {% if max_quantity or min_price or max_price or region_uae %}open{% endif %}>
+                <details class="bg-white rounded-lg border border-gray-300" {% if max_quantity or min_price or max_price or max_delivery_days or region_uae %}open{% endif %}>
                     <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 rounded-lg select-none">
-                        Фильтры {% if max_quantity or min_price or max_price or region_uae %}({{ [max_quantity, min_price, max_price, region_uae]|select|list|length }} активны){% endif %}
+                        Фильтры {% if max_quantity or min_price or max_price or max_delivery_days or region_uae %}({{ [max_quantity, min_price, max_price, max_delivery_days, region_uae]|select|list|length }} активны){% endif %}
                     </summary>
                     <div class="p-4 border-t border-gray-200">
                         <div class="flex flex-wrap gap-3 items-end">
@@ -86,6 +86,19 @@
                                        class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
                             </div>
                             
+                            <!-- Срок до -->
+                            <div class="flex-1 min-w-[150px]">
+                                <label for="max_delivery_days" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Срок до (дней):
+                                </label>
+                                <input type="number" 
+                                       name="max_delivery_days" 
+                                       id="max_delivery_days"
+                                       value="{{ max_delivery_days or '' }}" 
+                                       placeholder="например: 30"
+                                       class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                            </div>
+                            
                             <!-- Фильтр по ОАЭ -->
                             <div class="flex items-center">
                                 <label class="inline-flex items-center cursor-pointer">
@@ -99,7 +112,7 @@
                             </div>
                             
                             <!-- Кнопка сброса фильтров -->
-                            {% if max_quantity or min_price or max_price or region_uae %}
+                            {% if max_quantity or min_price or max_price or max_delivery_days or region_uae %}
                             <div>
                                 <a href="/products{% if search %}?search={{ search }}{% endif %}" 
                                    class="inline-flex items-center rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 border border-gray-300">
@@ -112,7 +125,7 @@
                 </details>
                 
                 <!-- Активные фильтры -->
-                {% if max_quantity or min_price or max_price or region_uae %}
+                {% if max_quantity or min_price or max_price or max_delivery_days or region_uae %}
                 <div class="flex flex-wrap gap-2 pt-2 border-t border-gray-200">
                     <span class="text-xs font-medium text-gray-500">Активные фильтры:</span>
                     {% if max_quantity %}
@@ -128,6 +141,11 @@
                     {% if max_price %}
                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         Цена до ₽{{ "%.2f"|format(max_price) }}
+                    </span>
+                    {% endif %}
+                    {% if max_delivery_days %}
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        Срок до {{ max_delivery_days }} дн
                     </span>
                     {% endif %}
                     {% if region_uae %}
