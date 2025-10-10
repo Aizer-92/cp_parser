@@ -398,3 +398,4 @@ def create_product(name, description, ...):
 **Следующий шаг:** Решение по MVP
 
 
+

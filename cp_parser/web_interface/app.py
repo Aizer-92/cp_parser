@@ -123,9 +123,19 @@ def generate_search_embedding(query: str):
         print(f"⚠️  [VECTOR] Ошибка генерации embedding: {e}")
         return None
 
+def cosine_similarity(vec1, vec2):
+    """Вычисляет косинусное сходство между двумя векторами"""
+    import math
+    dot_product = sum(a * b for a, b in zip(vec1, vec2))
+    magnitude1 = math.sqrt(sum(a * a for a in vec1))
+    magnitude2 = math.sqrt(sum(b * b for b in vec2))
+    if magnitude1 == 0 or magnitude2 == 0:
+        return 0
+    return dot_product / (magnitude1 * magnitude2)
+
 def vector_search_products(session, query_embedding, limit=100):
     """
-    Выполняет векторный поиск товаров
+    Выполняет векторный поиск товаров (работает БЕЗ pgvector!)
     Возвращает список ID товаров, отсортированных по релевантности
     Если что-то не работает - возвращает None (fallback на обычный поиск)
     """
@@ -134,43 +144,87 @@ def vector_search_products(session, query_embedding, limit=100):
     
     try:
         from sqlalchemy import text
+        import json
         
-        # Проверяем что колонка существует
-        check = session.execute(text("""
+        # Проверяем что колонка существует (сначала TEXT версия, потом pgvector)
+        check_text = session.execute(text("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'products' 
+            AND column_name = 'name_embedding_text'
+        """)).fetchone()
+        
+        check_vector = session.execute(text("""
             SELECT column_name 
             FROM information_schema.columns 
             WHERE table_name = 'products' 
             AND column_name = 'name_embedding'
         """)).fetchone()
         
-        if not check:
-            print("⚠️  [VECTOR] Колонка name_embedding не существует, используем обычный поиск")
+        if not check_text and not check_vector:
+            print("⚠️  [VECTOR] Embeddings колонки не существуют, используем обычный поиск")
             return None
         
-        # Выполняем векторный поиск
-        # Используем косинусное расстояние (1 - cosine similarity)
-        # Меньшее расстояние = более релевантный результат
-        result = session.execute(text("""
-            SELECT id, name, 
-                   1 - (name_embedding <=> :query_embedding::vector) as similarity
-            FROM products
-            WHERE name_embedding IS NOT NULL
-            ORDER BY name_embedding <=> :query_embedding::vector
-            LIMIT :limit
-        """), {
-            'query_embedding': str(query_embedding),
-            'limit': limit
-        }).fetchall()
+        # Если есть TEXT колонка - используем её (простая версия)
+        if check_text:
+            print("🔍 [VECTOR] Используем TEXT embeddings (простая версия)")
+            
+            # Получаем ВСЕ товары с embeddings (для небольших объемов это ОК)
+            result = session.execute(text("""
+                SELECT id, name, name_embedding_text
+                FROM products
+                WHERE name_embedding_text IS NOT NULL
+                LIMIT 1000
+            """)).fetchall()
+            
+            # Вычисляем similarity в Python
+            similarities = []
+            for product_id, product_name, embedding_json in result:
+                try:
+                    product_embedding = json.loads(embedding_json)
+                    similarity = cosine_similarity(query_embedding, product_embedding)
+                    if similarity > 0.3:  # Порог релевантности
+                        similarities.append((product_id, product_name, similarity))
+                except:
+                    continue
+            
+            # Сортируем по similarity
+            similarities.sort(key=lambda x: x[2], reverse=True)
+            
+            # Берем top results
+            product_ids = [pid for pid, _, _ in similarities[:limit]]
+            
+            if product_ids:
+                print(f"✅ [VECTOR] Найдено {len(product_ids)} релевантных товаров (TEXT embeddings)")
+            else:
+                print("⚠️  [VECTOR] Векторный поиск не нашел релевантных товаров")
+            
+            return product_ids if product_ids else None
         
-        # Возвращаем только ID товаров с достаточной релевантностью (>0.3)
-        product_ids = [row[0] for row in result if row[2] > 0.3]
-        
-        if product_ids:
-            print(f"✅ [VECTOR] Найдено {len(product_ids)} релевантных товаров векторным поиском")
-        else:
-            print("⚠️  [VECTOR] Векторный поиск не нашел релевантных товаров, используем обычный")
-        
-        return product_ids if product_ids else None
+        # Если есть pgvector колонка - используем её (быстрая версия)
+        elif check_vector:
+            print("🔍 [VECTOR] Используем pgvector (быстрая версия)")
+            
+            result = session.execute(text("""
+                SELECT id, name, 
+                       1 - (name_embedding <=> :query_embedding::vector) as similarity
+                FROM products
+                WHERE name_embedding IS NOT NULL
+                ORDER BY name_embedding <=> :query_embedding::vector
+                LIMIT :limit
+            """), {
+                'query_embedding': str(query_embedding),
+                'limit': limit
+            }).fetchall()
+            
+            product_ids = [row[0] for row in result if row[2] > 0.3]
+            
+            if product_ids:
+                print(f"✅ [VECTOR] Найдено {len(product_ids)} релевантных товаров (pgvector)")
+            else:
+                print("⚠️  [VECTOR] Векторный поиск не нашел релевантных товаров")
+            
+            return product_ids if product_ids else None
         
     except Exception as e:
         print(f"⚠️  [VECTOR] Ошибка векторного поиска: {e}")
