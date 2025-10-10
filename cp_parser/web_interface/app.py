@@ -71,6 +71,21 @@ from auth import AUTH_USERNAME, AUTH_PASSWORD, SECRET_KEY, create_session_token,
 
 from datetime import datetime
 
+# ===== УТИЛИТЫ =====
+
+def parse_price(price_str):
+    """Парсит цену из текстового формата '20 700,00 ₽' в float"""
+    if not price_str:
+        return None
+    try:
+        # Убираем символ рубля и неразрывные пробелы
+        cleaned = str(price_str).replace('₽', '').replace('\xa0', '').replace(' ', '').strip()
+        # Заменяем запятую на точку
+        cleaned = cleaned.replace(',', '.')
+        return float(cleaned)
+    except (ValueError, AttributeError):
+        return None
+
 # ===== АВТОРИЗАЦИЯ =====
 
 @app.route('/login')
@@ -263,7 +278,7 @@ def products_list():
             product.name = row[2]
             product.description = row[3]
             product.article_number = row[4]
-            product.sample_price = float(row[5]) if row[5] is not None else None
+            product.sample_price = parse_price(row[5])  # Используем parse_price для TEXT формата
             product.sample_delivery_time = int(row[6]) if row[6] is not None else None
             product.row_number = int(row[7]) if row[7] is not None else None
             product.region = row[8] if len(row) > 8 else None  # Регион проекта
@@ -300,8 +315,8 @@ def products_list():
                 offer = PriceOffer()
                 offer.id = offer_row[0]
                 offer.quantity = int(offer_row[1]) if offer_row[1] is not None else None
-                offer.price_usd = float(offer_row[2]) if offer_row[2] is not None else None
-                offer.price_rub = float(offer_row[3]) if offer_row[3] is not None else None
+                offer.price_usd = parse_price(offer_row[2])  # Используем parse_price для TEXT формата
+                offer.price_rub = parse_price(offer_row[3])  # Используем parse_price для TEXT формата
                 offer.delivery_time_days = int(offer_row[4]) if offer_row[4] is not None else None
                 product.price_offers.append(offer)
             
@@ -503,7 +518,7 @@ def project_detail(project_id):
             product.name = row[2]
             product.description = row[3]
             product.article_number = row[4]
-            product.sample_price = float(row[5]) if row[5] is not None else None
+            product.sample_price = parse_price(row[5])  # Используем parse_price для TEXT формата
             product.sample_delivery_time = int(row[6]) if row[6] is not None else None
             product.row_number = int(row[7]) if row[7] is not None else None
             product.region = row[8] if len(row) > 8 else None  # Регион проекта
@@ -540,8 +555,8 @@ def project_detail(project_id):
                 offer = PriceOffer()
                 offer.id = offer_row[0]
                 offer.quantity = int(offer_row[1]) if offer_row[1] is not None else None
-                offer.price_usd = float(offer_row[2]) if offer_row[2] is not None else None
-                offer.price_rub = float(offer_row[3]) if offer_row[3] is not None else None
+                offer.price_usd = parse_price(offer_row[2])  # Используем parse_price для TEXT формата
+                offer.price_rub = parse_price(offer_row[3])  # Используем parse_price для TEXT формата
                 offer.delivery_time_days = int(offer_row[4]) if offer_row[4] is not None else None
                 product.price_offers.append(offer)
                 
@@ -620,7 +635,7 @@ def product_detail(product_id):
         product.name = product_row[2]
         product.description = product_row[3]
         product.article_number = product_row[4]
-        product.sample_price = float(product_row[5]) if product_row[5] is not None else None
+        product.sample_price = parse_price(product_row[5])  # Используем parse_price для TEXT формата
         product.sample_delivery_time = int(product_row[6]) if product_row[6] is not None else None
         product.row_number = int(product_row[7]) if product_row[7] is not None else None
         product.custom_field = product_row[8]  # Дизайн
@@ -649,8 +664,8 @@ def product_detail(product_id):
             offer = PriceOffer()
             offer.id = row[0]
             offer.quantity = int(row[1]) if row[1] is not None else None
-            offer.price_usd = float(row[2]) if row[2] is not None else None
-            offer.price_rub = float(row[3]) if row[3] is not None else None
+            offer.price_usd = parse_price(row[2])  # Используем parse_price для TEXT формата
+            offer.price_rub = parse_price(row[3])  # Используем parse_price для TEXT формата
             offer.delivery_time_days = int(row[4]) if row[4] is not None else None
             offer.route = row[5]
             price_offers.append(offer)
