@@ -36,7 +36,8 @@ class Project(Base):
     client_name = Column(String(300), nullable=True, comment="Название клиента/контрагента")
     manager_name = Column(String(200), nullable=True, comment="Менеджер проекта")
     region = Column(String(100), nullable=True, comment="Регион (РФ/Международная/ОАЭ)")
-    offer_creation_date = Column(String(50), nullable=True, comment="Дата создания КП из мастер-таблицы")
+    offer_creation_date = Column(String(50), nullable=True, comment="Дата создания КП из мастер-таблицы (TEXT)")
+    offer_created_at = Column(DateTime, nullable=True, comment="Дата создания КП (TIMESTAMP для сортировки)")
     
     # Ценовые рамки проекта (общие)
     min_budget_usd = Column(Float, nullable=True, comment="Минимальный бюджет в USD")

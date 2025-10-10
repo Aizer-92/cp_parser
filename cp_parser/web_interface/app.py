@@ -253,16 +253,17 @@ def products_list():
         
         # Определяем SELECT и ORDER BY в зависимости от sort_by
         # ВАЖНО: для SELECT DISTINCT все поля в ORDER BY должны быть в SELECT
+        # Используем offer_created_at (TIMESTAMP) вместо offer_creation_date (TEXT) для корректной сортировки
         base_select = """p.id, p.project_id, p.name, p.description, p.article_number, 
-                   p.sample_price, p.sample_delivery_time, p.row_number, pr.region, pr.offer_creation_date"""
+                   p.sample_price, p.sample_delivery_time, p.row_number, pr.region, pr.offer_created_at"""
         
         order_by = "p.id DESC"  # По умолчанию
         select_fields = base_select
         
         if sort_by == "date_asc":
-            order_by = "pr.offer_creation_date ASC NULLS LAST, p.id ASC"
+            order_by = "pr.offer_created_at ASC NULLS LAST, p.id ASC"
         elif sort_by == "date_desc":
-            order_by = "pr.offer_creation_date DESC NULLS LAST, p.id DESC"
+            order_by = "pr.offer_created_at DESC NULLS LAST, p.id DESC"
         elif sort_by == "price_asc":
             # Добавляем подзапрос для цены в SELECT для сортировки
             select_fields = base_select + """, (SELECT MIN(CAST(po.price_rub AS NUMERIC)) FROM price_offers po WHERE po.product_id = p.id) as min_price"""
@@ -307,7 +308,7 @@ def products_list():
             product.sample_delivery_time = int(row[6]) if row[6] is not None else None
             product.row_number = int(row[7]) if row[7] is not None else None
             product.region = row[8]  # Регион проекта
-            # row[9] = offer_creation_date (используется для сортировки, не нужно присваивать)
+            # row[9] = offer_created_at (TIMESTAMP, используется для сортировки, не нужно присваивать)
             # row[10] = min_price (только для сортировки по цене, если применимо)
             
             # Получаем изображения для товара
