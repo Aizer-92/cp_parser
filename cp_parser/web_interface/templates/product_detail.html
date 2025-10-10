@@ -29,9 +29,9 @@
 
     <div class="lg:grid lg:grid-cols-2 lg:gap-x-8 lg:items-start">
         <!-- Изображения -->
-        <div class="flex flex-col-reverse">
+        <div class="flex flex-col">
             <!-- Основное изображение -->
-            <div class="aspect-h-1 aspect-w-1 w-full">
+            <div class="aspect-h-1 aspect-w-1 w-full mb-6">
                 {% if images %}
                 <img id="main-image" 
                      src="{{ get_image_url(images[0].image_filename) }}" 
@@ -44,14 +44,14 @@
                 {% endif %}
             </div>
 
-            <!-- Миниатюры -->
+            <!-- Миниатюры (теперь под основным изображением) -->
             {% if images|length > 1 %}
-            <div class="mx-auto mt-6 hidden w-full max-w-2xl sm:block lg:max-w-none">
+            <div class="mx-auto w-full max-w-2xl sm:block lg:max-w-none">
                 <div class="grid grid-cols-4 gap-6">
                     {% for image in images[:8] %}
                     <button type="button" 
                             onclick="changeMainImage('{{ get_image_url(image.image_filename) }}')"
-                            class="relative h-24 bg-white rounded-md flex items-center justify-center text-sm font-medium uppercase text-gray-900 cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring focus:ring-opacity-50 focus:ring-offset-4">
+                            class="relative h-24 bg-white rounded-md flex items-center justify-center text-sm font-medium uppercase text-gray-900 cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring focus:ring-opacity-50 focus:ring-offset-4 border-2 border-gray-200">
                         <span class="sr-only">{{ image.image_filename }}</span>
                         <span class="absolute inset-0 rounded-md overflow-hidden">
                             <img src="{{ get_image_url(image.image_filename) }}" 

@@ -218,10 +218,10 @@ def products_list():
                 price_filters.append("po.quantity <= :max_quantity")
                 params["max_quantity"] = max_quantity
             if min_price is not None:
-                price_filters.append("po.price_rub >= :min_price")
+                price_filters.append("CAST(po.price_rub AS NUMERIC) >= :min_price")
                 params["min_price"] = min_price
             if max_price is not None:
-                price_filters.append("po.price_rub <= :max_price")
+                price_filters.append("CAST(po.price_rub AS NUMERIC) <= :max_price")
                 params["max_price"] = max_price
             
             price_where = " AND ".join(price_filters)

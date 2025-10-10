@@ -39,57 +39,60 @@
                 </div>
                 
                 <!-- Фильтры -->
-                <div class="flex flex-wrap gap-3 items-end">
-                    <!-- Тираж до -->
-                    <div class="flex-1 min-w-[150px]">
-                        <label for="max_quantity" class="block text-xs font-medium text-gray-700 mb-1">
-                            Тираж до (шт):
-                        </label>
-                        <input type="number" 
-                               name="max_quantity" 
-                               id="max_quantity"
-                               value="{{ max_quantity or '' }}" 
-                               placeholder="например: 1000"
-                               class="block w-full rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                <div class="bg-white p-4 rounded-lg border-2 border-gray-300 shadow-sm">
+                    <h3 class="text-sm font-semibold text-gray-900 mb-3">Фильтры</h3>
+                    <div class="flex flex-wrap gap-3 items-end">
+                        <!-- Тираж до -->
+                        <div class="flex-1 min-w-[150px]">
+                            <label for="max_quantity" class="block text-sm font-medium text-gray-900 mb-1">
+                                Тираж до (шт):
+                            </label>
+                            <input type="number" 
+                                   name="max_quantity" 
+                                   id="max_quantity"
+                                   value="{{ max_quantity or '' }}" 
+                                   placeholder="например: 1000"
+                                   class="block w-full rounded-md border-2 border-gray-400 px-3 py-2.5 text-sm font-medium shadow-sm focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        
+                        <!-- Цена от -->
+                        <div class="flex-1 min-w-[150px]">
+                            <label for="min_price" class="block text-sm font-medium text-gray-900 mb-1">
+                                Цена от (₽):
+                            </label>
+                            <input type="number" 
+                                   name="min_price" 
+                                   id="min_price"
+                                   value="{{ min_price or '' }}" 
+                                   step="0.01"
+                                   placeholder="например: 500"
+                                   class="block w-full rounded-md border-2 border-gray-400 px-3 py-2.5 text-sm font-medium shadow-sm focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        
+                        <!-- Цена до -->
+                        <div class="flex-1 min-w-[150px]">
+                            <label for="max_price" class="block text-sm font-medium text-gray-900 mb-1">
+                                Цена до (₽):
+                            </label>
+                            <input type="number" 
+                                   name="max_price" 
+                                   id="max_price"
+                                   value="{{ max_price or '' }}" 
+                                   step="0.01"
+                                   placeholder="например: 2000"
+                                   class="block w-full rounded-md border-2 border-gray-400 px-3 py-2.5 text-sm font-medium shadow-sm focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        
+                        <!-- Кнопка сброса фильтров -->
+                        {% if max_quantity or min_price or max_price %}
+                        <div>
+                            <a href="/products{% if search %}?search={{ search }}{% endif %}" 
+                               class="inline-flex items-center rounded-md bg-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-300 transition-all border-2 border-gray-400">
+                                Сбросить фильтры
+                            </a>
+                        </div>
+                        {% endif %}
                     </div>
-                    
-                    <!-- Цена от -->
-                    <div class="flex-1 min-w-[150px]">
-                        <label for="min_price" class="block text-xs font-medium text-gray-700 mb-1">
-                            Цена от (₽):
-                        </label>
-                        <input type="number" 
-                               name="min_price" 
-                               id="min_price"
-                               value="{{ min_price or '' }}" 
-                               step="0.01"
-                               placeholder="например: 500"
-                               class="block w-full rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
-                    </div>
-                    
-                    <!-- Цена до -->
-                    <div class="flex-1 min-w-[150px]">
-                        <label for="max_price" class="block text-xs font-medium text-gray-700 mb-1">
-                            Цена до (₽):
-                        </label>
-                        <input type="number" 
-                               name="max_price" 
-                               id="max_price"
-                               value="{{ max_price or '' }}" 
-                               step="0.01"
-                               placeholder="например: 2000"
-                               class="block w-full rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
-                    </div>
-                    
-                    <!-- Кнопка сброса фильтров -->
-                    {% if max_quantity or min_price or max_price %}
-                    <div>
-                        <a href="/products{% if search %}?search={{ search }}{% endif %}" 
-                           class="inline-flex items-center rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-all">
-                            Сбросить фильтры
-                        </a>
-                    </div>
-                    {% endif %}
                 </div>
                 
                 <!-- Активные фильтры -->
