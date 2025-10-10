@@ -1,8 +1,8 @@
 metadata:
-  version: '1.0'
+  version: '1.1'
   description: Конфигурация категорий товаров для Price Calculator
-  total_categories: 108
-  created_from: categories_data.py
+  total_categories: 109
+  created_from: categories_data.py + manual additions
   fields_description:
     category: Название категории товара
     material: Материалы изготовления
@@ -16,6 +16,32 @@ metadata:
     median_price_rub: Медианная цена в рублях
     avg_quantity: Среднее количество для заказа
 categories:
+# Специальная категория для нераспознанных товаров (требует ручного ввода параметров)
+- category: Новая категория
+  material: ''
+  tnved_code: ''
+  duty_rate: 0%
+  vat_rate: 20%
+  certificates: []
+  description: Для товаров, не распознанных автоматически. Требует ручного ввода всех параметров.
+  rates:
+    rail_base: 0  # Должен быть заполнен пользователем (0 = не заполнено)
+    air_base: 0   # Должен быть заполнен пользователем (0 = не заполнено)
+  price_ranges:
+    price_rub_min: 0
+    price_rub_max: 0
+    price_yuan_min: 0
+    price_yuan_max: 0
+  weight_ranges:
+    weight_min: 0
+    weight_max: 0
+  quantity_ranges:
+    quantity_min: 1
+    quantity_max: 100000
+  median_price_yuan: 0
+  median_price_rub: 0
+  avg_quantity: 1000
+  density: 200
 - category: сумка
   material: Полиэстер, нейлон, хлопок, Оксфорд, плюш, фетр, акрил, кожзам
   tnved_code: '4202929800'

@@ -505,3 +505,5 @@ custom_field = self._get_cell_value(ws_data, row, 'description')
 Хочешь начать создавать парсер для Шаблона 5?
 
 
+
+

@@ -182,8 +182,8 @@ def init_database():
     
     conn.commit()
     
-    # Миграция: добавляем отсутствующие столбцы если их нет
-    migrate_database_schema(conn, cursor, db_type)
+    # МИГРАЦИЯ ОТКЛЮЧЕНА: init_db.py уже добавляет все необходимые колонки при старте
+    # migrate_database_schema(conn, cursor, db_type)  # Закомментировано
     
     # НЕ закрываем подключение - переиспользуем его
     print(f"Таблицы инициализированы ({db_type})")
@@ -224,6 +224,7 @@ def migrate_database_schema(conn, cursor, db_type):
                 print(f"✅ Добавлен столбец: {column_name}")
             except Exception as e:
                 # Столбец уже существует или другая ошибка
+                conn.rollback()  # КРИТИЧНО для PostgreSQL: откатываем абортированную транзакцию
                 if "already exists" in str(e).lower() or "duplicate column" in str(e).lower():
                     continue  # Столбец уже есть, это нормально
                 else:
@@ -243,6 +244,11 @@ def save_calculation_to_db(data: Dict[str, Any]) -> int:
         
         print(f"💾 Сохранение расчета в БД ({db_type}): {data['product_name']}")
         
+        # Сериализуем custom_logistics для сохранения
+        custom_logistics_json = None
+        if data.get('custom_logistics'):
+            custom_logistics_json = json.dumps(data['custom_logistics'])
+        
         if db_type == 'postgres':
             cursor.execute('''
                 INSERT INTO calculations 
@@ -252,8 +258,9 @@ def save_calculation_to_db(data: Dict[str, Any]) -> int:
                  packing_units_per_box, packing_box_weight, packing_box_length, packing_box_width, packing_box_height,
                  packing_total_boxes, packing_total_volume, packing_total_weight,
                  tnved_code, duty_rate, vat_rate, duty_amount_usd, vat_amount_usd, total_customs_cost_usd,
-                 certificates, customs_notes, density_warning_message, calculated_density, category_density) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
+                 certificates, customs_notes, density_warning_message, calculated_density, category_density,
+                 custom_logistics, forced_category) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
                 RETURNING id
             ''', (
                 data['product_name'], data['category'], data['price_yuan'], data['weight_kg'],
@@ -270,7 +277,9 @@ def save_calculation_to_db(data: Dict[str, Any]) -> int:
                 data.get('duty_amount_usd'), data.get('vat_amount_usd'), data.get('total_customs_cost_usd'),
                 data.get('certificates'), data.get('customs_notes'),
                 # Данные о предупреждениях плотности
-                data.get('density_warning_message'), data.get('calculated_density'), data.get('category_density')
+                data.get('density_warning_message'), data.get('calculated_density'), data.get('category_density'),
+                # Новые поля для кастомных параметров
+                custom_logistics_json, data.get('forced_category')
             ))
             result = cursor.fetchone()
             calculation_id = result['id'] if isinstance(result, dict) else result[0]
@@ -284,8 +293,9 @@ def save_calculation_to_db(data: Dict[str, Any]) -> int:
                  packing_units_per_box, packing_box_weight, packing_box_length, packing_box_width, packing_box_height,
                  packing_total_boxes, packing_total_volume, packing_total_weight,
                  tnved_code, duty_rate, vat_rate, duty_amount_usd, vat_amount_usd, total_customs_cost_usd,
-                 certificates, customs_notes, density_warning_message, calculated_density, category_density) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 certificates, customs_notes, density_warning_message, calculated_density, category_density,
+                 custom_logistics, forced_category) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 data['product_name'], data['category'], data['price_yuan'], data['weight_kg'],
                 data['quantity'], data['markup'], data.get('custom_rate'), data.get('product_url'),
@@ -301,7 +311,9 @@ def save_calculation_to_db(data: Dict[str, Any]) -> int:
                 data.get('duty_amount_usd'), data.get('vat_amount_usd'), data.get('total_customs_cost_usd'),
                 data.get('certificates'), data.get('customs_notes'),
                 # Данные о предупреждениях плотности
-                data.get('density_warning_message'), data.get('calculated_density'), data.get('category_density')
+                data.get('density_warning_message'), data.get('calculated_density'), data.get('category_density'),
+                # Новые поля для кастомных параметров
+                custom_logistics_json, data.get('forced_category')
             ))
             calculation_id = cursor.lastrowid
             print(f"✅ SQLite: Расчет сохранен с ID {calculation_id}")
@@ -404,7 +416,8 @@ def get_calculation_history() -> List[Dict[str, Any]]:
                    sale_price_rub, sale_price_usd, profit_rub, profit_usd, created_at,
                    calculation_type,
                    packing_units_per_box, packing_box_weight, packing_box_length, packing_box_width, packing_box_height,
-                   packing_total_boxes, packing_total_volume, packing_total_weight
+                   packing_total_boxes, packing_total_volume, packing_total_weight,
+                   custom_logistics, forced_category
             FROM calculations 
             ORDER BY created_at DESC 
             LIMIT 50
@@ -417,10 +430,20 @@ def get_calculation_history() -> List[Dict[str, Any]]:
         for row in rows:
             if db_type == 'postgres':
                 # PostgreSQL с RealDictCursor возвращает dict-like объекты
-                history.append(dict(row))
+                item = dict(row)
             else:
                 # SQLite с row_factory = sqlite3.Row
-                history.append(dict(row))
+                item = dict(row)
+            
+            # Десериализуем custom_logistics из JSON если есть
+            if item.get('custom_logistics'):
+                if isinstance(item['custom_logistics'], str):
+                    try:
+                        item['custom_logistics'] = json.loads(item['custom_logistics'])
+                    except json.JSONDecodeError:
+                        item['custom_logistics'] = None
+            
+            history.append(item)
         
         print(f"✅ История загружена: {len(history)} записей")
         return history
@@ -439,7 +462,8 @@ def get_calculation_history() -> List[Dict[str, Any]]:
                        sale_price_rub, sale_price_usd, profit_rub, profit_usd, created_at,
                        calculation_type,
                        packing_units_per_box, packing_box_weight, packing_box_length, packing_box_width, packing_box_height,
-                       packing_total_boxes, packing_total_volume, packing_total_weight
+                       packing_total_boxes, packing_total_volume, packing_total_weight,
+                       custom_logistics, forced_category
                 FROM calculations 
                 ORDER BY created_at DESC 
                 LIMIT 50
@@ -450,7 +474,17 @@ def get_calculation_history() -> List[Dict[str, Any]]:
             
             history = []
             for row in rows:
-                history.append(dict(row))
+                item = dict(row)
+                
+                # Десериализуем custom_logistics из JSON если есть
+                if item.get('custom_logistics'):
+                    if isinstance(item['custom_logistics'], str):
+                        try:
+                            item['custom_logistics'] = json.loads(item['custom_logistics'])
+                        except json.JSONDecodeError:
+                            item['custom_logistics'] = None
+                
+                history.append(item)
             
             print(f"✅ История загружена после переподключения: {len(history)} записей")
             return history
@@ -465,6 +499,11 @@ def update_calculation(calculation_id: int, data: dict):
         conn, db_type = get_database_connection()
         cursor = conn.cursor()
         
+        # Сериализуем custom_logistics для сохранения
+        custom_logistics_json = None
+        if data.get('custom_logistics'):
+            custom_logistics_json = json.dumps(data['custom_logistics'])
+        
         # Обновляем запись
         if db_type == 'postgres':
             cursor.execute('''
@@ -472,7 +511,11 @@ def update_calculation(calculation_id: int, data: dict):
                 SET product_name = %s, category = %s, price_yuan = %s, weight_kg = %s, 
                     quantity = %s, markup = %s, custom_rate = %s, product_url = %s,
                     cost_price_rub = %s, cost_price_usd = %s, sale_price_rub = %s, 
-                    sale_price_usd = %s, profit_rub = %s, profit_usd = %s
+                    sale_price_usd = %s, profit_rub = %s, profit_usd = %s,
+                    packing_units_per_box = %s, packing_box_weight = %s, 
+                    packing_box_length = %s, packing_box_width = %s, packing_box_height = %s,
+                    packing_total_boxes = %s, packing_total_volume = %s, packing_total_weight = %s,
+                    custom_logistics = %s, forced_category = %s
                 WHERE id = %s
                 RETURNING id
             ''', (
@@ -480,7 +523,14 @@ def update_calculation(calculation_id: int, data: dict):
                 data['quantity'], data['markup'], data.get('custom_rate'),
                 data.get('product_url', ''), data['cost_price_rub'], data['cost_price_usd'],
                 data['sale_price_rub'], data['sale_price_usd'], data['profit_rub'],
-                data['profit_usd'], calculation_id
+                data['profit_usd'],
+                # Данные пакинга
+                data.get('packing_units_per_box'), data.get('packing_box_weight'),
+                data.get('packing_box_length'), data.get('packing_box_width'), data.get('packing_box_height'),
+                data.get('packing_total_boxes'), data.get('packing_total_volume'), data.get('packing_total_weight'),
+                # Новые поля для кастомных параметров
+                custom_logistics_json, data.get('forced_category'),
+                calculation_id
             ))
             
             if not cursor.fetchone():
@@ -492,14 +542,25 @@ def update_calculation(calculation_id: int, data: dict):
                 SET product_name = ?, category = ?, price_yuan = ?, weight_kg = ?, 
                     quantity = ?, markup = ?, custom_rate = ?, product_url = ?,
                     cost_price_rub = ?, cost_price_usd = ?, sale_price_rub = ?, 
-                    sale_price_usd = ?, profit_rub = ?, profit_usd = ?
+                    sale_price_usd = ?, profit_rub = ?, profit_usd = ?,
+                    packing_units_per_box = ?, packing_box_weight = ?, 
+                    packing_box_length = ?, packing_box_width = ?, packing_box_height = ?,
+                    packing_total_boxes = ?, packing_total_volume = ?, packing_total_weight = ?,
+                    custom_logistics = ?, forced_category = ?
                 WHERE id = ?
             ''', (
                 data['product_name'], data['category'], data['price_yuan'], data['weight_kg'],
                 data['quantity'], data['markup'], data.get('custom_rate'),
                 data.get('product_url', ''), data['cost_price_rub'], data['cost_price_usd'],
                 data['sale_price_rub'], data['sale_price_usd'], data['profit_rub'],
-                data['profit_usd'], calculation_id
+                data['profit_usd'],
+                # Данные пакинга
+                data.get('packing_units_per_box'), data.get('packing_box_weight'),
+                data.get('packing_box_length'), data.get('packing_box_width'), data.get('packing_box_height'),
+                data.get('packing_total_boxes'), data.get('packing_total_volume'), data.get('packing_total_weight'),
+                # Новые поля для кастомных параметров
+                custom_logistics_json, data.get('forced_category'),
+                calculation_id
             ))
             
             if cursor.rowcount == 0:

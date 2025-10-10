@@ -9,6 +9,9 @@ from database import get_database_connection
 
 # Данные по пошлинам для всех категорий
 CUSTOMS_DATA = {
+    # Специальная категория для нераспознанных товаров
+    "Новая категория": {"duty_rate": "0%", "vat_rate": "20%", "certificates": [], "description": "Для товаров, не распознанных автоматически. Требует ручного ввода пошлин."},
+    
     # Основные категории с пошлинами
     "повербанки": {"duty_rate": "0%", "vat_rate": "20%", "certificates": ["EAC"]},
     "кружки": {"duty_rate": "12%", "vat_rate": "20%", "certificates": ["EAC"]},  # Исправлено с 11.5%
@@ -37,6 +40,16 @@ CUSTOMS_DATA = {
     "перчатки": {"duty_rate": "10%", "duty_type": "combined", "ad_valorem_rate": "10%", "specific_rate": "1.88 EUR/kg", "vat_rate": "20%", "certificates": ["EAC"]},
     "дождевик": {"duty_rate": "10%", "duty_type": "combined", "ad_valorem_rate": "10%", "specific_rate": "1.88 EUR/kg", "vat_rate": "20%", "certificates": ["EAC"]},
     "носки": {"duty_rate": "10%", "duty_type": "combined", "ad_valorem_rate": "10%", "specific_rate": "1.88 EUR/kg", "vat_rate": "20%", "certificates": ["EAC"]},
+    
+    # Текстиль - ЧИСТО ВЕСОВЫЕ ПОШЛИНЫ (только EUR/кг, ТН ВЭД 6307)
+    "чехлы для чемодана": {"duty_rate": "2.2 EUR/kg", "duty_type": "specific", "specific_rate": "2.2 EUR/kg", "vat_rate": "20%", "certificates": ["EAC"]},
+    "чехол для чемодана": {"duty_rate": "2.2 EUR/kg", "duty_type": "specific", "specific_rate": "2.2 EUR/kg", "vat_rate": "20%", "certificates": ["EAC"]},
+    "ланъярд": {"duty_rate": "2.2 EUR/kg", "duty_type": "specific", "specific_rate": "2.2 EUR/kg", "vat_rate": "20%", "certificates": ["EAC"]},
+    "ланьярд": {"duty_rate": "2.2 EUR/kg", "duty_type": "specific", "specific_rate": "2.2 EUR/kg", "vat_rate": "20%", "certificates": ["EAC"]},
+    "шнурок для телефона": {"duty_rate": "2.2 EUR/kg", "duty_type": "specific", "specific_rate": "2.2 EUR/kg", "vat_rate": "20%", "certificates": ["EAC"]},
+    "маска для сна": {"duty_rate": "2.2 EUR/kg", "duty_type": "specific", "specific_rate": "2.2 EUR/kg", "vat_rate": "20%", "certificates": ["EAC"]},
+    "тряпки": {"duty_rate": "2.2 EUR/kg", "duty_type": "specific", "specific_rate": "2.2 EUR/kg", "vat_rate": "20%", "certificates": ["EAC"]},
+    "полотенца": {"duty_rate": "2.2 EUR/kg", "duty_type": "specific", "specific_rate": "2.2 EUR/kg", "vat_rate": "20%", "certificates": ["EAC"]},
     "сумки": {"duty_rate": "9.6%", "vat_rate": "20%", "certificates": ["EAC"]},
     "зонты": {"duty_rate": "6.5%", "vat_rate": "20%", "certificates": []},
     "часы": {"duty_rate": "6%", "vat_rate": "20%", "certificates": ["EAC"]},
@@ -138,17 +151,36 @@ def load_customs_data():
                     
                     # Добавляем/обновляем данные по пошлинам
                     if existing_tnved:
-                        # Если ТН ВЭД уже есть, только добавляем пошлины
+                        # Если ТН ВЭД уже есть, добавляем все поля пошлин
                         category_json['duty_rate'] = customs_info['duty_rate']
                         category_json['vat_rate'] = customs_info['vat_rate']
                         category_json['certificates'] = customs_info['certificates']
-                        print(f"✅ Обновлены пошлины для: {category_name} (ТН ВЭД: {existing_tnved})")
+                        
+                        # Добавляем поля комбинированных пошлин (если есть)
+                        if 'duty_type' in customs_info:
+                            category_json['duty_type'] = customs_info['duty_type']
+                        if 'ad_valorem_rate' in customs_info:
+                            category_json['ad_valorem_rate'] = customs_info['ad_valorem_rate']
+                        if 'specific_rate' in customs_info:
+                            category_json['specific_rate'] = customs_info['specific_rate']
+                        
+                        duty_info = f" (комбинир. {customs_info.get('ad_valorem_rate')}/{customs_info.get('specific_rate')})" if customs_info.get('duty_type') == 'combined' else ""
+                        print(f"✅ Обновлены пошлины для: {category_name} (ТН ВЭД: {existing_tnved}){duty_info}")
                     else:
                         # Если ТН ВЭД нет, используем общий код
                         category_json['tnved_code'] = "9999999999"  # Общий код для уточнения
                         category_json['duty_rate'] = customs_info['duty_rate']
                         category_json['vat_rate'] = customs_info['vat_rate']
                         category_json['certificates'] = customs_info['certificates']
+                        
+                        # Добавляем поля комбинированных пошлин (если есть)
+                        if 'duty_type' in customs_info:
+                            category_json['duty_type'] = customs_info['duty_type']
+                        if 'ad_valorem_rate' in customs_info:
+                            category_json['ad_valorem_rate'] = customs_info['ad_valorem_rate']
+                        if 'specific_rate' in customs_info:
+                            category_json['specific_rate'] = customs_info['specific_rate']
+                        
                         print(f"✅ Добавлены данные для: {category_name} (общий ТН ВЭД)")
                     
                     # Обновляем в БД

@@ -651,7 +651,8 @@ def project_detail(project_id):
         project_sql = text("""
             SELECT id, table_id, project_name, file_name, google_sheets_url, 
                    manager_name, total_products_found, total_images_found,
-                   parsing_status, region, updated_at, created_at, offer_created_at
+                   parsing_status, region, updated_at, created_at, offer_created_at,
+                   planfix_task_url
             FROM projects 
             WHERE id = :project_id
         """)
@@ -675,6 +676,7 @@ def project_detail(project_id):
         project.updated_at = datetime.fromisoformat(str(project_row[10])) if project_row[10] else None
         project.created_at = datetime.fromisoformat(str(project_row[11])) if project_row[11] else None
         project.offer_created_at = project_row[12]  # TIMESTAMP
+        project.planfix_task_url = project_row[13]  # Planfix URL
         
         # Получаем товары проекта с пагинацией
         page = request.args.get('page', 1, type=int)

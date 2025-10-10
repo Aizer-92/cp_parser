@@ -60,6 +60,30 @@ const ResultsDisplay = {
             return this.editingCalculationId !== null;
         },
         
+        // Debug: проверка данных плотности
+        hasDensityInfo: function() {
+            console.log('🔍 DEBUG hasDensityInfo:', {
+                has_result: !!this.result,
+                has_density_info: !!(this.result && this.result.density_info),
+                density_info: this.result ? this.result.density_info : null,
+                has_logistics: !!(this.result && this.result.logistics),
+                logistics: this.result ? this.result.logistics : null
+            });
+            return this.result && 
+                   this.result.density_info && 
+                   this.result.density_info.has_density_data === true;
+        },
+        
+        // Debug: проверка данных Prologix
+        hasPrologixInfo: function() {
+            console.log('🔍 DEBUG hasPrologixInfo:', {
+                has_result: !!this.result,
+                has_prologix: !!(this.result && this.result.prologix_cost),
+                prologix_cost: this.result ? this.result.prologix_cost : null
+            });
+            return this.result && this.result.prologix_cost;
+        },
+        
             // Проверяем наличие данных пакинга для точных расчетов
             hasPackingData: function() {
                 var hasPacking = this.result && 
@@ -271,9 +295,29 @@ const ResultsDisplay = {
                         '<span class="detail-label">Товар:</span>' +
                         '<span class="detail-value">{{ formatNumberWithSpaces(result.total_price.rub) }} руб ({{ getPercentOfCost(result.total_price.rub, result.cost_price.total.rub) }}%)</span>' +
                     '</div>' +
+                    
+                    '<!-- Детализация логистической ставки -->' +
                     '<div class="detail-item">' +
                         '<span class="detail-label">Логистика:</span>' +
                         '<span class="detail-value">{{ formatNumberWithSpaces(result.logistics.cost_rub) }} руб ({{ getPercentOfCost(result.logistics.cost_rub, result.cost_price.total.rub) }}%)</span>' +
+                    '</div>' +
+                    '<div v-if="hasDensityInfo" style="margin-left: 20px; font-size: 12px; color: #6b7280;">' +
+                        '<div style="display: flex; justify-content: space-between; padding: 2px 0;">' +
+                            '<span>Базовая ставка:</span>' +
+                            '<span>${{ formatNumber(result.logistics.base_rate_usd, 2) }}/кг</span>' +
+                        '</div>' +
+                        '<div v-if="result.logistics.density_surcharge_usd > 0" style="display: flex; justify-content: space-between; padding: 2px 0; color: #dc2626;">' +
+                            '<span>⚠️ Надбавка за плотность ({{ formatNumber(result.density_info.density_kg_m3, 1) }} кг/м³):</span>' +
+                            '<span>+${{ formatNumber(result.logistics.density_surcharge_usd, 2) }}/кг</span>' +
+                        '</div>' +
+                        '<div v-else style="display: flex; justify-content: space-between; padding: 2px 0; color: #059669;">' +
+                            '<span>✅ Плотность оптимальная ({{ formatNumber(result.density_info.density_kg_m3, 1) }} кг/м³):</span>' +
+                            '<span>Надбавка: $0.00</span>' +
+                        '</div>' +
+                        '<div style="display: flex; justify-content: space-between; padding: 2px 0; font-weight: 600; border-top: 1px solid #e5e7eb; margin-top: 2px;">' +
+                            '<span>Итоговая ставка:</span>' +
+                            '<span>${{ formatNumber(result.logistics.rate_usd, 2) }}/кг</span>' +
+                        '</div>' +
                     '</div>' +
                     '<div class="detail-item">' +
                         '<span class="detail-label">Локальная доставка:</span>' +
@@ -393,6 +437,33 @@ const ResultsDisplay = {
                     '<div style="font-size: 12px; margin-top: 4px; color: #991b1b;">Обратитесь к таможенному брокеру для получения информации.</div>' +
                 '</div>' +
             '</template>' +
+        '</div>' +
+        
+        '<!-- БЛОК PROLOGIX - РАСЧЕТ ПО КУБОМЕТРАМ -->' +
+        '<div v-if="hasPrologixInfo" style="margin-top: 20px; padding: 16px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px;">' +
+            '<h4 style="font-size: 14px; font-weight: 600; color: #1f2937; margin-bottom: 12px;">Prologix (доставка по кубометрам)</h4>' +
+            
+            '<div style="font-size: 13px; color: #6b7280; margin-bottom: 12px;">' +
+                'Объем: {{ result.prologix_cost.total_volume_m3 }} м³ × {{ result.prologix_cost.rate_rub_per_m3.toLocaleString() }} руб/м³ = ' +
+                '<strong style="color: #059669;">{{ result.prologix_cost.logistics_cost_rub.toLocaleString() }} ₽</strong> логистика' +
+            '</div>' +
+            
+            '<div style="font-size: 12px; color: #6b7280; margin-bottom: 12px; padding: 8px; background: white; border-radius: 6px;">' +
+                'Срок доставки: {{ result.prologix_cost.delivery_days_min }}-{{ result.prologix_cost.delivery_days_max }} дней (среднее: {{ result.prologix_cost.delivery_days_avg }} дней)' +
+            '</div>' +
+            
+            '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 13px;">' +
+                '<div>' +
+                    '<span style="color: #6b7280;">За единицу:</span> ' +
+                    '<strong style="color: #1f2937;">{{ result.prologix_cost.cost_per_unit_rub.toLocaleString() }} ₽</strong>' +
+                    '<span style="color: #6b7280;"> ({{ result.prologix_cost.cost_per_unit_usd.toFixed(2) }}$)</span>' +
+                '</div>' +
+                '<div>' +
+                    '<span style="color: #6b7280;">Весь тираж:</span> ' +
+                    '<strong style="color: #1f2937;">{{ result.prologix_cost.total_cost_rub.toLocaleString() }} ₽</strong>' +
+                    '<span style="color: #6b7280;"> ({{ result.prologix_cost.total_cost_usd.toFixed(2) }}$)</span>' +
+                '</div>' +
+            '</div>' +
         '</div>' +
             
             '<!-- Product URL -->' +

@@ -73,6 +73,131 @@ async def list_categories():
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Ошибка получения категорий: {str(e)}")
 
+@router.get("/names")
+async def get_category_names():
+    """
+    Получить список названий категорий для автокомплита (без авторизации для V2)
+    """
+    try:
+        import yaml
+        
+        # Загружаем категории напрямую из YAML (проще и быстрее)
+        categories_path = root_dir / "config" / "categories.yaml"
+        
+        with open(categories_path, 'r', encoding='utf-8') as f:
+            categories_data = yaml.safe_load(f)
+        
+        categories = categories_data.get('categories', [])
+        
+        if not categories:
+            print("⚠️ Категории пустые")
+            return []
+        
+        # Формируем список категорий с названием и материалом
+        category_names = []
+        for cat in categories:
+            name = cat.get('category', '')
+            material = cat.get('material', '')
+            
+            if not name:
+                continue
+            
+            # Создаем красивое отображение
+            if material:
+                display_name = f"{name} ({material})"
+            else:
+                display_name = name
+            
+            category_names.append({
+                'value': name,  # Реальное значение для отправки в API
+                'label': display_name  # Отображаемое название
+            })
+        
+        print(f"✅ Загружено названий категорий: {len(category_names)}")
+        return sorted(category_names, key=lambda x: x['label'])
+    except Exception as e:
+        print(f"❌ Ошибка получения названий категорий: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+
+@router.get("/statistics")
+async def get_categories_statistics():
+    """
+    Получить статистику по ценам для всех категорий
+    """
+    try:
+        from database import get_database_connection
+        
+        conn, db_type = get_database_connection()
+        cursor = conn.cursor()
+        
+        # Получаем статистику по ценам в юанях для каждой категории
+        if db_type == "postgres":
+            query = """
+                SELECT 
+                    category,
+                    COUNT(*) as count,
+                    MIN(price_yuan) as min_price,
+                    MAX(price_yuan) as max_price,
+                    AVG(price_yuan) as avg_price,
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price_yuan) as median_price
+                FROM calculations
+                WHERE category IS NOT NULL AND price_yuan > 0
+                GROUP BY category
+                ORDER BY count DESC
+            """
+        else:
+            # SQLite не поддерживает PERCENTILE_CONT
+            query = """
+                SELECT 
+                    category,
+                    COUNT(*) as count,
+                    MIN(price_yuan) as min_price,
+                    MAX(price_yuan) as max_price,
+                    AVG(price_yuan) as avg_price
+                FROM calculations
+                WHERE category IS NOT NULL AND price_yuan > 0
+                GROUP BY category
+                ORDER BY count DESC
+            """
+        
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        
+        statistics = []
+        for row in rows:
+            if db_type == "postgres":
+                if hasattr(row, 'keys'):
+                    stat = dict(row)
+                else:
+                    columns = [desc[0] for desc in cursor.description]
+                    stat = dict(zip(columns, row))
+            else:
+                columns = [desc[0] for desc in cursor.description]
+                stat = dict(zip(columns, row))
+            
+            # Приводим к нужному формату
+            statistics.append({
+                'category': stat['category'],
+                'count': int(stat['count']) if stat['count'] else 0,
+                'min_price': float(stat['min_price']) if stat.get('min_price') else 0,
+                'max_price': float(stat['max_price']) if stat.get('max_price') else 0,
+                'avg_price': float(stat['avg_price']) if stat.get('avg_price') else 0,
+                'median_price': float(stat['median_price']) if stat.get('median_price') else None
+            })
+        
+        cursor.close()
+        conn.close()
+        
+        print(f"✅ Загружена статистика для {len(statistics)} категорий")
+        return statistics
+    except Exception as e:
+        print(f"❌ Ошибка получения статистики категорий: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+
 @router.get("/{category_id}")
 async def get_category(category_id: int):
     """

@@ -1,0 +1,51 @@
+# Тарифы Prologix
+# Расчет по кубометрам с порогами объема
+
+prologix_rates:
+  name: "Prologix"
+  description: "Логистика по кубометрам"
+  currency: "RUB"
+  
+  # Тарифная сетка по объему груза
+  volume_tiers:
+    - min_volume: 0.0      # минимальный объем
+      max_volume: 2.0      # до 2 м³ (не работают)
+      rate_rub_per_m3: null
+      note: "Минимальный объем 2 м³"
+    
+    - min_volume: 2.0      # от 2 м³
+      max_volume: 8.0      # до 8 м³
+      rate_rub_per_m3: 41000
+      note: "Очень малый объем"
+    
+    - min_volume: 8.0      # от 8 м³
+      max_volume: 20.0     # до 20 м³
+      rate_rub_per_m3: 20000
+      note: "Малый объем"
+    
+    - min_volume: 20.0     # от 20 м³
+      max_volume: 30.0     # до 30 м³
+      rate_rub_per_m3: 15000
+      note: "Средний объем"
+    
+    - min_volume: 30.0     # от 30 м³
+      max_volume: 999999   # без ограничений
+      rate_rub_per_m3: 13000
+      note: "Большой объем"
+  
+  # Сроки доставки
+  delivery_days_min: 25
+  delivery_days_max: 35
+  delivery_days_avg: 30
+
+  # Дополнительные параметры (как контракт)
+  # Все остальные расходы считаются как в Highway под контракт
+  calculation_mode: "like_contract"  # используем ту же формулу что и контракт
+  
+  # Комиссии и прочие расходы
+  toni_commission_percent: 5.0      # комиссия Тони
+  transfer_percent: 0.0              # процент переводов (0% для контракта)
+  local_delivery_rate_yuan_per_kg: 2.0  # локальная доставка
+  msk_pickup_total_rub: 1000.0      # забор в МСК
+  other_costs_percent: 2.5          # прочие расходы
+  fixed_cost_rub: 25000.0           # фиксированная сумма

@@ -225,7 +225,20 @@
                             <a href="https://docs.google.com/spreadsheets/d/{{ product.project.table_id }}" 
                                target="_blank" 
                                class="text-indigo-600 hover:text-indigo-500">
-                                Открыть таблицу
+                                📊 Открыть таблицу
+                            </a>
+                        </dd>
+                    </div>
+                    {% endif %}
+                    
+                    {% if product.project.planfix_task_url %}
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Задача в Planfix</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
+                            <a href="{{ product.project.planfix_task_url }}" 
+                               target="_blank" 
+                               class="text-blue-600 hover:text-blue-500">
+                                📋 Открыть задачу
                             </a>
                         </dd>
                     </div>

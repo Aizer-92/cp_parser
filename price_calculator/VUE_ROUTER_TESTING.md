@@ -203,3 +203,9 @@ open http://localhost:8000/settings
 **Автор:** AI Assistant  
 **Дата:** 06.10.2025  
 **Версия:** Vue Router Integration v1.0
+
+
+
+
+
+

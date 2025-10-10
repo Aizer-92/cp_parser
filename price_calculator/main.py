@@ -77,8 +77,12 @@ def require_auth(request: Request):
 async def lifespan(app: FastAPI):
     # Инициализация при запуске (НЕ КРИТИЧНО если упадет)
     try:
-        # ⚠️ МИГРАЦИЯ ОТКЛЮЧЕНА - БД уже настроена на Railway
-        # init_database()  # Закомментировано чтобы не пытаться изменять схему при каждом деплое
+        # ✅ Инициализация БД - добавляет необходимые колонки если их нет
+        from init_db import init_database as init_db_schema
+        init_db_schema()
+        
+        # Стандартная инициализация таблиц
+        init_database()
         restore_from_backup()
         print("OK База данных готова к работе!")
     except Exception as e:
@@ -144,13 +148,25 @@ def get_calculator():
     return calculator
 
 # Pydantic модели
+class RouteLogisticsParams(BaseModel):
+    """Параметры логистики для конкретного маршрута"""
+    custom_rate: Optional[float] = None  # Кастомная ставка доставки (USD/kg)
+    duty_type: Optional[str] = None  # Тип пошлины: 'percent', 'combined', 'specific'
+    duty_rate: Optional[float] = None  # Процентная пошлина (%)
+    specific_rate: Optional[float] = None  # Специфическая пошлина (EUR/kg или USD/kg)
+    vat_rate: Optional[float] = None  # НДС (%)
+    
+    class Config:
+        extra = "forbid"  # Запретить дополнительные поля
+
 class CalculationRequest(BaseModel):
     """Модель запроса для расчета цены товара"""
     product_name: str
+    link_or_wechat: Optional[str] = ""  # Ссылка на товар или WeChat поставщика
     price_yuan: float
-    weight_kg: float
+    weight_kg: Optional[float] = None  # Опционально, вычисляется из packing_box_weight если is_precise_calculation=True
     quantity: int
-    product_url: Optional[str] = ""
+    product_url: Optional[str] = ""  # Legacy поле для обратной совместимости
     custom_rate: Optional[float] = None
     delivery_type: str = "rail"  # rail или air
     markup: float = 1.7
@@ -162,6 +178,11 @@ class CalculationRequest(BaseModel):
     packing_box_length: Optional[float] = None
     packing_box_width: Optional[float] = None
     packing_box_height: Optional[float] = None
+    # Кастомные параметры логистики для конкретных маршрутов (только для этого расчета)
+    # Ключи: 'highway_rail', 'highway_air', 'contract', 'prologix', 'sea_container'
+    custom_logistics: Optional[Dict[str, Dict[str, Any]]] = None
+    # Принудительная категория (переопределяет автоопределение)
+    forced_category: Optional[str] = None
 
 class CalculationResponse(BaseModel):
     """Модель ответа с результатами расчета цены"""
@@ -193,9 +214,15 @@ class CalculationResponse(BaseModel):
     customs_info: Optional[Dict[str, Any]] = None
     customs_calculations: Optional[Dict[str, float]] = None
     density_warning: Optional[Dict[str, Any]] = None
+    # НОВОЕ ПОЛЕ: Данные о плотности и надбавке
+    density_info: Optional[Dict[str, Any]] = None
     # НОВЫЕ ПОЛЯ ДЛЯ КОНТРАКТА
     contract_cost: Optional[Dict[str, Any]] = None
     cost_difference: Optional[Dict[str, Any]] = None
+    # НОВОЕ ПОЛЕ: Prologix расчет
+    prologix_cost: Optional[Dict[str, Any]] = None
+    # 🚀 КРИТИЧНО: Все маршруты логистики в едином формате
+    routes: Optional[Dict[str, Any]] = None
 
 class CategoryInfo(BaseModel):
     category: str
@@ -278,6 +305,13 @@ def save_calculation(calculation: dict, request: CalculationRequest = None) -> i
                 'calculated_density': density_warning.get('calculated_density'),
                 'category_density': density_warning.get('category_density')
             })
+        
+        # Добавляем кастомные параметры логистики и принудительную категорию
+        if request:
+            if request.custom_logistics:
+                db_data['custom_logistics'] = request.custom_logistics
+            if request.forced_category:
+                db_data['forced_category'] = request.forced_category
         
         print(f"🔧 Вызов save_calculation_to_db с {len(db_data)} полями")
         result_id = save_calculation_to_db(db_data)
@@ -530,13 +564,23 @@ async def logout(request: Request, response: Response):
 # API endpoints
 @app.get("/")
 async def root(request: Request):
-    """Главная страница - Модульная архитектура Vue.js"""
+    """🚀 Главная страница - V2 (новая версия интерфейса)"""
     # Проверяем авторизацию
     session_token = request.cookies.get("session_token")
     if not verify_session(session_token):
         return RedirectResponse(url="/login", status_code=302)
     
-    # Возвращаем модульную версию (теперь основная)
+    return FileResponse('index_v2.html')
+
+@app.get("/v1")
+async def v1_page(request: Request):
+    """📦 V1 - Старая версия интерфейса (с авторизацией)"""
+    # Проверяем авторизацию
+    session_token = request.cookies.get("session_token")
+    if not verify_session(session_token):
+        return RedirectResponse(url="/login", status_code=302)
+    
+    # Возвращаем старую версию
     return FileResponse('index.html')
 
 @app.get("/refactored")
@@ -1196,7 +1240,321 @@ async def debug_calculate(request: CalculationRequest):
 
 @app.post("/api/calculate", response_model=CalculationResponse)
 async def calculate_price(request: CalculationRequest, auth: bool = Depends(require_auth)):
-    """Расчет цены товара"""
+    """Расчет цены товара (требует авторизацию)"""
+    return await _calculate_price_logic(request)
+
+@app.post("/api/v2/calculate", response_model=CalculationResponse)
+async def calculate_price_v2(request: CalculationRequest):
+    """Расчет цены товара V2 (без авторизации для разработки)"""
+    # Используем унифицированную функцию (calculation_id=None для создания нового)
+    return await _perform_calculation_and_save(request, calculation_id=None)
+
+@app.get("/api/v2/history")
+async def get_history_v2():
+    """Получение истории расчетов V2 (без авторизации для разработки)"""
+    try:
+        from database import get_calculation_history
+        
+        # Получаем последние 50 расчетов
+        history = get_calculation_history()
+        
+        # Форматируем для V2 (упрощенная структура + поля пакинга)
+        formatted_history = []
+        for item in history:
+            formatted_history.append({
+                'id': item.get('id'),
+                'product_name': item.get('product_name'),
+                'product_url': item.get('product_url'),  # Ссылка или WeChat
+                'price_yuan': item.get('price_yuan'),
+                'weight_kg': item.get('weight_kg'),
+                'quantity': item.get('quantity'),
+                'markup': item.get('markup'),
+                'category': item.get('category'),
+                'cost_price_rub': item.get('cost_price_rub'),
+                'sale_price_rub': item.get('sale_price_rub'),
+                'profit_rub': item.get('profit_rub'),
+                'created_at': item.get('created_at'),
+                'calculation_type': item.get('calculation_type'),
+                # Поля пакинга для копирования
+                'packing_units_per_box': item.get('packing_units_per_box'),
+                'packing_box_weight': item.get('packing_box_weight'),
+                'packing_box_length': item.get('packing_box_length'),
+                'packing_box_width': item.get('packing_box_width'),
+                'packing_box_height': item.get('packing_box_height')
+            })
+        
+        print(f"✅ История V2: {len(formatted_history)} расчетов")
+        return formatted_history
+    except Exception as e:
+        print(f"❌ Ошибка получения истории V2: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+
+@app.get("/api/v2/calculation/{calculation_id}/raw")
+async def get_calculation_raw_v2(calculation_id: int):
+    """DEBUG: Получить сырые данные расчета из БД"""
+    try:
+        from database import get_database_connection
+        
+        conn, db_type = get_database_connection()
+        cursor = conn.cursor()
+        
+        if db_type == 'postgres':
+            cursor.execute('SELECT * FROM calculations WHERE id = %s', (calculation_id,))
+        else:
+            cursor.execute('SELECT * FROM calculations WHERE id = ?', (calculation_id,))
+        row = cursor.fetchone()
+        
+        if not row:
+            raise HTTPException(status_code=404, detail=f"Расчет #{calculation_id} не найден")
+        
+        # Используем ту же логику, что и в основном endpoint
+        if db_type == 'postgres':
+            if hasattr(row, 'keys'):
+                calculation = dict(row)
+            else:
+                columns = [desc[0] for desc in cursor.description]
+                calculation = dict(zip(columns, row))
+        else:
+            columns = [desc[0] for desc in cursor.description]
+            calculation = dict(zip(columns, row))
+        
+        cursor.close()
+        conn.close()
+        
+        # Возвращаем сырые данные с типами
+        return {
+            "id": calculation_id,
+            "raw_data": {
+                col: {
+                    "value": str(calculation.get(col)),
+                    "type": type(calculation.get(col)).__name__,
+                    "repr": repr(calculation.get(col))
+                }
+                for col in ['product_name', 'price_yuan', 'quantity', 'weight_kg', 'markup', 
+                           'calculation_type', 'packing_units_per_box', 'packing_box_weight']
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка получения данных: {str(e)}")
+
+@app.get("/api/v2/calculation/{calculation_id}")
+async def get_calculation_by_id_v2(calculation_id: int):
+    """Получить расчет по ID для V2 (для прямых ссылок)"""
+    try:
+        from database import get_database_connection
+        
+        conn, db_type = get_database_connection()
+        cursor = conn.cursor()
+        
+        # Получаем расчет из БД (правильный placeholder для типа БД)
+        if db_type == 'postgres':
+            cursor.execute('SELECT * FROM calculations WHERE id = %s', (calculation_id,))
+        else:
+            cursor.execute('SELECT * FROM calculations WHERE id = ?', (calculation_id,))
+        row = cursor.fetchone()
+        
+        if not row:
+            raise HTTPException(status_code=404, detail=f"Расчет #{calculation_id} не найден")
+        
+        # Преобразуем в dict
+        # КРИТИЧНО: для PostgreSQL используем column_names из cursor.description
+        columns = [desc[0] for desc in cursor.description]  # Всегда получаем имена колонок
+        
+        if db_type == 'postgres':
+            # PostgreSQL cursor возвращает RealDictRow или обычный tuple
+            # Пробуем использовать как словарь напрямую
+            if hasattr(row, 'keys'):
+                # Это уже словарь (RealDictRow)
+                calculation = dict(row)
+            else:
+                # Обычный tuple - создаем dict вручную
+                calculation = dict(zip(columns, row))
+        else:
+            # SQLite всегда возвращает tuple
+            calculation = dict(zip(columns, row))
+        
+        print(f"\n{'='*60}")
+        print(f"📖 ЗАГРУЖЕН РАСЧЕТ #{calculation_id}")
+        print(f"{'='*60}")
+        print(f"🏷️ Товар: {calculation.get('product_name')}")
+        print(f"📊 Все колонки из БД: {columns}")
+        print(f"\n🔍 ДЕТАЛЬНАЯ ДИАГНОСТИКА ТИПОВ ДАННЫХ:")
+        for col in ['price_yuan', 'weight_kg', 'quantity', 'markup', 'packing_units_per_box']:
+            val = calculation.get(col)
+            print(f"   {col:25} = {repr(val):20} | type: {type(val).__name__}")
+        print(f"{'='*60}\n")
+        
+        # Безопасное извлечение значений с проверкой типов
+        def safe_float(value, default=None):
+            """Безопасное преобразование в float"""
+            print(f"🔄 safe_float: входное значение = {repr(value)} | тип = {type(value).__name__} | default = {default}")
+            if value is None or value == '':
+                print(f"   → Возвращаем default: {default}")
+                return default
+            try:
+                result = float(value)
+                print(f"   → ✅ Успешно: {result}")
+                return result
+            except (ValueError, TypeError) as e:
+                print(f"   → ❌ Ошибка преобразования: {e}")
+                print(f"   → Возвращаем default: {default}")
+                return default
+        
+        def safe_int(value, default=None):
+            """Безопасное преобразование в int"""
+            print(f"🔄 safe_int: входное значение = {repr(value)} | тип = {type(value).__name__} | default = {default}")
+            if value is None or value == '':
+                print(f"   → Возвращаем default: {default}")
+                return default
+            try:
+                result = int(value)
+                print(f"   → ✅ Успешно: {result}")
+                return result
+            except (ValueError, TypeError) as e:
+                print(f"   → ❌ Ошибка преобразования: {e}")
+                print(f"   → Возвращаем default: {default}")
+                return default
+        
+        # Извлекаем данные с безопасным приведением типов
+        price_yuan = safe_float(calculation.get('price_yuan'), None)
+        quantity = safe_int(calculation.get('quantity'), None)
+        weight_kg = safe_float(calculation.get('weight_kg'), None)
+        
+        # Проверяем критичные поля ПЕРЕД созданием запроса
+        if not price_yuan or price_yuan <= 0:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"❌ Расчет #{calculation_id} поврежден: цена в юанях = {calculation.get('price_yuan')} (тип: {type(calculation.get('price_yuan'))}). Невозможно пересчитать."
+            )
+        
+        if not quantity or quantity <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"❌ Расчет #{calculation_id} поврежден: количество = {calculation.get('quantity')}. Невозможно пересчитать."
+            )
+        
+        # Десериализуем custom_logistics если есть
+        custom_logistics = None
+        custom_logistics_raw = calculation.get('custom_logistics')
+        if custom_logistics_raw:
+            import json
+            try:
+                if isinstance(custom_logistics_raw, str):
+                    custom_logistics = json.loads(custom_logistics_raw)
+                elif isinstance(custom_logistics_raw, dict):
+                    custom_logistics = custom_logistics_raw
+                print(f"✅ Загружены кастомные параметры логистики: {list(custom_logistics.keys()) if custom_logistics else 'None'}")
+            except json.JSONDecodeError as e:
+                print(f"⚠️ Ошибка десериализации custom_logistics: {e}")
+        
+        # Пересчитываем для получения актуальных маршрутов (с безопасным приведением типов)
+        request_data = CalculationRequest(
+            product_name=str(calculation.get('product_name', '')),
+            product_url=str(calculation.get('product_url', '')),  # Ссылка или WeChat
+            price_yuan=price_yuan,
+            quantity=quantity,
+            markup=safe_float(calculation.get('markup'), 1.4),
+            weight_kg=weight_kg,
+            is_precise_calculation=(calculation.get('calculation_type') == 'precise'),
+            packing_units_per_box=safe_int(calculation.get('packing_units_per_box'), None),
+            packing_box_weight=safe_float(calculation.get('packing_box_weight'), None),
+            packing_box_length=safe_float(calculation.get('packing_box_length'), None),
+            packing_box_width=safe_float(calculation.get('packing_box_width'), None),
+            packing_box_height=safe_float(calculation.get('packing_box_height'), None),
+            custom_logistics=custom_logistics,
+            forced_category=calculation.get('forced_category') or calculation.get('category')
+        )
+        
+        # Выполняем пересчет (без сохранения в БД)
+        result = await _calculate_price_logic(request_data)
+        
+        # КРИТИЧНО: _calculate_price_logic возвращает Pydantic модель,
+        # которая не поддерживает item assignment (result['key'] = value)
+        # Преобразуем в dict
+        result_dict = result.dict() if hasattr(result, 'dict') else dict(result)
+        
+        # Добавляем ID и дату создания оригинального расчета
+        result_dict['id'] = calculation_id
+        result_dict['created_at'] = calculation.get('created_at')
+        
+        print(f"✅ Расчет #{calculation_id} пересчитан и возвращен")
+        return result_dict
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Ошибка загрузки расчета #{calculation_id}: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+async def _perform_calculation_and_save(request: CalculationRequest, calculation_id: Optional[int] = None):
+    """
+    Единая функция для создания и обновления расчетов (использует CalculationService)
+    
+    Args:
+        request: Данные для расчета
+        calculation_id: ID существующего расчета (для обновления) или None (для создания)
+    
+    Returns:
+        Результат расчета с ID
+    """
+    # Получаем сервис
+    from services import get_calculation_service
+    service = get_calculation_service()
+    
+    # Выполняем расчет
+    result = service.perform_calculation(
+        product_name=request.product_name,
+        price_yuan=request.price_yuan,
+        weight_kg=request.weight_kg,
+        quantity=request.quantity,
+        custom_rate=request.custom_rate,
+        delivery_type=request.delivery_type,
+        markup=request.markup,
+        product_url=request.product_url,
+        packing_units_per_box=request.packing_units_per_box,
+        packing_box_weight=request.packing_box_weight,
+        packing_box_length=request.packing_box_length,
+        packing_box_width=request.packing_box_width,
+        packing_box_height=request.packing_box_height,
+        custom_logistics=request.custom_logistics,
+        forced_category=request.forced_category
+    )
+    
+    # Сохраняем или обновляем в БД
+    if calculation_id:
+        # Обновление существующего расчета
+        service.update_calculation(
+            calculation_id,
+            result,
+            custom_logistics=request.custom_logistics,
+            forced_category=request.forced_category
+        )
+        result['id'] = calculation_id
+        print(f"✅ Расчет {calculation_id} обновлен через сервис")
+    else:
+        # Создание нового расчета
+        saved_id = service.create_calculation(
+            result,
+            custom_logistics=request.custom_logistics,
+            forced_category=request.forced_category
+        )
+        if saved_id:
+            result['id'] = saved_id
+            result['created_at'] = datetime.now().isoformat()
+            print(f"✅ Новый расчет создан через сервис с ID: {saved_id}")
+        else:
+            result['id'] = None
+            result['created_at'] = datetime.now().isoformat()
+            print("⚠️ Расчет не сохранен в БД (ID отсутствует)")
+    
+    return result
+
+async def _calculate_price_logic(request: CalculationRequest):
+    """Общая логика расчета цены"""
     try:
         # Логируем входящий запрос для диагностики
         print(f"🔍 API CALCULATE REQUEST:")
@@ -1229,6 +1587,19 @@ async def calculate_price(request: CalculationRequest, auth: bool = Depends(requ
             if not request.packing_box_height or request.packing_box_height <= 0:
                 raise HTTPException(status_code=400, detail="Для точных расчетов укажите высоту коробки")
         
+        # Вычисляем вес 1 штуки из данных упаковки (для точного расчета)
+        calculated_weight_kg = request.weight_kg
+        if request.is_precise_calculation:
+            if request.packing_box_weight and request.packing_units_per_box:
+                calculated_weight_kg = request.packing_box_weight / request.packing_units_per_box
+                print(f"📦 Вычислен вес 1 шт из пакинга: {calculated_weight_kg:.3f} кг (вес коробки {request.packing_box_weight} / {request.packing_units_per_box} шт)")
+            else:
+                raise HTTPException(status_code=400, detail="Для точного расчета нужны данные упаковки")
+        else:
+            # Для быстрого расчета weight_kg обязателен
+            if not calculated_weight_kg or calculated_weight_kg <= 0:
+                raise HTTPException(status_code=400, detail="Для быстрого расчета укажите вес 1 шт (weight_kg)")
+        
         # Выполняем расчет
         calc = get_calculator()
         if not calc:
@@ -1236,13 +1607,23 @@ async def calculate_price(request: CalculationRequest, auth: bool = Depends(requ
         
         result = calc.calculate_cost(
             price_yuan=request.price_yuan,
-            weight_kg=request.weight_kg,
+            weight_kg=calculated_weight_kg,
             quantity=request.quantity,
             product_name=request.product_name,
             custom_rate=request.custom_rate,
             delivery_type=request.delivery_type,
             markup=request.markup,
-            product_url=request.product_url
+            product_url=request.product_url,
+            # Передаем данные упаковки для расчета плотности и Prologix
+            packing_units_per_box=request.packing_units_per_box,
+            packing_box_weight=request.packing_box_weight,
+            packing_box_length=request.packing_box_length,
+            packing_box_width=request.packing_box_width,
+            packing_box_height=request.packing_box_height,
+            # Передаем кастомные параметры логистики (только для этого расчета!)
+            custom_logistics_params=request.custom_logistics,
+            # Передаем принудительную категорию (если указана)
+            forced_category=request.forced_category
         )
         
         if not result:
@@ -1466,6 +1847,79 @@ async def debug_category_by_name(product_name: str):
         traceback.print_exc()
         return {"error": f"Ошибка определения категории: {str(e)}"}
 
+@app.get("/api/categories/names")
+async def get_category_names():
+    """Получение списка названий категорий для автокомплита (без авторизации для V2)"""
+    try:
+        calc = get_calculator()
+        if not calc:
+            print("⚠️ get_calculator() вернул None")
+            return []
+        
+        if not hasattr(calc, 'categories'):
+            print("⚠️ У калькулятора нет атрибута 'categories'")
+            return []
+        
+        # Формируем список категорий с названием и материалом
+        category_names = []
+        for cat in calc.categories:
+            name = cat.get('category', '')
+            material = cat.get('material', '')
+            
+            if not name:
+                continue
+            
+            # Создаем красивое отображение
+            if material:
+                display_name = f"{name} ({material})"
+            else:
+                display_name = name
+            
+            category_names.append({
+                'value': name,  # Реальное значение для отправки в API
+                'label': display_name  # Отображаемое название
+            })
+        
+        print(f"✅ Загружено категорий: {len(category_names)}")
+        return sorted(category_names, key=lambda x: x['label'])
+    except Exception as e:
+        print(f"❌ Ошибка получения категорий: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+
+@app.get("/api/categories/combined-duties")
+async def get_combined_duty_categories():
+    """Получение списка категорий с комбинированными пошлинами (процент ИЛИ EUR/кг)"""
+    try:
+        calc = get_calculator()
+        if not calc or not hasattr(calc, 'categories'):
+            return {"categories": []}
+        
+        combined_duty_categories = []
+        for cat in calc.categories:
+            if cat.get('duty_type') == 'combined':
+                combined_duty_categories.append({
+                    'category': cat.get('category'),
+                    'material': cat.get('material'),
+                    'duty_type': 'combined',
+                    'ad_valorem_rate': cat.get('ad_valorem_rate'),
+                    'specific_rate': cat.get('specific_rate'),
+                    'vat_rate': cat.get('vat_rate'),
+                    'tnved_code': cat.get('tnved_code')
+                })
+        
+        print(f"✅ Найдено категорий с комбинированными пошлинами: {len(combined_duty_categories)}")
+        return {
+            "count": len(combined_duty_categories),
+            "categories": sorted(combined_duty_categories, key=lambda x: x['category'])
+        }
+    except Exception as e:
+        print(f"❌ Ошибка получения категорий с комбинированными пошлинами: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/category/{product_name}")
 async def get_category_by_name(product_name: str, auth: bool = Depends(require_auth)):
     """Получение категории товара по названию"""
@@ -1611,63 +2065,299 @@ async def get_calculation(calculation_id: int, auth: bool = Depends(require_auth
         raise HTTPException(status_code=503, detail="База данных недоступна")
 
 
+async def _update_calculation_logic(calculation_id: int, request: CalculationRequest):
+    """Общая логика обновления расчета (использует единую функцию)"""
+    try:
+        print(f"🔄 _update_calculation_logic: ID={calculation_id}, product={request.product_name}")
+        result = await _perform_calculation_and_save(request, calculation_id=calculation_id)
+        print(f"✅ _update_calculation_logic завершён успешно")
+        return result
+    except Exception as e:
+        print(f"❌ Ошибка в _update_calculation_logic: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+
 @app.put("/api/calculation/{calculation_id}")
 async def update_calculation_endpoint(calculation_id: int, request: CalculationRequest, auth: bool = Depends(require_auth)):
-    """Обновление существующего расчета"""
+    """Обновление существующего расчета (endpoint /api/calculation/:id)"""
     try:
-        # Выполняем расчет
-        calculator = PriceCalculator()
-        result = calculator.calculate_cost(
-            product_name=request.product_name,
-            price_yuan=request.price_yuan,
-            weight_kg=request.weight_kg,
-            quantity=request.quantity,
-            custom_rate=request.custom_rate,
-            delivery_type=request.delivery_type,
-            markup=request.markup,
-            product_url=request.product_url
-        )
-        
-        # Подготавливаем данные для обновления
-        calculation_data = {
-            'product_name': request.product_name,
-            'category': result.get('category', 'Не определена'),
-            'price_yuan': request.price_yuan,
-            'weight_kg': request.weight_kg,
-            'quantity': request.quantity,
-            'markup': request.markup,
-            'custom_rate': request.custom_rate,
-            'product_url': request.product_url,
-            'cost_price_rub': result['cost_price']['total']['rub'],
-            'cost_price_usd': result['cost_price']['total']['usd'],
-            'sale_price_rub': result['sale_price']['total']['rub'],
-            'sale_price_usd': result['sale_price']['total']['usd'],
-            'profit_rub': result['profit']['total']['rub'],
-            'profit_usd': result['profit']['total']['usd']
-        }
-        
-        # Обновляем в базе данных
-        update_calculation(calculation_id, calculation_data)
-        
-        return result
-        
+        return await _update_calculation_logic(calculation_id, request)
     except ValueError as e:
         print(f"ERROR Расчет не найден: {e}")
         raise HTTPException(status_code=404, detail="Расчет не найден")
     except Exception as e:
         print(f"ERROR Ошибка обновления расчета: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail="Ошибка обновления расчета")
+
+@app.put("/api/history/{calculation_id}")
+async def update_history_calculation(calculation_id: int, request: CalculationRequest, auth: bool = Depends(require_auth)):
+    """Обновление существующего расчета (endpoint /api/history/:id, алиас для совместимости)"""
+    try:
+        print(f"🔄 PUT /api/history/{calculation_id} - обновление расчета")
+        return await _update_calculation_logic(calculation_id, request)
+    except ValueError as e:
+        print(f"ERROR Расчет не найден: {e}")
+        raise HTTPException(status_code=404, detail="Расчет не найден")
+    except Exception as e:
+        print(f"ERROR Ошибка обновления расчета: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Ошибка обновления расчета")
+
+@app.put("/api/v2/calculation/{calculation_id}")
+async def update_calculation_v2(calculation_id: int, request: CalculationRequest):
+    """Обновление существующего расчета V2 (без авторизации для разработки)"""
+    print(f"📥 PUT /api/v2/calculation/{calculation_id} - START")
+    print(f"   product_name: {request.product_name}")
+    print(f"   price_yuan: {request.price_yuan}")
+    print(f"   quantity: {request.quantity}")
+    print(f"   custom_logistics: {request.custom_logistics is not None}")
+    print(f"   forced_category: {request.forced_category}")
+    
+    try:
+        print(f"🔄 Вызов _update_calculation_logic...")
+        result = await _update_calculation_logic(calculation_id, request)
+        print(f"✅ PUT /api/v2/calculation/{calculation_id} - SUCCESS")
+        return result
+    except ValueError as e:
+        print(f"❌ ERROR Расчет не найден: {e}")
+        raise HTTPException(status_code=404, detail="Расчет не найден")
+    except Exception as e:
+        print(f"❌ ERROR Ошибка обновления расчета: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Ошибка обновления расчета: {str(e)}")
+
+# ============================================================================
+# V3 API - NEW ARCHITECTURE (State Machine + Strategy Pattern)
+# ============================================================================
+
+@app.post("/api/v3/calculate/start")
+async def start_calculation_v3(request: CalculationRequest):
+    """
+    V3: Начало нового расчёта с новой архитектурой.
+    
+    Возвращает:
+    - state: состояние расчёта (READY, PENDING_PARAMS)
+    - needs_user_input: нужен ли ввод параметров
+    - required_params: список требуемых параметров
+    - category: определённая категория
+    """
+    try:
+        from services.calculation_orchestrator import CalculationOrchestrator
+        import json
+        
+        # Загружаем категории из Railway
+        with open('config/categories_from_railway.json', 'r', encoding='utf-8') as f:
+            categories_data = json.load(f)
+        
+        # Преобразуем в словарь {category_name: category_data}
+        categories = {cat['category']: cat for cat in categories_data['categories']}
+        
+        # Создаём оркестратор
+        orchestrator = CalculationOrchestrator(categories)
+        
+        # Начинаем расчёт
+        response = orchestrator.start_calculation(
+            product_name=request.product_name,
+            quantity=request.quantity,
+            weight_kg=request.weight_kg or 0.5,  # Дефолтный вес
+            unit_price_yuan=request.price_yuan,
+            markup=request.markup,
+            forced_category=request.forced_category
+        )
+        
+        # Добавляем context info для frontend
+        context_info = orchestrator.get_context_info()
+        response['context'] = context_info
+        
+        print(f"✅ V3 START: {response['state']} | needs_input: {response['needs_user_input']}")
+        
+        return response
+        
+    except Exception as e:
+        print(f"❌ V3 START ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v3/calculate/params")
+async def provide_custom_params_v3(request: Dict[str, Any]):
+    """
+    V3: Предоставление кастомных параметров.
+    
+    Body:
+    {
+        "product_name": "...",
+        "quantity": 100,
+        "weight_kg": 0.5,
+        "unit_price_yuan": 50,
+        "markup": 1.7,
+        "forced_category": "...",
+        "custom_logistics": {
+            "highway_rail": {"custom_rate": 8.5, "duty_rate": 10, "vat_rate": 20},
+            "highway_air": {...},
+            ...
+        }
+    }
+    """
+    try:
+        from services.calculation_orchestrator import CalculationOrchestrator
+        import json
+        
+        # Загружаем категории
+        with open('config/categories_from_railway.json', 'r', encoding='utf-8') as f:
+            categories_data = json.load(f)
+        categories = {cat['category']: cat for cat in categories_data['categories']}
+        
+        # Создаём оркестратор
+        orchestrator = CalculationOrchestrator(categories)
+        
+        # Сначала начинаем расчёт
+        orchestrator.start_calculation(
+            product_name=request.get('product_name'),
+            quantity=request.get('quantity'),
+            weight_kg=request.get('weight_kg', 0.5),
+            unit_price_yuan=request.get('unit_price_yuan'),
+            markup=request.get('markup', 1.7),
+            forced_category=request.get('forced_category')
+        )
+        
+        # Предоставляем кастомные параметры
+        custom_logistics = request.get('custom_logistics', {})
+        result = orchestrator.provide_custom_params(custom_logistics)
+        
+        print(f"✅ V3 PARAMS: valid={result['valid']} | can_calculate={result['can_calculate']}")
+        
+        return result
+        
+    except Exception as e:
+        print(f"❌ V3 PARAMS ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v3/calculate/execute")
+async def execute_calculation_v3(request: CalculationRequest):
+    """
+    V3: Выполнение расчёта (State Machine + Strategy Pattern).
+    
+    Поддерживает:
+    - Стандартные категории (сразу рассчитываются)
+    - Кастомные категории (требуют custom_logistics)
+    - Переопределение параметров для ЛЮБОЙ категории
+    """
+    try:
+        from services.calculation_orchestrator import CalculationOrchestrator
+        import json
+        
+        print(f"🔵 V3 EXECUTE: {request.product_name}")
+        print(f"   forced_category: {request.forced_category}")
+        print(f"   custom_logistics: {bool(request.custom_logistics)}")
+        
+        # Загружаем категории
+        with open('config/categories_from_railway.json', 'r', encoding='utf-8') as f:
+            categories_data = json.load(f)
+        categories = {cat['category']: cat for cat in categories_data['categories']}
+        
+        # Создаём оркестратор
+        orchestrator = CalculationOrchestrator(categories)
+        
+        # Начинаем расчёт
+        orchestrator.start_calculation(
+            product_name=request.product_name,
+            quantity=request.quantity,
+            weight_kg=request.weight_kg or 0.5,
+            unit_price_yuan=request.price_yuan,
+            markup=request.markup,
+            forced_category=request.forced_category
+        )
+        
+        # Если есть кастомные параметры, предоставляем их
+        if request.custom_logistics:
+            params_result = orchestrator.provide_custom_params(request.custom_logistics)
+            if not params_result['valid']:
+                print(f"❌ Невалидные параметры: {params_result['errors']}")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Невалидные параметры: {', '.join(params_result['errors'])}"
+                )
+        
+        # Выполняем расчёт
+        calc_result = orchestrator.calculate()
+        
+        if not calc_result['success']:
+            print(f"❌ Ошибка расчёта: {calc_result['error']}")
+            raise HTTPException(status_code=400, detail=calc_result['error'])
+        
+        # Сохраняем в БД через существующий сервис
+        from services import get_calculation_service
+        service = get_calculation_service()
+        
+        saved_id = service.create_calculation(
+            calc_result['result'],
+            custom_logistics=request.custom_logistics,
+            forced_category=request.forced_category
+        )
+        
+        if saved_id:
+            orchestrator.mark_saved(saved_id)
+            calc_result['result']['id'] = saved_id
+            calc_result['result']['created_at'] = datetime.now().isoformat()
+            print(f"✅ V3 EXECUTE SUCCESS: ID={saved_id}")
+        
+        # Возвращаем результат в формате совместимом с V2
+        return calc_result['result']
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ V3 EXECUTE ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v3/categories")
+async def get_categories_v3():
+    """
+    V3: Получение списка всех категорий с метаданными.
+    
+    Возвращает категории в новом формате с:
+    - requirements (что требуется вводить)
+    - needs_custom_params (флаг для UI)
+    - keywords, tnved_code, certificates
+    """
+    try:
+        import json
+        
+        with open('config/categories_from_railway.json', 'r', encoding='utf-8') as f:
+            categories_data = json.load(f)
+        
+        return {
+            'total': categories_data['total_categories'],
+            'version': categories_data['version'],
+            'source': categories_data['source'],
+            'categories': categories_data['categories']
+        }
+        
+    except Exception as e:
+        print(f"❌ V3 CATEGORIES ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Инициализация БД происходит в lifespan
 
-# 🚀 VUE ROUTER SUPPORT - Catch-all route для SPA
-# ВАЖНО: Этот роут должен быть ПОСЛЕДНИМ, чтобы не перехватывать API endpoints
-@app.get("/{full_path:path}")
-async def catch_all(request: Request, full_path: str):
+# 🚀 VUE ROUTER SUPPORT - Явные роуты для SPA (вместо catch-all)
+# ВАЖНО: Эти роуты должны быть ПОСЛЕ API endpoints и ПЕРЕД StaticFiles
+async def serve_spa(request: Request):
     """
-    Catch-all маршрут для поддержки Vue Router (history mode)
-    Возвращает index.html для всех неизвестных маршрутов,
-    чтобы Vue Router мог обработать их на клиенте
+    Обслуживает SPA для Vue Router (history mode)
+    Возвращает index.html для всех SPA маршрутов
     """
     # Проверяем авторизацию для всех маршрутов SPA
     session_token = request.cookies.get("session_token")
@@ -1676,6 +2366,34 @@ async def catch_all(request: Request, full_path: str):
     
     # Возвращаем index.html для Vue Router
     return FileResponse('index.html')
+
+# Явные роуты для Vue Router (чтобы не перехватывать /static/)
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    return await serve_spa(request)
+
+# 🆕 V2 - Новая версия интерфейса (с авторизацией)
+@app.get("/v2", response_class=HTMLResponse)
+async def v2_page(request: Request):
+    """Новая версия интерфейса с двумя этапами"""
+    # Проверяем авторизацию
+    session_token = request.cookies.get("session_token")
+    if not verify_session(session_token):
+        return RedirectResponse(url="/login", status_code=302)
+    
+    return FileResponse('index_v2.html')
+
+@app.get("/precise", response_class=HTMLResponse)
+async def precise_page(request: Request):
+    return await serve_spa(request)
+
+@app.get("/history", response_class=HTMLResponse)
+async def history_page(request: Request):
+    return await serve_spa(request)
+
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    return await serve_spa(request)
 
 if __name__ == "__main__":
     import uvicorn

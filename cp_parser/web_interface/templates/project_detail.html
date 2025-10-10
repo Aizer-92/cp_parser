@@ -56,14 +56,24 @@
                     {% else %}Ошибка{% endif %}
                 </span>
                 
-                <!-- Ссылка на Google Sheets -->
-                {% if project.table_id %}
-                <a href="https://docs.google.com/spreadsheets/d/{{ project.table_id }}" 
-                   target="_blank" 
-                   class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                    Открыть в Google Sheets
-                </a>
-                {% endif %}
+                <!-- Ссылки на Google Sheets и Planfix -->
+                <div class="flex gap-3">
+                    {% if project.table_id %}
+                    <a href="https://docs.google.com/spreadsheets/d/{{ project.table_id }}" 
+                       target="_blank" 
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        📊 Открыть в Google Sheets
+                    </a>
+                    {% endif %}
+                    
+                    {% if project.planfix_task_url %}
+                    <a href="{{ project.planfix_task_url }}" 
+                       target="_blank" 
+                       class="inline-flex items-center px-4 py-2 border border-blue-300 rounded-md shadow-sm text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        📋 Задача в Planfix
+                    </a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>

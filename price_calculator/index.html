@@ -608,6 +608,15 @@
             width: 16px;
             height: 16px;
         }
+        
+        /* 📊 Routes Comparison - минимальные стили */
+        .routes-comparison {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -622,11 +631,12 @@
     <script src="/static/js/components/CategorySelector.js?v=3"></script>
     <script src="/static/js/components/ProductForm.js?v=5"></script>
     <script src="/static/js/components/ProductFormPrecise.js?v=7"></script>
-    <script src="/static/js/components/ResultsDisplay.js?v=15-customs-check"></script>
+    <script src="/static/js/components/ResultsDisplay.js?v=21-prologix-final"></script>
+    <script src="/static/js/components/RoutesComparison.js?v=4-no-icons"></script>
     <script src="/static/js/components/HistoryPanel.js?v=5"></script>
     <script src="/static/js/components/SettingsPanel.js?v=1"></script>
     <script src="/static/js/components/CategoriesPanel.js?v=5-debug-id"></script>
-    <script src="/static/js/PriceCalculatorApp.js?v=20-vue-router"></script>
+    <script src="/static/js/PriceCalculatorApp.js?v=39-total-price"></script>
 
     <!-- Initialize App -->
     <script>
@@ -635,7 +645,7 @@
             console.log('🔄 Инициализация модульного приложения...');
             
             // Проверяем загрузку компонентов
-            var requiredComponents = ['CategorySelector', 'ProductForm', 'ProductFormPrecise', 'ResultsDisplay', 'HistoryPanel', 'SettingsPanel', 'CategoriesPanel', 'PriceCalculatorApp'];
+            var requiredComponents = ['CategorySelector', 'ProductForm', 'ProductFormPrecise', 'ResultsDisplay', 'RoutesComparison', 'HistoryPanel', 'SettingsPanel', 'CategoriesPanel', 'PriceCalculatorApp'];
             var missingComponents = requiredComponents.filter(function(name) { return !window[name]; });
             
             if (missingComponents.length > 0) {

@@ -157,3 +157,5 @@ python3 apply_fixes.py your_file.csv
 2. Вручную проверьте Google Sheets источники
 3. Используйте `apply_fixes.py` для применения исправлений
 
+
+

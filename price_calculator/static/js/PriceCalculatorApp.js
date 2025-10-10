@@ -11,6 +11,7 @@ const PriceCalculatorApp = {
         ProductForm: window.ProductForm,
         ProductFormPrecise: window.ProductFormPrecise,
         ResultsDisplay: window.ResultsDisplay,
+        RoutesComparison: window.RoutesComparison,
         HistoryPanel: window.HistoryPanel,
         SettingsPanel: window.SettingsPanel,
         CategoriesPanel: window.CategoriesPanel
@@ -23,6 +24,11 @@ const PriceCalculatorApp = {
             settingsSubTab: 'general', // general или categories
             isCalculating: false,
             editingCalculationId: null,
+            // ID текущего расчета на странице (для UPDATE при изменениях)
+            currentPreciseCalculationId: null,
+            // Выбранный маршрут для детального отображения
+            selectedRoute: null,
+            cachedRouteData: null, // Кэш для selectedRouteData
             
             // Form Data (быстрые расчеты)
             form: {
@@ -138,10 +144,162 @@ const PriceCalculatorApp = {
             if (!this.detectedCategoryPrecise) return 0;
             var rates = this.detectedCategoryPrecise.rates;
             return this.preciseForm.delivery_type === 'air' ? rates.air_base : rates.rail_base;
+        },
+        
+        // Адаптированные данные для выбранного маршрута (для ResultsDisplay)
+        selectedRouteData: function() {
+            if (!this.preciseResult || !this.selectedRoute || !this.preciseResult.routes) {
+                return null;
+            }
+            
+            var route = this.preciseResult.routes[this.selectedRoute];
+            if (!route) {
+                console.error('❌ Маршрут не найден:', this.selectedRoute);
+                return null;
+            }
+            
+            // Защита от undefined: проверяем обязательные поля
+            if (!route.total_cost_rub || !route.cost_per_unit_rub) {
+                console.error('❌ Маршрут не содержит цены:', route);
+                return null;
+            }
+            
+            console.log('✅ Адаптирую маршрут:', this.selectedRoute, 'данные:', {
+                cost_rub: route.total_cost_rub,
+                per_unit: route.cost_per_unit_rub,
+                sale_rub: route.sale_total_rub
+            });
+            
+            console.log('📋 Структура cost_price будет:', {
+                total: { rub: route.total_cost_rub, usd: route.total_cost_usd || route.total_cost_rub / 97 },
+                per_unit: { rub: route.cost_per_unit_rub, usd: route.cost_per_unit_usd || route.cost_per_unit_rub / 97 }
+            });
+            
+            // ВАЖНО: НЕ используем Object.assign - он не копирует вложенные объекты!
+            // Копируем только базовые поля, остальное перезаписываем
+            var adaptedResult = {
+                // Базовая информация о товаре
+                product_name: this.preciseResult.product_name,
+                category: this.preciseResult.category,
+                quantity: this.preciseResult.quantity,
+                weight_kg: this.preciseResult.weight_kg,
+                markup: this.preciseResult.markup,
+                
+                // Данные пакинга (ВАЖНО для отображения блока!)
+                packing_units_per_box: this.preciseResult.packing_units_per_box,
+                packing_box_weight: this.preciseResult.packing_box_weight,
+                packing_box_length: this.preciseResult.packing_box_length,
+                packing_box_width: this.preciseResult.packing_box_width,
+                packing_box_height: this.preciseResult.packing_box_height,
+                
+                // Цены выбранного маршрута
+                cost_price: {
+                    total: { rub: route.total_cost_rub, usd: route.total_cost_usd || route.total_cost_rub / 97 },
+                    per_unit: { rub: route.cost_per_unit_rub, usd: route.cost_per_unit_usd || route.cost_per_unit_rub / 97 }
+                },
+                sale_price: {
+                    total: { rub: route.sale_total_rub, usd: (route.sale_total_rub || 0) / 97 },
+                    per_unit: { rub: route.sale_per_unit_rub, usd: (route.sale_per_unit_rub || 0) / 97 }
+                },
+                
+                // total_price - стоимость товара от фабрики (для детального расчета)
+                total_price: this.preciseResult.total_price || {
+                    yuan: 0,
+                    usd: 0,
+                    rub: 0
+                },
+                
+                // КРИТИЧНО: Рассчитываем profit из разницы sale - cost
+                profit: {
+                    total: { 
+                        rub: (route.sale_total_rub || 0) - route.total_cost_rub,
+                        usd: ((route.sale_total_rub || 0) - route.total_cost_rub) / 97
+                    },
+                    per_unit: { 
+                        rub: (route.sale_per_unit_rub || 0) - route.cost_per_unit_rub,
+                        usd: ((route.sale_per_unit_rub || 0) - route.cost_per_unit_rub) / 97
+                    }
+                },
+                
+                // Логистика выбранного маршрута
+                logistics: {
+                    rate_usd: route.logistics_rate_usd || route.base_rate_usd || 0,
+                    base_rate_usd: route.base_rate_usd || route.logistics_rate_usd || 0,
+                    density_surcharge_usd: route.density_surcharge_usd || 0,
+                    cost_rub: route.logistics_cost_rub || 0,
+                    cost_usd: route.logistics_cost_usd || 0,
+                    delivery_type: this.selectedRoute.includes('air') ? 'air' : 'rail'
+                },
+                
+                // Плотность (если есть)
+                density_info: this.preciseResult.density_info || null,
+                
+                // Пошлины (если есть)
+                customs_info: this.preciseResult.customs_info || null,
+                
+                // Дополнительные расходы (КРИТИЧНО для отображения)
+                additional_costs: this.preciseResult.additional_costs || {
+                    local_delivery_rub: 0,
+                    msk_pickup_rub: 0,
+                    other_costs_rub: 0,
+                    total_rub: 0
+                },
+                
+                // Contract cost и cost_difference (для отображения под контрактом)
+                contract_cost: this.preciseResult.contract_cost || null,
+                cost_difference: this.preciseResult.cost_difference || null
+            };
+            
+            // Если это Prologix - добавляем его данные
+            if (this.selectedRoute === 'prologix' && route) {
+                adaptedResult.prologix_cost = {
+                    route_name: route.name,
+                    total_volume_m3: this.preciseResult.prologix_cost ? this.preciseResult.prologix_cost.total_volume_m3 : 0,
+                    rate_rub_per_m3: route.rate_rub_per_m3,
+                    logistics_cost_rub: route.logistics_cost_rub || 0,
+                    logistics_cost_usd: route.logistics_cost_usd || 0,
+                    total_cost_rub: route.total_cost_rub,
+                    total_cost_usd: route.total_cost_usd || route.total_cost_rub / 97,
+                    cost_per_unit_rub: route.cost_per_unit_rub,
+                    cost_per_unit_usd: route.cost_per_unit_usd || route.cost_per_unit_rub / 97,
+                    fixed_cost_rub: 25000,
+                    delivery_days_min: 25,
+                    delivery_days_max: 35,
+                    delivery_days_avg: 30
+                };
+            }
+            
+            // Все данные подготовлены для ResultsDisplay
+            console.log('📦 Финальный adaptedResult:', JSON.stringify({
+                has_cost_price: !!adaptedResult.cost_price,
+                has_sale_price: !!adaptedResult.sale_price,
+                cost_price_total_rub: adaptedResult.cost_price ? adaptedResult.cost_price.total.rub : null,
+                cost_price_per_unit_rub: adaptedResult.cost_price ? adaptedResult.cost_price.per_unit.rub : null
+            }, null, 2));
+            
+            // 🚀 КРИТИЧНО: Возвращаем plain object через JSON для убирания Proxy
+            // Это гарантирует что ResultsDisplay получит чистый объект без Vue reactivity
+            return JSON.parse(JSON.stringify(adaptedResult));
         }
     },
     
     watch: {
+        // 🔄 СБРОС currentPreciseCalculationId ПРИ СМЕНЕ СТРАНИЦЫ
+        '$route': function(newRoute, oldRoute) {
+            // Если уходим со страницы /precise, сбрасываем ID текущего расчета
+            if (oldRoute && oldRoute.path === '/precise' && newRoute.path !== '/precise') {
+                this.currentPreciseCalculationId = null;
+                console.log('🔄 Переход со страницы /precise, currentPreciseCalculationId сброшен');
+            }
+        },
+        
+        // 🔄 Принудительное обновление при смене маршрута
+        'selectedRoute': function(newRoute, oldRoute) {
+            if (newRoute && newRoute !== oldRoute) {
+                console.log('🔄 selectedRoute изменен:', oldRoute, '→', newRoute);
+            }
+        },
+        
         // 🔥 АВТОМАТИЧЕСКОЕ ОБНОВЛЕНИЕ СТАВКИ ПРИ СМЕНЕ МАРШРУТА (БЫСТРЫЙ РАСЧЕТ)
         'form.delivery_type': function(newType, oldType) {
             if (this.detectedCategory && this.detectedCategory.rates) {
@@ -379,6 +537,47 @@ const PriceCalculatorApp = {
             });
         },
         
+        // === ROUTES MANAGEMENT ===
+        handleSelectRoute: function(routeKey) {
+            var self = this;
+            console.log('🔘 handleSelectRoute вызван:', routeKey);
+            console.log('📊 Текущий selectedRoute (до):', self.selectedRoute);
+            
+            // ВАЖНО: Просто меняем selectedRoute, Vue сам обновит через :key
+            self.selectedRoute = routeKey;
+            
+            console.log('📊 Текущий selectedRoute (после):', self.selectedRoute);
+            console.log('✅ Vue автоматически обновит ResultsDisplay через :key');
+            
+            // Пересчитываем cachedRouteData СРАЗУ
+            self.updateCachedRouteData();
+        },
+        
+        updateCachedRouteData: function() {
+            // Просто триггерим пересчет - computed property сделает всю работу
+            // cachedRouteData больше не используется, данные идут из getPlainRouteData()
+            console.log('💾 updateCachedRouteData вызван, selectedRoute:', this.selectedRoute);
+        },
+        
+        getPlainRouteData: function() {
+            // Вызывается при каждом рендере ResultsDisplay
+            // Возвращает ЧИСТЫЙ объект без Vue reactivity
+            var data = this.selectedRouteData;
+            if (!data) return null;
+            
+            // Конвертируем в plain object через JSON
+            var plain = JSON.parse(JSON.stringify(data));
+            
+            console.log('🎯 getPlainRouteData вызван');
+            console.log('🎯 ПОЛНАЯ структура plain (JSON):', JSON.stringify(plain, null, 2));
+            console.log('🎯 plain.cost_price (JSON):', JSON.stringify(plain.cost_price, null, 2));
+            console.log('🎯 plain.sale_price (JSON):', JSON.stringify(plain.sale_price, null, 2));
+            console.log('🎯 plain.profit (JSON):', JSON.stringify(plain.profit, null, 2));
+            console.log('🎯 plain.additional_costs (JSON):', JSON.stringify(plain.additional_costs, null, 2));
+            
+            return plain;
+        },
+        
         performPreciseCalculation: function() {
             var self = this;
             if (!this.isPreciseFormValid) return Promise.resolve();
@@ -406,18 +605,86 @@ const PriceCalculatorApp = {
                 packing_box_height: parseFloat(this.preciseForm.packing_box_height) || null
             };
             
-            return axios.post('/api/calculate', calculationData).then(function(response) {
+            // ✨ Умная логика: UPDATE если уже есть расчет на странице, INSERT если новый
+            var apiCall;
+            var calculationId = self.currentPreciseCalculationId || self.editingCalculationId;
+            
+            if (calculationId) {
+                console.log('🔄 Обновление существующего расчета ID:', calculationId);
+                apiCall = axios.put('/api/history/' + calculationId, calculationData);
+            } else {
+                console.log('➕ Создание нового расчета');
+                apiCall = axios.post('/api/calculate', calculationData);
+            }
+            
+            return apiCall.then(function(response) {
+                console.log('📥 Получен ответ от API:', response.data);
+                console.log('🔍 routes в ответе:', response.data.routes);
+                console.log('🔍 Ключи routes:', response.data.routes ? Object.keys(response.data.routes) : 'НЕТ');
                 self.preciseResult = response.data;
                 
-                // Обновляем историю после расчета
+                // 📊 Автоматически выбираем самый дешевый маршрут после расчета
+                if (self.preciseResult.routes && Object.keys(self.preciseResult.routes).length > 0) {
+                    var routes = self.preciseResult.routes;
+                    console.log('📊 Доступные маршруты:', Object.keys(routes));
+                    var cheapestRoute = null;
+                    var lowestCost = Infinity;
+                    
+                    for (var key in routes) {
+                        console.log('💰 Маршрут', key, 'стоимость:', routes[key].total_cost_rub);
+                        if (routes[key].total_cost_rub < lowestCost) {
+                            lowestCost = routes[key].total_cost_rub;
+                            cheapestRoute = key;
+                        }
+                    }
+                    
+                    console.log('✅ Выбран самый дешевый маршрут:', cheapestRoute, 'стоимость:', lowestCost);
+                    self.selectedRoute = cheapestRoute;
+                    
+                    // Принудительно обновляем Vue, чтобы computed property пересчитался
+                    self.$nextTick(function() {
+                        console.log('🔄 Vue обновлен, selectedRoute:', self.selectedRoute);
+                        // Обновляем cachedRouteData
+                        self.updateCachedRouteData();
+                    });
+                } else {
+                    console.error('❌ Нет маршрутов в ответе!', self.preciseResult);
+                    console.error('❌ response.data.routes:', response.data.routes);
+                    console.error('❌ typeof routes:', typeof response.data.routes);
+                }
+                
+                // Сохраняем ID текущего расчета для дальнейших UPDATE
                 if (self.preciseResult.id) {
+                    self.currentPreciseCalculationId = self.preciseResult.id;
+                    console.log('💾 Сохранен ID текущего расчета:', self.currentPreciseCalculationId);
                     self.loadHistory();
+                }
+                
+                // Очищаем editingCalculationId после успешного сохранения
+                if (self.editingCalculationId) {
+                    console.log('✅ Расчет обновлен, сбрасываем editingCalculationId');
+                    self.editingCalculationId = null;
+                }
+                
+                // ✨ Умный роутинг: переход на /precise после расчета
+                // Визуально остаемся на той же странице, но URL обновляется для истории браузера
+                var currentPath = self.$route ? self.$route.path : '/';
+                if (currentPath !== '/precise') {
+                    console.log('📍 Переход на /precise с', currentPath);
+                    self.$router.push('/precise').catch(function(err) {
+                        // Игнорируем ошибку "NavigationDuplicated"
+                        if (err.name !== 'NavigationDuplicated') {
+                            console.error('Ошибка навигации:', err);
+                        }
+                    });
                 }
             }).catch(function(error) {
                 console.error('Ошибка точного расчета:', error);
                 alert('Ошибка при выполнении точного расчета. Проверьте введенные данные.');
             }).finally(function() {
                 self.isCalculating = false;
+                console.log('✅ Точный расчет завершен, isCalculating:', self.isCalculating);
+                console.log('📝 isPreciseFormValid:', self.isPreciseFormValid);
             });
         },
         
@@ -459,6 +726,8 @@ const PriceCalculatorApp = {
             this.detectedCategoryPrecise = null;
             this.selectedCategoryIndexPrecise = null;
             this.editingCalculationId = null;
+            this.currentPreciseCalculationId = null;
+            console.log('🔄 Форма очищена, currentPreciseCalculationId сброшен');
         },
         
         // === HISTORY MANAGEMENT ===
@@ -829,8 +1098,13 @@ const PriceCalculatorApp = {
                     '</form>' +
                 '</div>' +
                 
+                '<!-- Routes Comparison -->' +
+                '<RoutesComparison v-if="preciseResult && preciseResult.routes" :routes="preciseResult.routes" :selected-route="selectedRoute" @select-route="handleSelectRoute" />' +
+                
                 '<!-- Results -->' +
-                '<ResultsDisplay :result="preciseResult" :is-calculating="isCalculating" />' +
+                '<div v-if="selectedRouteData && selectedRoute" class="results-container">' +
+                    '<ResultsDisplay :result="getPlainRouteData()" :is-calculating="isCalculating" />' +
+                '</div>' +
             '</div>' +
             
             '<!-- History Tab -->' +
