@@ -74,14 +74,14 @@
                 <!-- Лейбл региона (только ОАЭ) -->
                 {% if product.region == 'ОАЭ' %}
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-amber-100 text-amber-800 border border-amber-300">
-                    🇦🇪 ОАЭ
+                    ОАЭ
                 </span>
                 {% endif %}
             </div>
 
             <!-- Проект -->
             {% if product.project %}
-            <div class="mt-3">
+            <div class="mt-3 space-y-1">
                 <p class="text-sm text-gray-500">
                     Проект: 
                     <a href="/project/{{ product.project.id }}" class="text-indigo-600 hover:text-indigo-500 font-medium">
@@ -97,6 +97,11 @@
                     </a>
                     {% endif %}
                 </p>
+                {% if product.project.offer_creation_date %}
+                <p class="text-sm text-gray-500">
+                    Дата создания КП: <span class="font-medium text-gray-700">{{ product.project.offer_creation_date }}</span>
+                </p>
+                {% endif %}
             </div>
             {% endif %}
 

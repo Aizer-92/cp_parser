@@ -27,3 +27,7 @@ try:
 except Exception as e:
     logging.error(f"❌ Критическая ошибка регистрации типов: {e}")
     raise
+
+
+
+

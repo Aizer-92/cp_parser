@@ -466,7 +466,7 @@ def project_detail(project_id):
         project_sql = text("""
             SELECT id, table_id, project_name, file_name, google_sheets_url, 
                    manager_name, total_products_found, total_images_found,
-                   parsing_status, region, updated_at, created_at
+                   parsing_status, region, updated_at, created_at, offer_creation_date
             FROM projects 
             WHERE id = :project_id
         """)
@@ -489,6 +489,7 @@ def project_detail(project_id):
         # Преобразуем строки в datetime объекты
         project.updated_at = datetime.fromisoformat(str(project_row[10])) if project_row[10] else None
         project.created_at = datetime.fromisoformat(str(project_row[11])) if project_row[11] else None
+        project.offer_creation_date = project_row[12]
         
         # Получаем товары проекта с пагинацией
         page = request.args.get('page', 1, type=int)
@@ -648,13 +649,14 @@ def product_detail(product_id):
         product.region = product_row[9] if len(product_row) > 9 else None  # Регион проекта
         
         # Получаем информацию о проекте
-        project_sql = text("SELECT id, project_name, table_id FROM projects WHERE id = :project_id")
+        project_sql = text("SELECT id, project_name, table_id, offer_creation_date FROM projects WHERE id = :project_id")
         project_row_data = session.execute(project_sql, {"project_id": product.project_id}).fetchone()
         if project_row_data:
             product.project = Project()
             product.project.id = project_row_data[0]
             product.project.project_name = project_row_data[1]
             product.project.table_id = project_row_data[2]
+            product.project.offer_creation_date = project_row_data[3]
         
         # Получаем все ценовые предложения
         offers_sql = text("""

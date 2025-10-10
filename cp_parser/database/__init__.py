@@ -27,3 +27,7 @@ except Exception as e:
     print(f"❌ [INIT] Критическая ошибка регистрации типов: {e}")
     import traceback
     traceback.print_exc()
+
+
+
+
