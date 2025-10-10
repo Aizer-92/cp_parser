@@ -27,6 +27,23 @@ import os
 from pathlib import Path
 import sys
 
+# Проверка доступности векторного поиска (graceful fallback)
+VECTOR_SEARCH_AVAILABLE = False
+OPENAI_CLIENT = None
+
+try:
+    from openai import OpenAI
+    from dotenv import load_dotenv
+    load_dotenv()
+    api_key = os.getenv('OPENAI_API_KEY')
+    if api_key:
+        OPENAI_CLIENT = OpenAI(api_key=api_key)
+        VECTOR_SEARCH_AVAILABLE = True
+        print("✅ [APP] Векторный поиск доступен (OpenAI)")
+except Exception as e:
+    print("⚠️  [APP] Векторный поиск недоступен (OpenAI не установлен или ключ отсутствует)")
+    print("   Используется обычный текстовый поиск")
+
 # Добавляем путь к модулям проекта
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -84,6 +101,80 @@ def parse_price(price_str):
         cleaned = cleaned.replace(',', '.')
         return float(cleaned)
     except (ValueError, AttributeError):
+        return None
+
+# ===== ВЕКТОРНЫЙ ПОИСК (с graceful fallback) =====
+
+def generate_search_embedding(query: str):
+    """
+    Генерирует embedding для поискового запроса
+    Возвращает None если векторный поиск недоступен
+    """
+    if not VECTOR_SEARCH_AVAILABLE or not OPENAI_CLIENT:
+        return None
+    
+    try:
+        response = OPENAI_CLIENT.embeddings.create(
+            input=query[:8000],
+            model="text-embedding-3-small"
+        )
+        return response.data[0].embedding
+    except Exception as e:
+        print(f"⚠️  [VECTOR] Ошибка генерации embedding: {e}")
+        return None
+
+def vector_search_products(session, query_embedding, limit=100):
+    """
+    Выполняет векторный поиск товаров
+    Возвращает список ID товаров, отсортированных по релевантности
+    Если что-то не работает - возвращает None (fallback на обычный поиск)
+    """
+    if not query_embedding:
+        return None
+    
+    try:
+        from sqlalchemy import text
+        
+        # Проверяем что колонка существует
+        check = session.execute(text("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'products' 
+            AND column_name = 'name_embedding'
+        """)).fetchone()
+        
+        if not check:
+            print("⚠️  [VECTOR] Колонка name_embedding не существует, используем обычный поиск")
+            return None
+        
+        # Выполняем векторный поиск
+        # Используем косинусное расстояние (1 - cosine similarity)
+        # Меньшее расстояние = более релевантный результат
+        result = session.execute(text("""
+            SELECT id, name, 
+                   1 - (name_embedding <=> :query_embedding::vector) as similarity
+            FROM products
+            WHERE name_embedding IS NOT NULL
+            ORDER BY name_embedding <=> :query_embedding::vector
+            LIMIT :limit
+        """), {
+            'query_embedding': str(query_embedding),
+            'limit': limit
+        }).fetchall()
+        
+        # Возвращаем только ID товаров с достаточной релевантностью (>0.3)
+        product_ids = [row[0] for row in result if row[2] > 0.3]
+        
+        if product_ids:
+            print(f"✅ [VECTOR] Найдено {len(product_ids)} релевантных товаров векторным поиском")
+        else:
+            print("⚠️  [VECTOR] Векторный поиск не нашел релевантных товаров, используем обычный")
+        
+        return product_ids if product_ids else None
+        
+    except Exception as e:
+        print(f"⚠️  [VECTOR] Ошибка векторного поиска: {e}")
+        print("   Используем обычный текстовый поиск")
         return None
 
 # ===== АВТОРИЗАЦИЯ =====
@@ -221,9 +312,25 @@ def products_list():
         where_conditions = []
         params = {}
         
+        # ===== УМНЫЙ ПОИСК: Векторный + fallback на текстовый =====
+        vector_product_ids = None
         if search.strip():
-            where_conditions.append("(p.name ILIKE :search OR p.description ILIKE :search)")
-            params["search"] = f"%{search.strip()}%"
+            # 1. Пробуем векторный поиск (если доступен)
+            query_embedding = generate_search_embedding(search.strip())
+            if query_embedding:
+                vector_product_ids = vector_search_products(session, query_embedding, limit=200)
+            
+            # 2. Выбираем метод поиска
+            if vector_product_ids:
+                # Векторный поиск успешен - ищем по ID
+                print(f"🔍 [SEARCH] Используем векторный поиск: {len(vector_product_ids)} товаров")
+                where_conditions.append(f"p.id IN :vector_ids")
+                params["vector_ids"] = tuple(vector_product_ids)
+            else:
+                # Fallback на обычный текстовый поиск
+                print(f"🔍 [SEARCH] Используем текстовый поиск (ILIKE)")
+                where_conditions.append("(p.name ILIKE :search OR p.description ILIKE :search)")
+                params["search"] = f"%{search.strip()}%"
         
         # Фильтр по региону ОАЭ
         if region_uae:
