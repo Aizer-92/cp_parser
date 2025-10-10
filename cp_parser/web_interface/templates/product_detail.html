@@ -102,9 +102,9 @@
                     Исполнители: <span class="font-medium text-gray-700">{{ product.project.manager_name }}</span>
                 </p>
                 {% endif %}
-                {% if product.project.offer_creation_date %}
+                {% if product.project.offer_created_at %}
                 <p class="text-sm text-gray-500">
-                    Дата создания КП: <span class="font-medium text-gray-700">{{ product.project.offer_creation_date }}</span>
+                    Дата создания КП: <span class="font-medium text-gray-700">{{ product.project.offer_created_at.strftime('%d.%m.%Y') if product.project.offer_created_at else '' }}</span>
                 </p>
                 {% endif %}
             </div>
