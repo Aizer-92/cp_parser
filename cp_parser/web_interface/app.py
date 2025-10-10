@@ -251,18 +251,25 @@ def products_list():
         
         where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
         
-        # Определяем ORDER BY в зависимости от sort_by
+        # Определяем SELECT и ORDER BY в зависимости от sort_by
+        # ВАЖНО: для SELECT DISTINCT все поля в ORDER BY должны быть в SELECT
+        base_select = """p.id, p.project_id, p.name, p.description, p.article_number, 
+                   p.sample_price, p.sample_delivery_time, p.row_number, pr.region, pr.offer_creation_date"""
+        
         order_by = "p.id DESC"  # По умолчанию
+        select_fields = base_select
         
         if sort_by == "date_asc":
             order_by = "pr.offer_creation_date ASC NULLS LAST, p.id ASC"
         elif sort_by == "date_desc":
             order_by = "pr.offer_creation_date DESC NULLS LAST, p.id DESC"
         elif sort_by == "price_asc":
-            # Для сортировки по цене используем MIN(price_rub) из price_offers
-            order_by = "(SELECT MIN(CAST(po.price_rub AS NUMERIC)) FROM price_offers po WHERE po.product_id = p.id) ASC NULLS LAST, p.id ASC"
+            # Добавляем подзапрос для цены в SELECT для сортировки
+            select_fields = base_select + """, (SELECT MIN(CAST(po.price_rub AS NUMERIC)) FROM price_offers po WHERE po.product_id = p.id) as min_price"""
+            order_by = "min_price ASC NULLS LAST, p.id ASC"
         elif sort_by == "price_desc":
-            order_by = "(SELECT MIN(CAST(po.price_rub AS NUMERIC)) FROM price_offers po WHERE po.product_id = p.id) DESC NULLS LAST, p.id DESC"
+            select_fields = base_select + """, (SELECT MIN(CAST(po.price_rub AS NUMERIC)) FROM price_offers po WHERE po.product_id = p.id) as min_price"""
+            order_by = "min_price DESC NULLS LAST, p.id DESC"
         
         # Подсчитываем общее количество с фильтрами
         count_sql = text(f"""
@@ -275,8 +282,7 @@ def products_list():
         
         # Получаем товары с фильтрами
         products_sql = text(f"""
-            SELECT DISTINCT p.id, p.project_id, p.name, p.description, p.article_number, 
-                   p.sample_price, p.sample_delivery_time, p.row_number, pr.region
+            SELECT DISTINCT {select_fields}
             FROM products p
             LEFT JOIN projects pr ON p.project_id = pr.id
             WHERE {where_clause}
@@ -300,7 +306,9 @@ def products_list():
             product.sample_price = parse_price(row[5])  # Используем parse_price для TEXT формата
             product.sample_delivery_time = int(row[6]) if row[6] is not None else None
             product.row_number = int(row[7]) if row[7] is not None else None
-            product.region = row[8] if len(row) > 8 else None  # Регион проекта
+            product.region = row[8]  # Регион проекта
+            # row[9] = offer_creation_date (используется для сортировки, не нужно присваивать)
+            # row[10] = min_price (только для сортировки по цене, если применимо)
             
             # Получаем изображения для товара
             images_sql = text("""
