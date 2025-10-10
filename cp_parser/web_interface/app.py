@@ -148,7 +148,7 @@ def index():
             products_count = session.query(Product).count()
             offers_count = session.query(PriceOffer).count()
             images_count = session.query(ProductImage).count()
-            completed_projects = session.query(Project).filter(Project.parsing_status == 'completed').count()
+            completed_projects = session.query(Project).filter(Project.parsing_status == 'complete').count()
             
             # Получаем последние обработанные проекты (только с товарами)
             print("🔍 [DEBUG] Пробуем получить последние проекты через RAW SQL...")
@@ -160,7 +160,7 @@ def index():
                        manager_name, total_products_found, total_images_found,
                        updated_at, created_at
                 FROM projects 
-                WHERE parsing_status = 'completed' AND total_products_found > 0
+                WHERE parsing_status = 'complete' AND total_products_found > 0
                 ORDER BY updated_at DESC 
                 LIMIT 6
             """)
@@ -211,10 +211,10 @@ def products_list():
     page = request.args.get('page', 1, type=int)
     search = request.args.get('search', '', type=str)
     max_quantity = request.args.get('max_quantity', type=int)  # Фильтр по тиражу (до)
-    min_price = request.args.get('min_price', type=float)  # Фильтр по мин. цене RUB
     max_price = request.args.get('max_price', type=float)  # Фильтр по макс. цене RUB
     max_delivery_days = request.args.get('max_delivery_days', type=int)  # Фильтр по сроку доставки (до)
     region_uae = request.args.get('region_uae')  # Фильтр по ОАЭ (checkbox)
+    sort_by = request.args.get('sort_by', '', type=str)  # Сортировка
     
     with db_manager.get_session() as session:
         # Строим динамический WHERE для фильтров
@@ -230,7 +230,7 @@ def products_list():
             where_conditions.append("pr.region = 'ОАЭ'")
         
         # Фильтры по цене, тиражу и сроку требуют JOIN с price_offers
-        needs_price_join = max_quantity is not None or min_price is not None or max_price is not None or max_delivery_days is not None
+        needs_price_join = max_quantity is not None or max_price is not None or max_delivery_days is not None
         
         if needs_price_join:
             # Добавляем подзапрос для фильтрации по ценовым предложениям
@@ -239,9 +239,6 @@ def products_list():
             if max_quantity is not None:
                 price_filters.append("CAST(po.quantity AS INTEGER) <= :max_quantity")
                 params["max_quantity"] = max_quantity
-            if min_price is not None:
-                price_filters.append("CAST(po.price_rub AS NUMERIC) >= :min_price")
-                params["min_price"] = min_price
             if max_price is not None:
                 price_filters.append("CAST(po.price_rub AS NUMERIC) <= :max_price")
                 params["max_price"] = max_price
@@ -253,6 +250,19 @@ def products_list():
             where_conditions.append(f"p.id IN (SELECT DISTINCT product_id FROM price_offers po WHERE {price_where})")
         
         where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        
+        # Определяем ORDER BY в зависимости от sort_by
+        order_by = "p.id DESC"  # По умолчанию
+        
+        if sort_by == "date_asc":
+            order_by = "pr.offer_creation_date ASC NULLS LAST, p.id ASC"
+        elif sort_by == "date_desc":
+            order_by = "pr.offer_creation_date DESC NULLS LAST, p.id DESC"
+        elif sort_by == "price_asc":
+            # Для сортировки по цене используем MIN(price_rub) из price_offers
+            order_by = "(SELECT MIN(CAST(po.price_rub AS NUMERIC)) FROM price_offers po WHERE po.product_id = p.id) ASC NULLS LAST, p.id ASC"
+        elif sort_by == "price_desc":
+            order_by = "(SELECT MIN(CAST(po.price_rub AS NUMERIC)) FROM price_offers po WHERE po.product_id = p.id) DESC NULLS LAST, p.id DESC"
         
         # Подсчитываем общее количество с фильтрами
         count_sql = text(f"""
@@ -270,7 +280,7 @@ def products_list():
             FROM products p
             LEFT JOIN projects pr ON p.project_id = pr.id
             WHERE {where_clause}
-            ORDER BY p.id DESC 
+            ORDER BY {order_by}
             LIMIT :limit OFFSET :offset
         """)
         params["limit"] = PRODUCTS_PER_PAGE
@@ -364,10 +374,10 @@ def products_list():
                              pagination=pagination, 
                              search=search,
                              max_quantity=max_quantity,
-                             min_price=min_price,
                              max_price=max_price,
                              max_delivery_days=max_delivery_days,
-                             region_uae=region_uae)
+                             region_uae=region_uae,
+                             sort_by=sort_by)
 
 @app.route('/projects')
 @login_required
@@ -729,7 +739,7 @@ def api_stats():
             'offers': session.query(PriceOffer).count(),
             'images': session.query(ProductImage).count(),
             'completed_projects': session.query(Project).filter(
-                Project.parsing_status == 'completed'
+                Project.parsing_status == 'complete'
             ).count()
         }
         return jsonify(stats)

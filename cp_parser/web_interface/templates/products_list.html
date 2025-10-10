@@ -4,7 +4,7 @@
 
 <!-- Макрос для создания URL с параметрами фильтрации -->
 {% macro filter_url(page_num) -%}
-?page={{ page_num }}{% if search %}&search={{ search }}{% endif %}{% if max_quantity %}&max_quantity={{ max_quantity }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}{% if max_delivery_days %}&max_delivery_days={{ max_delivery_days }}{% endif %}{% if region_uae %}&region_uae=on{% endif %}
+?page={{ page_num }}{% if search %}&search={{ search }}{% endif %}{% if max_quantity %}&max_quantity={{ max_quantity }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}{% if max_delivery_days %}&max_delivery_days={{ max_delivery_days }}{% endif %}{% if region_uae %}&region_uae=on{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}
 {%- endmacro %}
 
 {% block content %}
@@ -39,9 +39,9 @@
                 </div>
                 
                 <!-- Фильтры (collapsible) -->
-                <details class="bg-white rounded-lg border border-gray-300" {% if max_quantity or min_price or max_price or max_delivery_days or region_uae %}open{% endif %}>
+                <details class="bg-white rounded-lg border border-gray-300" {% if max_quantity or max_price or max_delivery_days or region_uae %}open{% endif %}>
                     <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 rounded-lg select-none">
-                        Фильтры {% if max_quantity or min_price or max_price or max_delivery_days or region_uae %}({{ [max_quantity, min_price, max_price, max_delivery_days, region_uae]|select|list|length }} активны){% endif %}
+                        Фильтры {% if max_quantity or max_price or max_delivery_days or region_uae %}({{ [max_quantity, max_price, max_delivery_days, region_uae]|select|list|length }} активны){% endif %}
                     </summary>
                     <div class="p-4 border-t border-gray-200">
                         <div class="flex flex-wrap gap-3 items-end">
@@ -55,20 +55,6 @@
                                        id="max_quantity"
                                        value="{{ max_quantity or '' }}" 
                                        placeholder="например: 1000"
-                                       class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
-                            </div>
-                            
-                            <!-- Цена от -->
-                            <div class="flex-1 min-w-[150px]">
-                                <label for="min_price" class="block text-sm font-medium text-gray-700 mb-1">
-                                    Цена от (₽):
-                                </label>
-                                <input type="number" 
-                                       name="min_price" 
-                                       id="min_price"
-                                       value="{{ min_price or '' }}" 
-                                       step="0.01"
-                                       placeholder="например: 500"
                                        class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
                             </div>
                             
@@ -112,9 +98,9 @@
                             </div>
                             
                             <!-- Кнопка сброса фильтров -->
-                            {% if max_quantity or min_price or max_price or max_delivery_days or region_uae %}
+                            {% if max_quantity or max_price or max_delivery_days or region_uae %}
                             <div>
-                                <a href="/products{% if search %}?search={{ search }}{% endif %}" 
+                                <a href="/products{% if search %}?search={{ search }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" 
                                    class="inline-flex items-center rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 border border-gray-300">
                                     Сбросить фильтры
                                 </a>
@@ -124,18 +110,30 @@
                     </div>
                 </details>
                 
+                <!-- Сортировка -->
+                <div class="bg-gray-50 rounded-lg border border-gray-300 px-4 py-3">
+                    <div class="flex items-center gap-3">
+                        <label for="sort_by" class="text-sm font-medium text-gray-700">Сортировка:</label>
+                        <select name="sort_by" 
+                                id="sort_by"
+                                onchange="this.form.submit()"
+                                class="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                            <option value="">По умолчанию (новые первые)</option>
+                            <option value="date_asc" {% if sort_by == 'date_asc' %}selected{% endif %}>Дата КП (старые первые)</option>
+                            <option value="date_desc" {% if sort_by == 'date_desc' %}selected{% endif %}>Дата КП (новые первые)</option>
+                            <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>Цена (дешевле первые)</option>
+                            <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>Цена (дороже первые)</option>
+                        </select>
+                    </div>
+                </div>
+                
                 <!-- Активные фильтры -->
-                {% if max_quantity or min_price or max_price or max_delivery_days or region_uae %}
+                {% if max_quantity or max_price or max_delivery_days or region_uae %}
                 <div class="flex flex-wrap gap-2 pt-2 border-t border-gray-200">
                     <span class="text-xs font-medium text-gray-500">Активные фильтры:</span>
                     {% if max_quantity %}
                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                         Тираж до {{ max_quantity }} шт
-                    </span>
-                    {% endif %}
-                    {% if min_price %}
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Цена от ₽{{ "%.2f"|format(min_price) }}
                     </span>
                     {% endif %}
                     {% if max_price %}
