@@ -213,9 +213,10 @@ def products_list():
         
         if needs_price_join:
             # Добавляем подзапрос для фильтрации по ценовым предложениям
+            # ВАЖНО: quantity и price_rub могут быть TEXT в БД, поэтому используем CAST
             price_filters = []
             if max_quantity is not None:
-                price_filters.append("po.quantity <= :max_quantity")
+                price_filters.append("CAST(po.quantity AS INTEGER) <= :max_quantity")
                 params["max_quantity"] = max_quantity
             if min_price is not None:
                 price_filters.append("CAST(po.price_rub AS NUMERIC) >= :min_price")
