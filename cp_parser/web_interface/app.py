@@ -114,7 +114,13 @@ def generate_search_embedding(query: str):
         return None
     
     try:
-        response = OPENAI_CLIENT.embeddings.create(
+        # Таймаут 10 секунд для OpenAI API
+        import httpx
+        client_with_timeout = OpenAI(
+            api_key=OPENAI_CLIENT.api_key,
+            timeout=httpx.Timeout(10.0, connect=5.0)
+        )
+        response = client_with_timeout.embeddings.create(
             input=query[:8000],
             model="text-embedding-3-small"
         )
@@ -167,26 +173,46 @@ def vector_search_products(session, query_embedding, limit=100):
         
         # Если есть TEXT колонка - используем её (простая версия)
         if check_text:
-            print("🔍 [VECTOR] Используем TEXT embeddings (простая версия)")
+            print("🔍 [VECTOR] Используем TEXT embeddings (оптимизированная версия)")
             
-            # Получаем ВСЕ товары с embeddings (для небольших объемов это ОК)
+            import time
+            start_time = time.time()
+            
+            # ОПТИМИЗАЦИЯ: Загружаем только 200 товаров вместо 1000
+            # Берем последние добавленные товары (они обычно актуальнее)
             result = session.execute(text("""
                 SELECT id, name, name_embedding_text
                 FROM products
                 WHERE name_embedding_text IS NOT NULL
-                LIMIT 1000
+                ORDER BY id DESC
+                LIMIT 200
             """)).fetchall()
+            
+            fetch_time = time.time() - start_time
+            print(f"   Загружено {len(result)} товаров за {fetch_time:.2f}с")
             
             # Вычисляем similarity в Python
             similarities = []
+            calc_start = time.time()
+            
             for product_id, product_name, embedding_json in result:
                 try:
+                    # ОПТИМИЗАЦИЯ: Таймаут на весь поиск (5 секунд max)
+                    if time.time() - start_time > 5.0:
+                        print("⚠️  [VECTOR] Timeout 5с, прерываем поиск")
+                        break
+                    
                     product_embedding = json.loads(embedding_json)
                     similarity = cosine_similarity(query_embedding, product_embedding)
-                    if similarity > 0.3:  # Порог релевантности
+                    
+                    # ОПТИМИЗАЦИЯ: Снизили порог до 0.25 для лучшего recall
+                    if similarity > 0.25:
                         similarities.append((product_id, product_name, similarity))
                 except:
                     continue
+            
+            calc_time = time.time() - calc_start
+            print(f"   Вычислено similarity для {len(similarities)} товаров за {calc_time:.2f}с")
             
             # Сортируем по similarity
             similarities.sort(key=lambda x: x[2], reverse=True)
@@ -194,8 +220,10 @@ def vector_search_products(session, query_embedding, limit=100):
             # Берем top results
             product_ids = [pid for pid, _, _ in similarities[:limit]]
             
+            total_time = time.time() - start_time
+            
             if product_ids:
-                print(f"✅ [VECTOR] Найдено {len(product_ids)} релевантных товаров (TEXT embeddings)")
+                print(f"✅ [VECTOR] Найдено {len(product_ids)} релевантных товаров за {total_time:.2f}с")
             else:
                 print("⚠️  [VECTOR] Векторный поиск не нашел релевантных товаров")
             
@@ -974,4 +1002,6 @@ if __name__ == '__main__':
         serve(app, host='0.0.0.0', port=port, threads=4)
     except ImportError:
         print("⚠️ Waitress не найден, используем Flask dev server")
+        app.run(debug=False, host='0.0.0.0', port=port)
+
         app.run(debug=False, host='0.0.0.0', port=port)
