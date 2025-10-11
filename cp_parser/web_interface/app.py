@@ -28,25 +28,23 @@ from pathlib import Path
 import sys
 
 # Проверка доступности векторного поиска (graceful fallback)
-# ВРЕМЕННО ОТКЛЮЧЕН: векторный поиск находит неправильные товары
+# Embeddings пересоздан ТОЛЬКО из названий (БЕЗ описаний) для точности
 VECTOR_SEARCH_AVAILABLE = False
 OPENAI_CLIENT = None
 
-# try:
-#     from openai import OpenAI
-#     from dotenv import load_dotenv
-#     load_dotenv()
-#     api_key = os.getenv('OPENAI_API_KEY')
-#     if api_key:
-#         OPENAI_CLIENT = OpenAI(api_key=api_key)
-#         VECTOR_SEARCH_AVAILABLE = True
-#         print("✅ [APP] Векторный поиск доступен (OpenAI)")
-# except Exception as e:
-#     print("⚠️  [APP] Векторный поиск недоступен (OpenAI не установлен или ключ отсутствует)")
-#     print("   Используется обычный текстовый поиск")
-
-print("⚠️  [APP] Векторный поиск ВРЕМЕННО ОТКЛЮЧЕН")
-print("   Используется обычный текстовый поиск (ILIKE)")
+try:
+    from openai import OpenAI
+    from dotenv import load_dotenv
+    load_dotenv()
+    api_key = os.getenv('OPENAI_API_KEY')
+    if api_key:
+        OPENAI_CLIENT = OpenAI(api_key=api_key)
+        VECTOR_SEARCH_AVAILABLE = True
+        print("✅ [APP] Векторный поиск доступен (OpenAI)")
+        print("   📝 Embeddings из НАЗВАНИЙ товаров (v2.0 - улучшенная точность)")
+except Exception as e:
+    print("⚠️  [APP] Векторный поиск недоступен (OpenAI не установлен или ключ отсутствует)")
+    print("   Используется обычный текстовый поиск")
 
 # Добавляем путь к модулям проекта
 sys.path.append(str(Path(__file__).parent.parent))
