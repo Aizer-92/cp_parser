@@ -149,3 +149,5 @@ curl -X POST https://price-calculator-production.up.railway.app/api/v3/calculate
 **Статус:** Ожидаем деплоя на Railway (~2 минуты). После деплоя нужно протестировать Сценарии 1-3.
 
 
+
+

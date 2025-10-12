@@ -80,3 +80,5 @@ print("\nЧтобы запустить тест:")
 print("1. Запусти сервер: cd web_interface && python3 app.py")
 print("2. В другом терминале: python3 test_kp_api.py")
 
+
+

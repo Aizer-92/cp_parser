@@ -15,6 +15,7 @@ from .position import Position
 from .calculation import Calculation
 from .logistics_route import LogisticsRoute
 from .audit_log import AuditLog
+from .database import engine, SessionLocal, get_db, init_db, drop_all_tables
 
 __all__ = [
     'Base',
@@ -23,5 +24,12 @@ __all__ = [
     'Calculation',
     'LogisticsRoute',
     'AuditLog',
+    'engine',
+    'SessionLocal',
+    'get_db',
+    'init_db',
+    'drop_all_tables',
 ]
+
+
 

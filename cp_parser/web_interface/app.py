@@ -74,19 +74,32 @@ IMAGE_SEARCH_ENABLED = False
 CLIP_MODEL = None
 
 try:
-    if PGVECTOR_ENGINE:  # Image search требует pgvector БД
+    if PGVECTOR_ENGINE and OPENAI_CLIENT:  # Image search требует pgvector БД
+        print("🔄 [APP] Загружаю CLIP модель (это может занять 10-30 секунд)...")
+        import time
+        start_time = time.time()
+        
         from sentence_transformers import SentenceTransformer
         CLIP_MODEL = SentenceTransformer('clip-ViT-B-32')
+        
+        load_time = time.time() - start_time
         IMAGE_SEARCH_ENABLED = True
-        print("✅ [APP] CLIP модель загружена - поиск по изображениям ВКЛЮЧЕН")
+        print(f"✅ [APP] CLIP модель загружена за {load_time:.1f}с - поиск по изображениям ВКЛЮЧЕН")
+    elif not PGVECTOR_ENGINE:
+        print("ℹ️  [APP] CLIP модель НЕ загружается: отсутствует pgvector БД")
+    elif not OPENAI_CLIENT:
+        print("ℹ️  [APP] CLIP модель НЕ загружается: отсутствует OpenAI API")
 except Exception as e:
+    import traceback
     print(f"⚠️  [APP] CLIP модель недоступна: {e}")
+    print(f"   Traceback: {traceback.format_exc()}")
     print("ℹ️  [APP] Поиск по изображениям ОТКЛЮЧЕН")
 
 # Добавляем путь к модулям проекта
 sys.path.append(str(Path(__file__).parent.parent))
 
-from flask import Flask, render_template, jsonify, send_from_directory, request, session, redirect, url_for
+from flask import Flask, render_template, jsonify, send_from_directory, request, redirect, url_for
+from flask import session as flask_session
 from werkzeug.utils import secure_filename
 from PIL import Image
 import io
@@ -510,7 +523,7 @@ def products_list():
         if image_search_id:
             # Получаем product_ids из сессии
             session_key = f'image_search_{image_search_id}'
-            image_product_ids = session.get(session_key)
+            image_product_ids = flask_session.get(session_key)
             
             if image_product_ids:
                 print(f"🖼️  [IMAGE SEARCH] Показываем результаты поиска по изображению: {len(image_product_ids)} товаров")
@@ -1119,10 +1132,10 @@ from flask import g
 
 def get_session_id():
     """Получает или создает session_id для пользователя"""
-    if 'session_id' not in session:
-        session['session_id'] = str(uuid.uuid4())
-        session.permanent = True
-    return session['session_id']
+    if 'session_id' not in flask_session:
+        flask_session['session_id'] = str(uuid.uuid4())
+        flask_session.permanent = True
+    return flask_session['session_id']
 
 @app.route('/api/kp/add', methods=['POST'])
 def api_kp_add():
@@ -1137,7 +1150,7 @@ def api_kp_add():
             return jsonify({'success': False, 'error': 'Не указан product_id или price_offer_id'}), 400
         
         session_id = get_session_id()
-        db_session = db_manager.Session()
+        db_session = db_manager.get_session_direct()
         
         try:
             # Проверяем существование товара и варианта цены
@@ -1181,7 +1194,7 @@ def api_kp_remove(kp_item_id):
     
     try:
         session_id = get_session_id()
-        db_session = db_manager.Session()
+        db_session = db_manager.get_session_direct()
         
         try:
             db_session.execute(text("""
@@ -1206,7 +1219,7 @@ def api_kp_get():
     
     try:
         session_id = get_session_id()
-        db_session = db_manager.Session()
+        db_session = db_manager.get_session_direct()
         
         try:
             result = db_session.execute(text("""
@@ -1282,7 +1295,7 @@ def api_kp_clear():
     
     try:
         session_id = get_session_id()
-        db_session = db_manager.Session()
+        db_session = db_manager.get_session_direct()
         
         try:
             db_session.execute(text("DELETE FROM kp_items WHERE session_id = :session_id"), {'session_id': session_id})
@@ -1307,7 +1320,7 @@ def api_kp_check():
             return jsonify({'success': True, 'in_kp': []})
         
         session_id = get_session_id()
-        db_session = db_manager.Session()
+        db_session = db_manager.get_session_direct()
         
         try:
             placeholders = ','.join([f':id{i}' for i in range(len(price_offer_ids))])
@@ -1339,9 +1352,19 @@ def api_search_by_image():
     """Поиск товаров по загруженному изображению"""
     
     if not IMAGE_SEARCH_ENABLED:
+        # Определяем причину
+        if not PGVECTOR_ENGINE:
+            reason = "Отсутствует подключение к pgvector БД (проверьте VECTOR_DATABASE_URL)"
+        elif not OPENAI_CLIENT:
+            reason = "Отсутствует OpenAI API (проверьте OPENAI_API_KEY)"
+        elif not CLIP_MODEL:
+            reason = "CLIP модель не загрузилась (проверьте логи запуска)"
+        else:
+            reason = "Неизвестная причина"
+        
         return jsonify({
             'success': False, 
-            'error': 'Поиск по изображениям отключен. Требуется CLIP модель и pgvector БД.'
+            'error': f'Поиск по изображениям отключен: {reason}'
         }), 503
     
     try:
@@ -1398,7 +1421,7 @@ def api_search_by_image():
         
         # Сохраняем product_ids в сессии
         search_id = str(uuid.uuid4())
-        session[f'image_search_{search_id}'] = product_ids
+        flask_session[f'image_search_{search_id}'] = product_ids
         
         return jsonify({
             'success': True, 

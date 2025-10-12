@@ -4,7 +4,8 @@
 import os
 import secrets
 from functools import wraps
-from flask import session, redirect, url_for, request
+from flask import redirect, url_for, request
+from flask import session as flask_session
 
 # Credentials
 AUTH_USERNAME = "admin"
@@ -30,7 +31,7 @@ def login_required(f):
     """Декоратор для защиты роутов"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'session_token' not in session or not check_session(session.get('session_token')):
+        if 'session_token' not in flask_session or not check_session(flask_session.get('session_token')):
             return redirect(url_for('login_page'))
         return f(*args, **kwargs)
     return decorated_function

@@ -289,3 +289,5 @@ similarity = cosine_similarity(query_embedding, product_embedding)
 
 
 
+
+

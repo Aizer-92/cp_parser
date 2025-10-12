@@ -357,3 +357,5 @@ ALTER TABLE categories ADD COLUMN updated_at TIMESTAMP DEFAULT NOW();
 
 
 
+
+
