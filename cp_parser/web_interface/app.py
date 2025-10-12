@@ -1388,76 +1388,118 @@ def api_search_by_image():
         # Загружаем изображение
         image_bytes = file.read()
         
-        # ВРЕМЕННОЕ РЕШЕНИЕ: Используем GPT-4 Vision для описания изображения
-        # затем ищем по текстовому описанию в БД названий товаров
-        print(f"🔍 [IMAGE SEARCH] Анализ изображения через GPT-4 Vision...")
+        # Генерируем image embedding через Hugging Face CLIP API
+        print(f"🔍 [IMAGE SEARCH] Генерация image embedding через Hugging Face...")
         
-        if not OPENAI_CLIENT:
+        HF_API_TOKEN = os.getenv('HUGGINGFACE_API_TOKEN')
+        if not HF_API_TOKEN:
             return jsonify({
                 'success': False,
-                'error': 'OpenAI API не настроен. Проверьте OPENAI_API_KEY.'
+                'error': 'Не настроен HUGGINGFACE_API_TOKEN. Добавьте в переменные окружения.'
             }), 503
         
+        import requests
         import base64
-        image_b64 = base64.b64encode(image_bytes).decode('utf-8')
         
-        # Описываем изображение через GPT-4 Vision
+        # Правильный endpoint для CLIP feature extraction
+        # Используем модель которая точно поддерживает image embeddings
+        api_url = "https://api-inference.huggingface.co/models/sentence-transformers/clip-ViT-B-32"
+        headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
+        
         try:
-            vision_response = OPENAI_CLIENT.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": "Describe this product in 2-3 keywords in Russian. What type of item is this? Focus on category (рюкзак, кружка, ручка, блокнот, повербанк, etc.). Answer with just the keywords, nothing else."
-                            },
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{image_b64}"
-                                }
-                            }
-                        ]
-                    }
-                ],
-                max_tokens=50
+            # Попытка 1: Отправляем изображение напрямую
+            print(f"   Попытка получить embedding...")
+            response = requests.post(
+                api_url,
+                headers=headers,
+                data=image_bytes,
+                timeout=60
             )
             
-            image_description = vision_response.choices[0].message.content.strip()
-            print(f"🖼️  [IMAGE SEARCH] GPT описание: '{image_description}'")
+            print(f"   Статус ответа: {response.status_code}")
             
-        except Exception as e:
-            print(f"❌ [IMAGE SEARCH] GPT Vision error: {e}")
+            if response.status_code == 503:
+                # Модель загружается (cold start)
+                return jsonify({
+                    'success': False,
+                    'error': 'Модель загружается. Подождите 20-30 секунд и попробуйте снова.',
+                    'retry': True
+                }), 503
+            
+            if response.status_code != 200:
+                print(f"   Ошибка HF API: {response.text}")
+                return jsonify({
+                    'success': False,
+                    'error': f'Ошибка Hugging Face API: {response.status_code}'
+                }), 503
+            
+            # Парсим ответ
+            result = response.json()
+            print(f"   Формат ответа: {type(result)}")
+            
+            # Обрабатываем разные форматы ответа
+            if isinstance(result, list):
+                # Формат: [[embedding]]
+                if isinstance(result[0], list):
+                    query_embedding = result[0]
+                else:
+                    query_embedding = result
+            elif isinstance(result, dict):
+                # Проверяем разные ключи
+                if 'embeddings' in result:
+                    query_embedding = result['embeddings'][0] if isinstance(result['embeddings'], list) else result['embeddings']
+                elif 'data' in result:
+                    query_embedding = result['data']
+                else:
+                    print(f"❌ Неожиданный формат dict: {result.keys()}")
+                    return jsonify({
+                        'success': False,
+                        'error': 'Неожиданный формат ответа от API'
+                    }), 500
+            else:
+                print(f"❌ Неожиданный тип ответа: {type(result)}")
+                return jsonify({
+                    'success': False,
+                    'error': 'Неожиданный формат ответа от API'
+                }), 500
+            
+            # Проверяем размер embedding
+            if not isinstance(query_embedding, list) or len(query_embedding) != 512:
+                print(f"❌ Неверный размер embedding: {len(query_embedding) if isinstance(query_embedding, list) else 'not a list'}")
+                return jsonify({
+                    'success': False,
+                    'error': f'Неверный размер embedding: ожидалось 512, получено {len(query_embedding) if isinstance(query_embedding, list) else "не список"}'
+                }), 500
+            
+            print(f"✅ [IMAGE SEARCH] Embedding получен успешно (размер: {len(query_embedding)})")
+            
+        except requests.exceptions.Timeout:
             return jsonify({
                 'success': False,
-                'error': f'Ошибка анализа изображения: {str(e)}'
+                'error': 'Timeout: модель не ответила вовремя. Попробуйте позже.',
+                'retry': True
+            }), 503
+        except Exception as e:
+            print(f"❌ [IMAGE SEARCH] Ошибка: {e}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({
+                'success': False,
+                'error': f'Ошибка при генерации embedding: {str(e)}'
             }), 500
         
-        # Теперь используем текстовый поиск по названиям товаров
-        # Генерируем text embedding для поиска
-        print(f"🔍 [IMAGE SEARCH] Поиск товаров по описанию: '{image_description}'")
-        
-        embedding_response = OPENAI_CLIENT.embeddings.create(
-            model="text-embedding-3-small",
-            input=image_description
-        )
-        
-        query_embedding = embedding_response.data[0].embedding
-        
-        # Ищем похожие ТОВАРЫ по названию в pgvector БД (text embeddings)
+        # Ищем похожие ИЗОБРАЖЕНИЯ в pgvector БД
         query_vector_str = '[' + ','.join(map(str, query_embedding)) + ']'
         
         with PGVECTOR_ENGINE.connect() as conn:
             from sqlalchemy import text
             sql_query = f"""
                 SELECT 
-                    pe.product_id,
-                    1 - (pe.name_embedding <=> '{query_vector_str}'::vector) as similarity
-                FROM product_embeddings pe
-                WHERE 1 - (pe.name_embedding <=> '{query_vector_str}'::vector) >= 0.4
-                ORDER BY pe.name_embedding <=> '{query_vector_str}'::vector
+                    ie.product_id,
+                    1 - (ie.image_embedding <=> '{query_vector_str}'::vector) as similarity
+                FROM image_embeddings ie
+                WHERE 1 - (ie.image_embedding <=> '{query_vector_str}'::vector) >= 0.3
+                ORDER BY ie.image_embedding <=> '{query_vector_str}'::vector
                 LIMIT 50
             """
             results = conn.execute(text(sql_query)).fetchall()
