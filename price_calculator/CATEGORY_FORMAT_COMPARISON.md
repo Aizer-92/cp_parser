@@ -263,3 +263,5 @@ if category.needs_custom_params():
 - ⏳ API integration (следующий шаг)
 - ⏳ Frontend (после API)
 
+
+

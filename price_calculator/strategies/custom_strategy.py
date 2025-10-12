@@ -132,3 +132,5 @@ class CustomCategoryStrategy(CalculationStrategy):
     def get_strategy_name(self) -> str:
         return "CustomCategory"
 
+
+

@@ -41,7 +41,8 @@ class CalculationOrchestrator:
         weight_kg: float,
         unit_price_yuan: float,
         markup: float,
-        forced_category: Optional[str] = None
+        forced_category: Optional[str] = None,
+        product_url: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Начинает новый расчёт.
@@ -53,6 +54,7 @@ class CalculationOrchestrator:
             unit_price_yuan: Цена за единицу (юань)
             markup: Наценка (например, 1.7 для 70%)
             forced_category: Принудительная категория (опционально)
+            product_url: URL товара или WeChat (опционально)
             
         Returns:
             Dict с информацией о состоянии:
@@ -79,12 +81,14 @@ class CalculationOrchestrator:
         category = Category.from_dict(category_data)
         
         # Базовые параметры
+        # ВАЖНО: calculate_cost() ожидает 'price_yuan', а не 'unit_price_yuan'
         base_params = {
             'product_name': product_name,
             'quantity': quantity,
             'weight_kg': weight_kg,
-            'unit_price_yuan': unit_price_yuan,
-            'markup': markup
+            'price_yuan': unit_price_yuan,  # Используем правильное имя параметра
+            'markup': markup,
+            'product_url': product_url  # URL товара или WeChat
         }
         
         # Устанавливаем категорию в контекст
@@ -168,7 +172,8 @@ class CalculationOrchestrator:
             calc_params = self.context.prepare_calculation_params()
             
             # Выполняем расчёт через PriceCalculator
-            result = self.calculator.calculate_routes(**calc_params)
+            # ИСПРАВЛЕНИЕ: Метод называется calculate_cost, а не calculate_routes
+            result = self.calculator.calculate_cost(**calc_params)
             
             # Помечаем как рассчитанный
             self.context.mark_calculated(result)
@@ -236,7 +241,18 @@ class CalculationOrchestrator:
         Returns:
             str: Название категории или "Новая категория"
         """
-        # Используем простой поиск по ключевым словам
+        # ИСПРАВЛЕНИЕ: Используем существующую проверенную логику из category_detector
+        try:
+            from category_detector import detect_category_from_name
+            detected = detect_category_from_name(product_name)
+            
+            # Если detect_category_from_name вернул категорию, проверяем что она есть в нашем списке
+            if detected and detected in self.categories:
+                return detected
+        except Exception as e:
+            print(f"⚠️ Ошибка при определении категории через category_detector: {e}")
+        
+        # Fallback: простой поиск по ключевым словам
         product_lower = product_name.lower()
         
         for category_name, category_data in self.categories.items():

@@ -23,3 +23,8 @@ EXPOSE 5000
 
 # Запускаем Python из web_interface
 CMD ["python", "/app/web_interface/app.py"]
+
+EXPOSE 5000
+
+# Запускаем Python из web_interface
+CMD ["python", "/app/web_interface/app.py"]

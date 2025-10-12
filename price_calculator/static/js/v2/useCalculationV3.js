@@ -17,6 +17,7 @@ window.useCalculationV3 = function() {
             console.log('🔵 V3 Calculate:', requestData.product_name);
             console.log('   forced_category:', requestData.forced_category);
             console.log('   custom_logistics:', !!requestData.custom_logistics);
+            console.log('   FULL REQUEST DATA:', JSON.stringify(requestData, null, 2));
             
             try {
                 // СТРАТЕГИЯ: Используем /api/v3/calculate/execute для всех случаев
@@ -220,4 +221,5 @@ window.useCalculationV3 = function() {
         }
     };
 };
+
 

@@ -36,6 +36,14 @@
                             class="inline-flex items-center rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                         Найти
                     </button>
+                    <button type="button"
+                            onclick="document.getElementById('image-search-modal').classList.remove('hidden')"
+                            class="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-6 py-3 text-sm font-semibold text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        По фото
+                    </button>
                 </div>
                 
                 <!-- Фильтры (collapsible) -->
@@ -344,6 +352,62 @@
     {% endif %}
 </div>
 
+<!-- Модальное окно поиска по изображению -->
+<div id="image-search-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium text-gray-900">Поиск по изображению</h3>
+            <button onclick="closeImageSearch()" class="text-gray-400 hover:text-gray-500">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        
+        <form id="image-search-form" enctype="multipart/form-data">
+            <!-- Drag & Drop область -->
+            <div id="drop-zone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-500 transition-colors cursor-pointer">
+                <div id="drop-zone-content">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p class="mt-2 text-sm text-gray-600">
+                        <span class="font-semibold">Перетащите изображение</span> или кликните для выбора
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">PNG, JPG, GIF до 10MB</p>
+                </div>
+                <div id="image-preview" class="hidden">
+                    <img id="preview-img" src="" alt="Preview" class="mx-auto max-h-48 rounded">
+                    <p id="file-name" class="mt-2 text-sm text-gray-600"></p>
+                </div>
+                <input type="file" 
+                       id="image-input" 
+                       name="image" 
+                       accept="image/*" 
+                       class="hidden">
+            </div>
+            
+            <!-- Кнопки -->
+            <div class="mt-4 flex gap-2">
+                <button type="submit" 
+                        id="search-btn"
+                        class="flex-1 inline-flex justify-center items-center rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                    <svg class="animate-spin hidden h-4 w-4 mr-2" id="loading-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="search-btn-text">Найти похожие</span>
+                </button>
+                <button type="button" 
+                        onclick="closeImageSearch()"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+                    Отмена
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <style>
 .line-clamp-2 {
     display: -webkit-box;
@@ -351,5 +415,131 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
+#drop-zone.drag-over {
+    border-color: #9333ea;
+    background-color: #faf5ff;
+}
 </style>
+
+<script>
+// Модальное окно
+function closeImageSearch() {
+    document.getElementById('image-search-modal').classList.add('hidden');
+    resetForm();
+}
+
+function resetForm() {
+    document.getElementById('image-search-form').reset();
+    document.getElementById('drop-zone-content').classList.remove('hidden');
+    document.getElementById('image-preview').classList.add('hidden');
+}
+
+// Drag & Drop
+const dropZone = document.getElementById('drop-zone');
+const imageInput = document.getElementById('image-input');
+const form = document.getElementById('image-search-form');
+
+dropZone.addEventListener('click', () => imageInput.click());
+
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+});
+
+dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('drag-over');
+});
+
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+        imageInput.files = e.dataTransfer.files;
+        showPreview(file);
+    }
+});
+
+imageInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        showPreview(file);
+    }
+});
+
+function showPreview(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('preview-img').src = e.target.result;
+        document.getElementById('file-name').textContent = file.name;
+        document.getElementById('drop-zone-content').classList.add('hidden');
+        document.getElementById('image-preview').classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+}
+
+// Отправка формы
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const file = imageInput.files[0];
+    if (!file) {
+        alert('Пожалуйста, выберите изображение');
+        return;
+    }
+    
+    // UI обратная связь
+    const searchBtn = document.getElementById('search-btn');
+    const searchBtnText = document.getElementById('search-btn-text');
+    const loadingIcon = document.getElementById('loading-icon');
+    
+    searchBtn.disabled = true;
+    loadingIcon.classList.remove('hidden');
+    searchBtnText.textContent = 'Ищем...';
+    
+    // Формируем FormData
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    try {
+        const response = await fetch('/api/search-by-image', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Редирект на страницу результатов
+            window.location.href = `/products?image_search=${data.search_id}`;
+        } else {
+            alert('Ошибка: ' + (data.error || 'Не удалось найти похожие товары'));
+            searchBtn.disabled = false;
+            loadingIcon.classList.add('hidden');
+            searchBtnText.textContent = 'Найти похожие';
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        alert('Произошла ошибка при поиске. Попробуйте еще раз.');
+        searchBtn.disabled = false;
+        loadingIcon.classList.add('hidden');
+        searchBtnText.textContent = 'Найти похожие';
+    }
+});
+
+// Закрытие по ESC
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeImageSearch();
+    }
+});
+
+// Закрытие по клику вне модального окна
+document.getElementById('image-search-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'image-search-modal') {
+        closeImageSearch();
+    }
+});
+</script>
 {% endblock %}

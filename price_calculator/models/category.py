@@ -168,6 +168,10 @@ class Category:
         Returns:
             bool: True если требуются кастомные параметры
         """
+        # ВАЖНО: Если категория "Новая категория" - всегда требуем параметры
+        if self.name == "Новая категория":
+            return True
+        
         # Если базовые ставки не определены или равны 0
         if self.rail_base is None or self.rail_base == 0:
             return True
@@ -262,12 +266,13 @@ class Category:
         if isinstance(vat_rate, str) and vat_rate.endswith('%'):
             vat_rate = float(vat_rate.rstrip('%'))
         
-        # Создаём requirements
+        # Создаём requirements (проверяем вложенный объект requirements)
+        req_data = data.get('requirements', {})
         requirements = CategoryRequirements(
-            requires_logistics_rate=data.get('requires_logistics_rate', False),
-            requires_duty_rate=data.get('requires_duty_rate', False),
-            requires_vat_rate=data.get('requires_vat_rate', False),
-            requires_specific_rate=data.get('requires_specific_rate', False)
+            requires_logistics_rate=req_data.get('requires_logistics_rate', data.get('requires_logistics_rate', False)),
+            requires_duty_rate=req_data.get('requires_duty_rate', data.get('requires_duty_rate', False)),
+            requires_vat_rate=req_data.get('requires_vat_rate', data.get('requires_vat_rate', False)),
+            requires_specific_rate=req_data.get('requires_specific_rate', data.get('requires_specific_rate', False))
         )
         
         # Если это "Новая категория" или ставки = 0, автоматически требуем параметры

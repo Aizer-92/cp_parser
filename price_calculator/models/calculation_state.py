@@ -334,3 +334,5 @@ class CalculationStateMachine:
     def __str__(self):
         return f"State: {self.get_state_name()} ({self.state.value})"
 
+
+

@@ -322,3 +322,5 @@ py -c "from database import load_categories_from_db; \
 **Дата:** 10.10.2025  
 **Автор:** Refactoring Stage 3
 
+
+

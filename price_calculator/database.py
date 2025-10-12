@@ -243,11 +243,14 @@ def save_calculation_to_db(data: Dict[str, Any]) -> int:
         cursor = conn.cursor()
         
         print(f"💾 Сохранение расчета в БД ({db_type}): {data['product_name']}")
+        print(f"   data['custom_logistics']: {data.get('custom_logistics')}")
+        print(f"   data['forced_category']: {data.get('forced_category')}")
         
         # Сериализуем custom_logistics для сохранения
         custom_logistics_json = None
         if data.get('custom_logistics'):
             custom_logistics_json = json.dumps(data['custom_logistics'])
+            print(f"   custom_logistics_json: {custom_logistics_json}")
         
         if db_type == 'postgres':
             cursor.execute('''
@@ -436,12 +439,20 @@ def get_calculation_history() -> List[Dict[str, Any]]:
                 item = dict(row)
             
             # Десериализуем custom_logistics из JSON если есть
+            # ВАЖНО: PostgreSQL JSONB возвращает уже dict, SQLite TEXT возвращает str
             if item.get('custom_logistics'):
                 if isinstance(item['custom_logistics'], str):
+                    # SQLite: нужно десериализовать из JSON string
                     try:
                         item['custom_logistics'] = json.loads(item['custom_logistics'])
-                    except json.JSONDecodeError:
+                        print(f"📦 ID={item['id']}: custom_logistics десериализован из строки")
+                    except json.JSONDecodeError as e:
+                        print(f"❌ ID={item['id']}: ошибка десериализации: {e}")
                         item['custom_logistics'] = None
+                elif isinstance(item['custom_logistics'], dict):
+                    # PostgreSQL JSONB: уже dict, ничего не делаем
+                    print(f"📦 ID={item['id']}: custom_logistics уже dict (JSONB): {item['custom_logistics']}")
+                    pass  # Уже десериализован PostgreSQL драйвером
             
             history.append(item)
         
@@ -477,12 +488,20 @@ def get_calculation_history() -> List[Dict[str, Any]]:
                 item = dict(row)
                 
                 # Десериализуем custom_logistics из JSON если есть
+                # ВАЖНО: PostgreSQL JSONB возвращает уже dict, SQLite TEXT возвращает str
                 if item.get('custom_logistics'):
                     if isinstance(item['custom_logistics'], str):
+                        # SQLite: нужно десериализовать из JSON string
                         try:
                             item['custom_logistics'] = json.loads(item['custom_logistics'])
-                        except json.JSONDecodeError:
+                            print(f"📦 ID={item['id']} (reconnect): custom_logistics десериализован из строки")
+                        except json.JSONDecodeError as e:
+                            print(f"❌ ID={item['id']} (reconnect): ошибка десериализации: {e}")
                             item['custom_logistics'] = None
+                    elif isinstance(item['custom_logistics'], dict):
+                        # PostgreSQL JSONB: уже dict, ничего не делаем
+                        print(f"📦 ID={item['id']} (reconnect): custom_logistics уже dict (JSONB)")
+                        pass  # Уже десериализован PostgreSQL драйвером
                 
                 history.append(item)
             
@@ -521,9 +540,9 @@ def update_calculation(calculation_id: int, data: dict):
             ''', (
                 data['product_name'], data['category'], data['price_yuan'], data['weight_kg'],
                 data['quantity'], data['markup'], data.get('custom_rate'),
-                data.get('product_url', ''), data['cost_price_rub'], data['cost_price_usd'],
-                data['sale_price_rub'], data['sale_price_usd'], data['profit_rub'],
-                data['profit_usd'],
+                data.get('product_url', ''), data['cost_price_total_rub'], data['cost_price_total_usd'],
+                data['sale_price_total_rub'], data['sale_price_total_usd'], data['profit_total_rub'],
+                data['profit_total_usd'],
                 # Данные пакинга
                 data.get('packing_units_per_box'), data.get('packing_box_weight'),
                 data.get('packing_box_length'), data.get('packing_box_width'), data.get('packing_box_height'),
@@ -551,9 +570,9 @@ def update_calculation(calculation_id: int, data: dict):
             ''', (
                 data['product_name'], data['category'], data['price_yuan'], data['weight_kg'],
                 data['quantity'], data['markup'], data.get('custom_rate'),
-                data.get('product_url', ''), data['cost_price_rub'], data['cost_price_usd'],
-                data['sale_price_rub'], data['sale_price_usd'], data['profit_rub'],
-                data['profit_usd'],
+                data.get('product_url', ''), data['cost_price_total_rub'], data['cost_price_total_usd'],
+                data['sale_price_total_rub'], data['sale_price_total_usd'], data['profit_total_rub'],
+                data['profit_total_usd'],
                 # Данные пакинга
                 data.get('packing_units_per_box'), data.get('packing_box_weight'),
                 data.get('packing_box_length'), data.get('packing_box_width'), data.get('packing_box_height'),

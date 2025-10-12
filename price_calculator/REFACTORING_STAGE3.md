@@ -355,3 +355,5 @@ ALTER TABLE categories ADD COLUMN updated_at TIMESTAMP DEFAULT NOW();
 **Статус:** ✅ Завершено  
 **Следующий этап:** Stage 4 - Финальное тестирование и документация
 
+
+

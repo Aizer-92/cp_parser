@@ -929,3 +929,5 @@ class CalculationOrchestrator:
 
 Это решение используется в крупных enterprise системах (финтех, e-commerce) для управления сложными бизнес-процессами.
 
+
+

@@ -28,6 +28,14 @@ from price_calculator import PriceCalculator
 from database import init_database, save_calculation_to_db, get_calculation_history, restore_from_backup, update_calculation
 from customs_data import customs_loader
 
+# DTO models для type safety и валидации
+from models.dto import (
+    ProductInputDTO,
+    CalculationResultDTO,
+    CategoriesResponseDTO,
+    CategoryDTO
+)
+
 # Загрузка настроек через ConfigLoader
 try:
     import sys
@@ -1280,10 +1288,16 @@ async def get_history_v2():
                 'packing_box_weight': item.get('packing_box_weight'),
                 'packing_box_length': item.get('packing_box_length'),
                 'packing_box_width': item.get('packing_box_width'),
-                'packing_box_height': item.get('packing_box_height')
+                'packing_box_height': item.get('packing_box_height'),
+                # Кастомные параметры (Stage 3)
+                'custom_logistics': item.get('custom_logistics'),
+                'forced_category': item.get('forced_category')
             })
         
-        print(f"✅ История V2: {len(formatted_history)} расчетов")
+        # 🔍 DEBUG: Проверяем custom_logistics перед отправкой
+        custom_count = sum(1 for item in formatted_history if item.get('custom_logistics'))
+        print(f"✅ История V2: {len(formatted_history)} расчетов, {custom_count} с custom_logistics")
+        
         return formatted_history
     except Exception as e:
         print(f"❌ Ошибка получения истории V2: {e}")
@@ -2038,6 +2052,13 @@ async def get_history(auth: bool = Depends(require_auth)):
     """Получение истории расчетов"""
     try:
         history = get_history_calculations()
+        
+        # 🔍 DEBUG: Проверяем custom_logistics перед отправкой на frontend
+        print(f"📤 Отправка истории на frontend: {len(history)} записей")
+        for item in history:
+            if item.get('custom_logistics'):
+                print(f"   ✅ ID={item['id']}: custom_logistics присутствует, тип={type(item['custom_logistics'])}")
+        
         return {"history": history}
     except Exception as e:
         print(f"WARNING Ошибка загрузки истории: {e}")
@@ -2114,7 +2135,7 @@ async def update_calculation_v2(calculation_id: int, request: CalculationRequest
     print(f"   product_name: {request.product_name}")
     print(f"   price_yuan: {request.price_yuan}")
     print(f"   quantity: {request.quantity}")
-    print(f"   custom_logistics: {request.custom_logistics is not None}")
+    print(f"   custom_logistics (тип: {type(request.custom_logistics)}): {request.custom_logistics}")
     print(f"   forced_category: {request.forced_category}")
     
     try:
@@ -2242,28 +2263,42 @@ async def provide_custom_params_v3(request: Dict[str, Any]):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/v3/calculate/execute")
-async def execute_calculation_v3(request: CalculationRequest):
+@app.post("/api/v3/calculate/execute", response_model=CalculationResultDTO)
+async def execute_calculation_v3(request: ProductInputDTO):
     """
     V3: Выполнение расчёта (State Machine + Strategy Pattern).
+    
+    **Использует Pydantic DTO для валидации входных данных.**
     
     Поддерживает:
     - Стандартные категории (сразу рассчитываются)
     - Кастомные категории (требуют custom_logistics)
     - Переопределение параметров для ЛЮБОЙ категории
+    
+    Args:
+        request (ProductInputDTO): Данные товара с валидацией
+        
+    Returns:
+        CalculationResultDTO: Результат расчёта
     """
     try:
         from services.calculation_orchestrator import CalculationOrchestrator
-        import json
         
         print(f"🔵 V3 EXECUTE: {request.product_name}")
         print(f"   forced_category: {request.forced_category}")
         print(f"   custom_logistics: {bool(request.custom_logistics)}")
+        if request.custom_logistics:
+            print(f"   custom_logistics содержимое: {request.custom_logistics}")
+            print(f"   custom_logistics тип: {type(request.custom_logistics)}")
         
-        # Загружаем категории
-        with open('config/categories_from_railway.json', 'r', encoding='utf-8') as f:
-            categories_data = json.load(f)
-        categories = {cat['category']: cat for cat in categories_data['categories']}
+        # Загружаем категории из БД (как в V2)
+        calc = get_calculator()
+        if not calc or not hasattr(calc, 'categories'):
+            raise ValueError("Не удалось загрузить калькулятор или категории")
+        
+        # Конвертируем в словарь для оркестратора
+        categories = {cat['category']: cat for cat in calc.categories}
+        print(f"✅ Загружено категорий из БД: {len(categories)}")
         
         # Создаём оркестратор
         orchestrator = CalculationOrchestrator(categories)
@@ -2275,11 +2310,13 @@ async def execute_calculation_v3(request: CalculationRequest):
             weight_kg=request.weight_kg or 0.5,
             unit_price_yuan=request.price_yuan,
             markup=request.markup,
-            forced_category=request.forced_category
+            forced_category=request.forced_category,
+            product_url=request.product_url  # Передаём URL товара или WeChat
         )
         
         # Если есть кастомные параметры, предоставляем их
         if request.custom_logistics:
+            # request.custom_logistics уже Dict (не DTO), используем напрямую
             params_result = orchestrator.provide_custom_params(request.custom_logistics)
             if not params_result['valid']:
                 print(f"❌ Невалидные параметры: {params_result['errors']}")
@@ -2292,16 +2329,63 @@ async def execute_calculation_v3(request: CalculationRequest):
         calc_result = orchestrator.calculate()
         
         if not calc_result['success']:
-            print(f"❌ Ошибка расчёта: {calc_result['error']}")
-            raise HTTPException(status_code=400, detail=calc_result['error'])
+            print(f"⚠️ Расчёт не выполнен: {calc_result['error']}")
+            
+            # Если причина в ожидании параметров - возвращаем частичный ответ
+            if 'Ожидание параметров' in calc_result.get('error', ''):
+                # Создаём заглушки маршрутов для заполнения
+                # ВАЖНО: Добавляем ВСЕ поля которые используются в template
+                placeholder_route = {
+                    'per_unit': 0,
+                    'cost_rub': 0,
+                    'cost_usd': 0,
+                    'total_cost_rub': 0,
+                    'sale_per_unit_rub': 0,  # Для отображения цены продажи
+                    'cost_per_unit_rub': 0,  # Для отображения себестоимости
+                    'needs_params': True,
+                    'placeholder': True
+                }
+                
+                placeholder_routes = {
+                    'highway_rail': placeholder_route.copy(),
+                    'highway_air': placeholder_route.copy(),
+                    'highway_contract': placeholder_route.copy(),
+                    'prologix': placeholder_route.copy()
+                }
+                
+                # Создаём минимальный ответ для UI
+                partial_result = {
+                    'product_name': request.product_name,
+                    'category': request.forced_category or 'Новая категория',
+                    'unit_price_yuan': request.price_yuan,
+                    'quantity': request.quantity,
+                    'weight_kg': request.weight_kg or 0.5,
+                    'markup': request.markup,
+                    'needs_custom_params': True,  # 🔑 Флаг для UI
+                    'routes': placeholder_routes,  # Заглушки маршрутов
+                    'message': 'Для этой категории требуется указать кастомные параметры логистики'
+                }
+                print(f"📋 Возвращаем частичный результат с заглушками маршрутов")
+                return partial_result
+            else:
+                # Другая ошибка - возвращаем 400
+                raise HTTPException(status_code=400, detail=calc_result['error'])
         
         # Сохраняем в БД через существующий сервис
         from services import get_calculation_service
         service = get_calculation_service()
         
+        # ВАЖНО: Если были использованы кастомные параметры, берём их из request
+        # (т.к. calculate_cost() не возвращает их в результате)
+        # request.custom_logistics уже Dict (не DTO)
+        custom_logistics_dict = request.custom_logistics if request.custom_logistics else None
+        if custom_logistics_dict:
+            # Добавляем в результат для отображения в UI
+            calc_result['result']['custom_logistics'] = custom_logistics_dict
+        
         saved_id = service.create_calculation(
             calc_result['result'],
-            custom_logistics=request.custom_logistics,
+            custom_logistics=custom_logistics_dict,
             forced_category=request.forced_category
         )
         
@@ -2326,7 +2410,7 @@ async def execute_calculation_v3(request: CalculationRequest):
 @app.get("/api/v3/categories")
 async def get_categories_v3():
     """
-    V3: Получение списка всех категорий с метаданными.
+    V3: Получение списка всех категорий с метаданными из БД.
     
     Возвращает категории в новом формате с:
     - requirements (что требуется вводить)
@@ -2334,20 +2418,22 @@ async def get_categories_v3():
     - keywords, tnved_code, certificates
     """
     try:
-        import json
-        
-        with open('config/categories_from_railway.json', 'r', encoding='utf-8') as f:
-            categories_data = json.load(f)
+        # Загружаем категории из БД (как в V2)
+        calc = get_calculator()
+        if not calc or not hasattr(calc, 'categories'):
+            raise ValueError("Не удалось загрузить калькулятор или категории")
         
         return {
-            'total': categories_data['total_categories'],
-            'version': categories_data['version'],
-            'source': categories_data['source'],
-            'categories': categories_data['categories']
+            'total': len(calc.categories),
+            'version': '3.0',
+            'source': 'PostgreSQL (Railway)',
+            'categories': calc.categories
         }
         
     except Exception as e:
         print(f"❌ V3 CATEGORIES ERROR: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 # Инициализация БД происходит в lifespan

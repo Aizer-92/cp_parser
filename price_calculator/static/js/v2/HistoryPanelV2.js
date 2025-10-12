@@ -21,7 +21,34 @@ window.HistoryPanelV2 = {
         };
     },
     
+    mounted() {
+        // 🔍 DEBUG: Проверяем custom_logistics в истории при монтировании
+        console.log('📚 HistoryPanelV2 mounted, история:', this.history.length, 'записей');
+        this.debugCustomLogistics();
+    },
+    
+    watch: {
+        history: {
+            handler(newHistory) {
+                // 🔍 DEBUG: Проверяем custom_logistics когда история обновляется
+                console.log('📚 HistoryPanelV2 history updated:', newHistory.length, 'записей');
+                this.debugCustomLogistics();
+            },
+            deep: true,
+            immediate: true
+        }
+    },
+    
     methods: {
+        debugCustomLogistics() {
+            // 🔍 DEBUG: Проверяем custom_logistics для каждого элемента
+            this.history.forEach(item => {
+                if (item.custom_logistics) {
+                    console.log(`✅ ID=${item.id} (${item.product_name}): custom_logistics =`, item.custom_logistics);
+                }
+            });
+        },
+        
         toggleDetails(itemId) {
             const index = this.expandedItems.indexOf(itemId);
             if (index > -1) {

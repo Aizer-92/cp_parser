@@ -48,12 +48,17 @@ class CalculationContext:
         self.base_params = base_params
         
         # Выбираем стратегию на основе категории
-        if category.needs_custom_params():
+        needs_custom = category.needs_custom_params()
+        print(f"📦 Категория: {category.name}")
+        print(f"   rail_base: {category.rail_base}, air_base: {category.air_base}")
+        print(f"   needs_custom_params: {needs_custom}")
+        print(f"   requirements: {category.requirements}")
+        
+        if needs_custom:
             self.strategy = CustomCategoryStrategy()
         else:
             self.strategy = StandardCategoryStrategy()
         
-        print(f"📦 Категория: {category.name}")
         print(f"🎯 Стратегия: {self.strategy.get_strategy_name()}")
         
         # Определяем нужное состояние
@@ -269,4 +274,5 @@ class CalculationContext:
         state_name = self.state_machine.get_state_name()
         strategy_name = self.strategy.get_strategy_name() if self.strategy else 'None'
         return f"<CalculationContext category={cat_name} state={state_name} strategy={strategy_name}>"
+
 

@@ -424,7 +424,17 @@ window.PriceCalculatorAppV2 = {
             this.productData.packing_box_length = item.packing_box_length || 0;
             this.productData.packing_box_width = item.packing_box_width || 0;
             this.productData.packing_box_height = item.packing_box_height || 0;
-            this.productData.forcedCategory = null;
+            
+            // ✅ Копируем forced_category и custom_logistics (Stage 3)
+            this.productData.forcedCategory = item.forced_category || null;
+            
+            // ✅ ВАЖНО: Копируем custom_logistics для редактирования с кастомными ставками
+            if (item.custom_logistics) {
+                this.customLogistics = item.custom_logistics;
+                console.log('📝 Кастомные ставки скопированы:', this.customLogistics);
+            } else {
+                this.customLogistics = null;
+            }
             
             console.log('📦 Данные пакинга скопированы:', {
                 units: item.packing_units_per_box,
@@ -530,14 +540,27 @@ window.PriceCalculatorAppV2 = {
                     calculationData.packing_box_height = this.productData.packing_box_height;
                 }
                 
+                // ✨ ВАЖНО: Добавляем категорию из формы (теперь определяется на фронтенде!)
+                if (this.productData.category) {
+                    // ИСПРАВЛЕНИЕ: Убеждаемся что category это строка, а не объект
+                    let categoryStr;
+                    if (typeof this.productData.category === 'string') {
+                        categoryStr = this.productData.category;
+                    } else {
+                        // Объект может быть {value: "...", label: "..."}
+                        categoryStr = this.productData.category.value 
+                            || this.productData.category.name 
+                            || this.productData.category.category 
+                            || String(this.productData.category);
+                    }
+                    
+                    calculationData.forced_category = categoryStr;
+                    console.log(`📦 Используем категорию из формы: ${categoryStr} (тип: ${typeof this.productData.category})`);
+                }
+                
                 // Если есть кастомные параметры логистики - добавляем
                 if (this.customLogistics) {
                     calculationData.custom_logistics = this.customLogistics;
-                }
-                
-                // Если есть принудительная категория - добавляем
-                if (this.productData.forcedCategory) {
-                    calculationData.forced_category = this.productData.forcedCategory;
                 }
                 
                 console.log('📤 Отправка данных на расчет (V3):', calculationData);
@@ -551,6 +574,10 @@ window.PriceCalculatorAppV2 = {
                     console.log(`🔄 Обновление расчета #${this.productData.calculation_id}`);
                     result = await v3.updateCalculation(this.productData.calculation_id, calculationData);
                     console.log(`✅ Расчет #${this.productData.calculation_id} обновлён`);
+                    
+                    // ✅ Перезагружаем историю чтобы обновить цены
+                    await this.loadHistory();
+                    console.log('🔄 История обновлена после изменения расчёта');
                 } else {
                     // Создание нового расчета через V3
                     console.log('✨ Создание нового расчета (V3)');
@@ -572,34 +599,54 @@ window.PriceCalculatorAppV2 = {
                 // Обновляем результаты расчета
                 this.calculationResult = result;
                 
+                // 🆕 Если требуются кастомные параметры - только логируем (без alert)
+                if (result.needs_custom_params) {
+                    console.log('⚠️ Требуются кастомные параметры для категории:', result.category);
+                    console.log('📋 Переход на Этап 2 для заполнения параметров');
+                }
+                
                 // Логируем маршруты для отладки
                 if (result.routes) {
                     console.log('🛣️ Маршруты в ответе:');
                     Object.keys(result.routes).forEach(key => {
                         const route = result.routes[key];
-                        console.log(`   ${key}: per_unit=${route.per_unit}₽, cost_rub=${route.cost_rub}₽`);
+                        console.log(`   ${key}: per_unit=${route.per_unit}₽, cost_rub=${route.cost_rub}₽, placeholder=${route.placeholder || false}`);
                     });
                 }
                 
-                // Автоматически выбираем самый дешевый маршрут
-                if (this.calculationResult.routes) {
+                // Автоматически выбираем самый дешевый маршрут (пропускаем placeholders)
+                if (this.calculationResult.routes && Object.keys(this.calculationResult.routes).length > 0) {
                     const routes = this.calculationResult.routes;
                     let cheapestRoute = null;
                     let lowestCost = Infinity;
                     
                     console.log('🔍 Поиск самого дешевого маршрута:');
                     for (const key in routes) {
-                        const cost = routes[key].cost_rub || routes[key].total_cost_rub;
-                        console.log(`  ${key}: ${cost.toLocaleString()} руб (cost_rub: ${routes[key].cost_rub}, total_cost_rub: ${routes[key].total_cost_rub})`);
+                        // Пропускаем placeholder маршруты при выборе самого дешевого
+                        if (routes[key].placeholder) {
+                            console.log(`  ${key}: [placeholder - пропущен]`);
+                            continue;
+                        }
                         
-                        if (cost < lowestCost) {
-                            lowestCost = cost;
-                            cheapestRoute = key;
+                        const cost = routes[key].cost_rub || routes[key].total_cost_rub || 0;
+                        if (cost && typeof cost === 'number') {
+                            console.log(`  ${key}: ${cost.toLocaleString()} руб`);
+                            
+                            if (cost > 0 && cost < lowestCost) {
+                                lowestCost = cost;
+                                cheapestRoute = key;
+                            }
                         }
                     }
                     
-                    this.selectedRoute = cheapestRoute;
-                    console.log(`✅ Самый дешевый маршрут: ${cheapestRoute} (${lowestCost.toLocaleString()} руб)`);
+                    if (cheapestRoute) {
+                        this.selectedRoute = cheapestRoute;
+                        console.log(`✅ Самый дешевый маршрут: ${cheapestRoute} (${lowestCost.toLocaleString()} руб)`);
+                    } else {
+                        // Если все маршруты - placeholders, выбираем первый
+                        this.selectedRoute = Object.keys(routes)[0];
+                        console.log(`⚠️ Все маршруты - placeholders, выбран первый: ${this.selectedRoute}`);
+                    }
                 }
                 
                 // Переход на Этап 2

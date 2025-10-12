@@ -435,3 +435,5 @@ if (start.data.needs_user_input) {
 - `ADVANCED_CATEGORY_SOLUTIONS.md` - архитектурные решения
 - `STATE_MACHINE_IMPLEMENTATION_PROGRESS.md` - прогресс State Machine
 
+
+

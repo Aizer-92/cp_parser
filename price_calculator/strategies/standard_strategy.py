@@ -89,3 +89,5 @@ class StandardCategoryStrategy(CalculationStrategy):
     def get_strategy_name(self) -> str:
         return "StandardCategory"
 
+
+

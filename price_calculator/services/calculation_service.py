@@ -89,11 +89,17 @@ class CalculationService:
         Returns:
             ID созданного расчёта
         """
+        print(f"💾 CalculationService.create_calculation вызван:")
+        print(f"   custom_logistics параметр: {custom_logistics}")
+        print(f"   calculation_result['custom_logistics']: {calculation_result.get('custom_logistics')}")
+        
         db_data = self._prepare_db_data(
             calculation_result,
             custom_logistics=custom_logistics,
             forced_category=forced_category
         )
+        
+        print(f"   db_data['custom_logistics']: {db_data.get('custom_logistics')}")
         
         return save_calculation_to_db(db_data)
     
@@ -119,7 +125,7 @@ class CalculationService:
         try:
             print(f"🔄 CalculationService.update_calculation: ID={calculation_id}")
             print(f"   calculation_result keys: {list(calculation_result.keys())}")
-            print(f"   custom_logistics: {custom_logistics is not None}")
+            print(f"   custom_logistics (тип: {type(custom_logistics)}): {custom_logistics}")
             print(f"   forced_category: {forced_category}")
             
             db_data = self._prepare_db_data(
@@ -129,6 +135,7 @@ class CalculationService:
             )
             
             print(f"✅ db_data подготовлены успешно: {len(db_data)} полей")
+            print(f"   db_data['custom_logistics']: {db_data.get('custom_logistics')}")
             
             update_calculation(calculation_id, db_data)
             print(f"✅ update_calculation завершён успешно")
@@ -173,13 +180,13 @@ class CalculationService:
                 'markup': result.get('markup', 1.7),
                 'custom_rate': result.get('logistics', {}).get('rate_usd') if result.get('logistics') else None,
                 'product_url': result.get('product_url', ''),
-                # ВАЖНО: database.py ожидает ключи БЕЗ _total!
-                'cost_price_rub': result.get('cost_price', {}).get('total', {}).get('rub', 0),
-                'cost_price_usd': result.get('cost_price', {}).get('total', {}).get('usd', 0),
-                'sale_price_rub': result.get('sale_price', {}).get('total', {}).get('rub', 0),
-                'sale_price_usd': result.get('sale_price', {}).get('total', {}).get('usd', 0),
-                'profit_rub': result.get('profit', {}).get('total', {}).get('rub', 0),
-                'profit_usd': result.get('profit', {}).get('total', {}).get('usd', 0),
+                # ВАЖНО: database.py ожидает ключи С _total суффиксом!
+                'cost_price_total_rub': result.get('cost_price', {}).get('total', {}).get('rub', 0),
+                'cost_price_total_usd': result.get('cost_price', {}).get('total', {}).get('usd', 0),
+                'sale_price_total_rub': result.get('sale_price', {}).get('total', {}).get('rub', 0),
+                'sale_price_total_usd': result.get('sale_price', {}).get('total', {}).get('usd', 0),
+                'profit_total_rub': result.get('profit', {}).get('total', {}).get('rub', 0),
+                'profit_total_usd': result.get('profit', {}).get('total', {}).get('usd', 0),
                 'calculation_type': result.get('calculation_type', 'quick'),
                 # Данные пакинга (с безопасным извлечением)
                 'packing_units_per_box': packing_data.get('units_per_box'),

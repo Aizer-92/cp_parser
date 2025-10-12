@@ -69,10 +69,29 @@ except Exception as e:
 if not PGVECTOR_ENABLED:
     print("ℹ️  [APP] Используется обычный текстовый поиск (ILIKE)")
 
+# ===== IMAGE SEARCH: CLIP модель =====
+IMAGE_SEARCH_ENABLED = False
+CLIP_MODEL = None
+
+try:
+    if PGVECTOR_ENGINE:  # Image search требует pgvector БД
+        from sentence_transformers import SentenceTransformer
+        CLIP_MODEL = SentenceTransformer('clip-ViT-B-32')
+        IMAGE_SEARCH_ENABLED = True
+        print("✅ [APP] CLIP модель загружена - поиск по изображениям ВКЛЮЧЕН")
+except Exception as e:
+    print(f"⚠️  [APP] CLIP модель недоступна: {e}")
+    print("ℹ️  [APP] Поиск по изображениям ОТКЛЮЧЕН")
+
 # Добавляем путь к модулям проекта
 sys.path.append(str(Path(__file__).parent.parent))
 
 from flask import Flask, render_template, jsonify, send_from_directory, request, session, redirect, url_for
+from werkzeug.utils import secure_filename
+from PIL import Image
+import io
+import tempfile
+import uuid
 
 # Патчим SQLAlchemy dialect ДО импорта моделей
 try:
@@ -479,11 +498,28 @@ def products_list():
     max_delivery_days = request.args.get('max_delivery_days', type=int)  # Фильтр по сроку доставки (до)
     region_uae = request.args.get('region_uae')  # Фильтр по ОАЭ (checkbox)
     sort_by = request.args.get('sort_by', '', type=str)  # Сортировка
+    image_search_id = request.args.get('image_search', '', type=str)  # ID поиска по изображению
     
     with db_manager.get_session() as session:
         # Строим динамический WHERE для фильтров
         where_conditions = []
         params = {}
+        
+        # ===== ПОИСК ПО ИЗОБРАЖЕНИЮ =====
+        image_product_ids = None
+        if image_search_id:
+            # Получаем product_ids из сессии
+            session_key = f'image_search_{image_search_id}'
+            image_product_ids = session.get(session_key)
+            
+            if image_product_ids:
+                print(f"🖼️  [IMAGE SEARCH] Показываем результаты поиска по изображению: {len(image_product_ids)} товаров")
+                where_conditions.append(f"p.id IN :image_ids")
+                params["image_ids"] = tuple(image_product_ids)
+                # Отключаем текстовый поиск при image search
+                search = ''
+            else:
+                print(f"⚠️  [IMAGE SEARCH] Результаты не найдены в сессии (search_id: {image_search_id})")
         
         # ===== УМНЫЙ ПОИСК: pgvector → fallback на ILIKE =====
         vector_product_ids = None
@@ -1296,6 +1332,87 @@ def api_kp_check():
 
 print("✅ [APP] API КП зарегистрирован (/api/kp/*)")
 
+# ===== API ДЛЯ ПОИСКА ПО ИЗОБРАЖЕНИЮ =====
+
+@app.route('/api/search-by-image', methods=['POST'])
+def api_search_by_image():
+    """Поиск товаров по загруженному изображению"""
+    
+    if not IMAGE_SEARCH_ENABLED:
+        return jsonify({
+            'success': False, 
+            'error': 'Поиск по изображениям отключен. Требуется CLIP модель и pgvector БД.'
+        }), 503
+    
+    try:
+        # Проверка наличия файла
+        if 'image' not in request.files:
+            return jsonify({'success': False, 'error': 'Изображение не найдено'}), 400
+        
+        file = request.files['image']
+        
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'Файл не выбран'}), 400
+        
+        # Проверка типа файла
+        allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+        if not ('.' in file.filename and file.filename.rsplit('.', 1)[1].lower() in allowed_extensions):
+            return jsonify({'success': False, 'error': 'Недопустимый тип файла'}), 400
+        
+        # Загружаем изображение
+        image_bytes = file.read()
+        image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+        
+        # Генерируем embedding
+        print(f"🔍 [IMAGE SEARCH] Генерация embedding для загруженного изображения...")
+        embedding = CLIP_MODEL.encode(image)
+        query_embedding = embedding.tolist()
+        
+        # Ищем похожие изображения в pgvector БД
+        query_vector_str = '[' + ','.join(map(str, query_embedding)) + ']'
+        
+        with PGVECTOR_ENGINE.connect() as conn:
+            from sqlalchemy import text
+            sql_query = f"""
+                SELECT 
+                    ie.product_id,
+                    ie.image_url,
+                    1 - (ie.image_embedding <=> '{query_vector_str}'::vector) as similarity
+                FROM image_embeddings ie
+                WHERE 1 - (ie.image_embedding <=> '{query_vector_str}'::vector) >= 0.3
+                ORDER BY ie.image_embedding <=> '{query_vector_str}'::vector
+                LIMIT 50
+            """
+            results = conn.execute(text(sql_query)).fetchall()
+        
+        # Извлекаем product_ids
+        product_ids = [row[0] for row in results]
+        
+        print(f"🔍 [IMAGE SEARCH] Найдено {len(product_ids)} похожих товаров")
+        
+        if not product_ids:
+            return jsonify({
+                'success': False, 
+                'error': 'Не найдено похожих товаров. Попробуйте другое изображение.'
+            }), 404
+        
+        # Сохраняем product_ids в сессии
+        search_id = str(uuid.uuid4())
+        session[f'image_search_{search_id}'] = product_ids
+        
+        return jsonify({
+            'success': True, 
+            'search_id': search_id,
+            'count': len(product_ids)
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+print("✅ [APP] API поиска по изображению зарегистрирован (/api/search-by-image)")
+
 if __name__ == '__main__':
     # Получаем порт из переменной окружения (Railway использует PORT)
     port = int(os.getenv('PORT', 5000))
@@ -1311,6 +1428,4 @@ if __name__ == '__main__':
         serve(app, host='0.0.0.0', port=port, threads=4)
     except ImportError:
         print("⚠️ Waitress не найден, используем Flask dev server")
-        app.run(debug=False, host='0.0.0.0', port=port)
-
         app.run(debug=False, host='0.0.0.0', port=port)

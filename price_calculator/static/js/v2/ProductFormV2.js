@@ -18,6 +18,7 @@ window.ProductFormV2 = {
                 price_yuan: 0,
                 quantity: 0,
                 markup: 1.4,
+                category: '',  // ✨ Категория товара (автоопределяется)
                 // Быстрый режим
                 weight_kg: 0,
                 // Полный режим
@@ -26,7 +27,8 @@ window.ProductFormV2 = {
                 packing_box_length: 0,
                 packing_box_width: 0,
                 packing_box_height: 0
-            }
+            },
+            availableCategories: []  // Список доступных категорий
         };
     },
     
@@ -106,6 +108,19 @@ window.ProductFormV2 = {
             immediate: true
         },
         
+        // ✨ Автоопределение категории при изменении названия товара
+        'localData.name': {
+            handler(newName) {
+                if (newName && newName.length > 2) {
+                    // Автоопределяем категорию с задержкой (debounce)
+                    clearTimeout(this._categoryDetectTimer);
+                    this._categoryDetectTimer = setTimeout(() => {
+                        this.detectCategory(newName);
+                    }, 500);
+                }
+            }
+        },
+        
         // Синхронизация calculationMode (родитель) → quickMode (локальный)
         calculationMode: {
             handler(newVal) {
@@ -129,7 +144,53 @@ window.ProductFormV2 = {
         handleSubmit() {
             if (!this.isFormValid) return;
             this.$emit('submit');
+        },
+        
+        // ✨ Загрузка списка категорий
+        async loadCategories() {
+            try {
+                const response = await axios.get('/api/categories/names');
+                // ИСПРАВЛЕНИЕ: Категории приходят как объекты {value, label}, извлекаем value
+                this.availableCategories = response.data.map(cat => {
+                    if (typeof cat === 'string') return cat;
+                    // Объект может быть {value: "...", label: "..."}
+                    if (cat.value) return cat.value;
+                    if (cat.name) return cat.name;
+                    if (cat.category) return cat.category;
+                    return String(cat);
+                });
+                console.log('📦 Загружено категорий:', this.availableCategories.length);
+                console.log('📦 Первые 3 категории:', this.availableCategories.slice(0, 3));
+            } catch (error) {
+                console.error('❌ Ошибка загрузки категорий:', error);
+            }
+        },
+        
+        // ✨ Автоопределение категории по названию товара
+        detectCategory(productName) {
+            if (!productName || !this.availableCategories.length) return;
+            
+            const nameLower = productName.toLowerCase();
+            
+            // Простой поиск по вхождению названия категории в название товара
+            const detected = this.availableCategories.find(cat => 
+                nameLower.includes(cat.toLowerCase())
+            );
+            
+            if (detected && detected !== this.localData.category) {
+                this.localData.category = detected;
+                console.log(`🎯 Автоопределена категория: ${detected}`);
+            } else if (!detected && !this.localData.category) {
+                // Если не нашли - ставим "Новая категория"
+                this.localData.category = 'Новая категория';
+                console.log('🆕 Категория не определена, установлена "Новая категория"');
+            }
         }
+    },
+    
+    mounted() {
+        // Загружаем список категорий при монтировании
+        this.loadCategories();
     },
     
     template: `
@@ -164,6 +225,30 @@ window.ProductFormV2 = {
                         placeholder="Введите название"
                         style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;"
                     />
+                </div>
+                
+                <!-- ✨ Категория сразу после названия -->
+                <div class="form-group">
+                    <label style="display: block; font-size: 14px; font-weight: 500; color: #374151; margin-bottom: 6px;">
+                        Категория товара
+                        <span v-if="localData.category && localData.category !== 'Новая категория'" style="color: #10b981; font-size: 12px; margin-left: 8px;">✓ определена</span>
+                        <span v-if="localData.category === 'Новая категория'" style="color: #f59e0b; font-size: 12px; margin-left: 8px;">⚠ требуются параметры</span>
+                    </label>
+                    <input 
+                        type="text"
+                        v-model="localData.category"
+                        list="categories-list"
+                        placeholder="Начните вводить или выберите из списка..."
+                        style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;"
+                    />
+                    <datalist id="categories-list">
+                        <option v-for="cat in availableCategories" :key="cat" :value="cat">
+                            {{ cat }}
+                        </option>
+                    </datalist>
+                    <div v-if="localData.category" style="margin-top: 4px; font-size: 12px; color: #6b7280;">
+                        💡 Категория влияет на расчёт логистики и пошлин
+                    </div>
                 </div>
                 
                 <div class="form-group">
