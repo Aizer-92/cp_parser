@@ -1388,68 +1388,76 @@ def api_search_by_image():
         # Загружаем изображение
         image_bytes = file.read()
         
-        # Конвертируем в base64 для API
+        # ВРЕМЕННОЕ РЕШЕНИЕ: Используем GPT-4 Vision для описания изображения
+        # затем ищем по текстовому описанию в БД названий товаров
+        print(f"🔍 [IMAGE SEARCH] Анализ изображения через GPT-4 Vision...")
+        
+        if not OPENAI_CLIENT:
+            return jsonify({
+                'success': False,
+                'error': 'OpenAI API не настроен. Проверьте OPENAI_API_KEY.'
+            }), 503
+        
         import base64
         image_b64 = base64.b64encode(image_bytes).decode('utf-8')
         
-        # Генерируем embedding через Hugging Face Inference API
-        print(f"🔍 [IMAGE SEARCH] Генерация embedding через Hugging Face API...")
-        
-        HF_API_TOKEN = os.getenv('HUGGINGFACE_API_TOKEN')
-        if not HF_API_TOKEN:
+        # Описываем изображение через GPT-4 Vision
+        try:
+            vision_response = OPENAI_CLIENT.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "Describe this product in 2-3 keywords in Russian. What type of item is this? Focus on category (рюкзак, кружка, ручка, блокнот, повербанк, etc.). Answer with just the keywords, nothing else."
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{image_b64}"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                max_tokens=50
+            )
+            
+            image_description = vision_response.choices[0].message.content.strip()
+            print(f"🖼️  [IMAGE SEARCH] GPT описание: '{image_description}'")
+            
+        except Exception as e:
+            print(f"❌ [IMAGE SEARCH] GPT Vision error: {e}")
             return jsonify({
                 'success': False,
-                'error': 'Не настроен HUGGINGFACE_API_TOKEN. Добавьте в переменные окружения.'
-            }), 503
-        
-        import requests
-        
-        # Используем Hugging Face Inference API для CLIP
-        hf_url = "https://api-inference.huggingface.co/models/openai/clip-vit-base-patch32"
-        headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
-        
-        # Отправляем изображение
-        response = requests.post(
-            hf_url,
-            headers=headers,
-            data=image_bytes,
-            timeout=30
-        )
-        
-        if response.status_code != 200:
-            print(f"❌ [IMAGE SEARCH] Hugging Face API error: {response.status_code}")
-            print(f"   Response: {response.text}")
-            return jsonify({
-                'success': False,
-                'error': f'Ошибка API: {response.status_code}. Попробуйте позже.'
-            }), 503
-        
-        # Получаем embedding из ответа
-        result = response.json()
-        
-        # Hugging Face возвращает embedding напрямую для feature extraction
-        if isinstance(result, list) and len(result) > 0:
-            query_embedding = result[0]
-        else:
-            print(f"❌ [IMAGE SEARCH] Неожиданный формат ответа: {result}")
-            return jsonify({
-                'success': False,
-                'error': 'Неожиданный формат ответа от API'
+                'error': f'Ошибка анализа изображения: {str(e)}'
             }), 500
         
-        # Ищем похожие изображения в pgvector БД
+        # Теперь используем текстовый поиск по названиям товаров
+        # Генерируем text embedding для поиска
+        print(f"🔍 [IMAGE SEARCH] Поиск товаров по описанию: '{image_description}'")
+        
+        embedding_response = OPENAI_CLIENT.embeddings.create(
+            model="text-embedding-3-small",
+            input=image_description
+        )
+        
+        query_embedding = embedding_response.data[0].embedding
+        
+        # Ищем похожие ТОВАРЫ по названию в pgvector БД (text embeddings)
         query_vector_str = '[' + ','.join(map(str, query_embedding)) + ']'
         
         with PGVECTOR_ENGINE.connect() as conn:
             from sqlalchemy import text
             sql_query = f"""
                 SELECT 
-                    ie.product_id,
-                    ie.image_url,
-                    1 - (ie.image_embedding <=> '{query_vector_str}'::vector) as similarity
-                FROM image_embeddings ie
-                WHERE 1 - (ie.image_embedding <=> '{query_vector_str}'::vector) >= 0.3
-                ORDER BY ie.image_embedding <=> '{query_vector_str}'::vector
+                    pe.product_id,
+                    1 - (pe.name_embedding <=> '{query_vector_str}'::vector) as similarity
+                FROM product_embeddings pe
+                WHERE 1 - (pe.name_embedding <=> '{query_vector_str}'::vector) >= 0.4
+                ORDER BY pe.name_embedding <=> '{query_vector_str}'::vector
                 LIMIT 50
             """
             results = conn.execute(text(sql_query)).fetchall()
