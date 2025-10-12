@@ -1361,6 +1361,35 @@ def api_kp_check():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/kp/generate/excel', methods=['POST'])
+@login_required
+def api_kp_generate_excel():
+    """Генерирует Excel файл коммерческого предложения"""
+    
+    try:
+        session_id = get_session_id()
+        
+        # Импортируем генератор
+        from kp_generator_excel import KPExcelGenerator
+        
+        generator = KPExcelGenerator()
+        output_path = generator.generate(session_id)
+        
+        # Отправляем файл клиенту
+        from flask import send_file
+        return send_file(
+            output_path,
+            as_attachment=True,
+            download_name=f'КП_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx',
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Ошибка генерации: {str(e)}'}), 500
+
 print("✅ [APP] API КП зарегистрирован (/api/kp/*)")
 
 # ===== API ДЛЯ ПОИСКА ПО ИЗОБРАЖЕНИЮ =====

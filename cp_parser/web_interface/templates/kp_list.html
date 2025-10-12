@@ -212,9 +212,36 @@ async function clearKP() {
     }
 }
 
-function generateKP() {
-    showNotification('Генерация КП в разработке', 'info');
-    // TODO: Реализовать генерацию PDF/Excel/Google Sheets
+async function generateKP() {
+    try {
+        showNotification('Генерирую Excel файл...', 'info');
+        
+        const response = await fetch('/api/kp/generate/excel', {
+            method: 'POST'
+        });
+        
+        if (!response.ok) {
+            const data = await response.json();
+            showNotification('Ошибка: ' + (data.error || 'Не удалось создать файл'), 'error');
+            return;
+        }
+        
+        // Скачиваем файл
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `КП_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        showNotification('Excel файл скачан!', 'success');
+    } catch (error) {
+        console.error('Ошибка генерации:', error);
+        showNotification('Ошибка генерации файла', 'error');
+    }
 }
 
 function updateTotalCount(count) {
