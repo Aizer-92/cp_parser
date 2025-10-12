@@ -410,20 +410,23 @@ def login():
         if username == AUTH_USERNAME and password == AUTH_PASSWORD:
             # Создаем новую сессию
             session_token = create_session_token()
-            session['session_token'] = session_token
-            session['username'] = username
+            flask_session['session_token'] = session_token
+            flask_session['username'] = username
             
             return jsonify({"success": True, "message": "Успешная авторизация"})
         else:
             return jsonify({"success": False, "message": "Неверный логин или пароль"}), 401
     
     except Exception as e:
-        return jsonify({"success": False, "message": "Ошибка сервера"}), 500
+        print(f"❌ [LOGIN] Ошибка: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "message": f"Ошибка сервера: {str(e)}"}), 500
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
     """API endpoint для выхода"""
-    session.clear()
+    flask_session.clear()
     return jsonify({"success": True, "message": "Вы вышли из системы"})
 
 # ===== ОСНОВНЫЕ РОУТЫ =====
