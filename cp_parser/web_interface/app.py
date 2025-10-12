@@ -206,7 +206,7 @@ def vector_search_pgvector(search_query, limit=200):
                     product_id,
                     1 - (name_embedding <=> '{query_vector_str}'::vector) as similarity
                 FROM product_embeddings
-                WHERE 1 - (name_embedding <=> '{query_vector_str}'::vector) >= 0.25
+                WHERE 1 - (name_embedding <=> '{query_vector_str}'::vector) >= 0.48
                 ORDER BY name_embedding <=> '{query_vector_str}'::vector
                 LIMIT {limit}
             """
