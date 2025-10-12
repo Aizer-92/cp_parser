@@ -17,7 +17,7 @@ class Calculation(Base):
             "Бутылка" от "Фабрики А" на тираж 1000 шт - это третий расчёт.
     """
     
-    __tablename__ = 'calculations'
+    __tablename__ = 'v3_calculations'
     
     # Primary Key
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -25,14 +25,14 @@ class Calculation(Base):
     # Foreign Keys
     position_id = Column(
         Integer,
-        ForeignKey('positions.id', ondelete='CASCADE'),
+        ForeignKey('v3_positions.id', ondelete='CASCADE'),
         nullable=False,
         index=True,
         comment="ID позиции"
     )
     factory_id = Column(
         Integer,
-        ForeignKey('factories.id', ondelete='SET NULL'),
+        ForeignKey('v3_factories.id', ondelete='SET NULL'),
         index=True,
         comment="ID фабрики из справочника (опционально)"
     )

@@ -16,7 +16,7 @@ class LogisticsRoute(Base):
     Хранит кастомные параметры и рассчитанные цены для каждого маршрута.
     """
     
-    __tablename__ = 'logistics_routes'
+    __tablename__ = 'v3_logistics_routes'
     
     # Primary Key
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -24,7 +24,7 @@ class LogisticsRoute(Base):
     # Foreign Keys
     calculation_id = Column(
         Integer,
-        ForeignKey('calculations.id', ondelete='CASCADE'),
+        ForeignKey('v3_calculations.id', ondelete='CASCADE'),
         nullable=False,
         index=True,
         comment="ID расчёта"

@@ -17,7 +17,7 @@ class AuditLog(Base):
     расчётов и маршрутов для отслеживания изменений цен и условий.
     """
     
-    __tablename__ = 'audit_logs'
+    __tablename__ = 'v3_audit_logs'
     
     # Primary Key
     id = Column(Integer, primary_key=True, autoincrement=True)

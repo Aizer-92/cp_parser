@@ -70,41 +70,45 @@ if not PGVECTOR_ENABLED:
     print("ℹ️  [APP] Используется обычный текстовый поиск (ILIKE)")
 
 # ===== IMAGE SEARCH: CLIP модель =====
+# ВРЕМЕННО ОТКЛЮЧЕНО: Блокирует запуск приложения на Railway
 IMAGE_SEARCH_ENABLED = False
 CLIP_MODEL = None
+print("ℹ️  [APP] Поиск по изображениям ОТКЛЮЧЕН (загрузка CLIP модели пропущена)")
 
-try:
-    if PGVECTOR_ENGINE and OPENAI_CLIENT:  # Image search требует pgvector БД
-        print("🔄 [APP] Загружаю CLIP модель (это может занять 10-30 секунд)...")
-        import time
-        start_time = time.time()
-        
-        from sentence_transformers import SentenceTransformer
-        CLIP_MODEL = SentenceTransformer('clip-ViT-B-32')
-        
-        load_time = time.time() - start_time
-        IMAGE_SEARCH_ENABLED = True
-        print(f"✅ [APP] CLIP модель загружена за {load_time:.1f}с - поиск по изображениям ВКЛЮЧЕН")
-    elif not PGVECTOR_ENGINE:
-        print("ℹ️  [APP] CLIP модель НЕ загружается: отсутствует pgvector БД")
-    elif not OPENAI_CLIENT:
-        print("ℹ️  [APP] CLIP модель НЕ загружается: отсутствует OpenAI API")
-except Exception as e:
-    import traceback
-    print(f"⚠️  [APP] CLIP модель недоступна: {e}")
-    print(f"   Traceback: {traceback.format_exc()}")
-    print("ℹ️  [APP] Поиск по изображениям ОТКЛЮЧЕН")
+# Раскомментируй для включения (требует ~1GB RAM):
+# try:
+#     if PGVECTOR_ENGINE and OPENAI_CLIENT:  # Image search требует pgvector БД
+#         print("🔄 [APP] Загружаю CLIP модель (это может занять 10-30 секунд)...")
+#         import time
+#         start_time = time.time()
+#         
+#         from sentence_transformers import SentenceTransformer
+#         CLIP_MODEL = SentenceTransformer('clip-ViT-B-32')
+#         
+#         load_time = time.time() - start_time
+#         IMAGE_SEARCH_ENABLED = True
+#         print(f"✅ [APP] CLIP модель загружена за {load_time:.1f}с - поиск по изображениям ВКЛЮЧЕН")
+#     elif not PGVECTOR_ENGINE:
+#         print("ℹ️  [APP] CLIP модель НЕ загружается: отсутствует pgvector БД")
+#     elif not OPENAI_CLIENT:
+#         print("ℹ️  [APP] CLIP модель НЕ загружается: отсутствует OpenAI API")
+# except Exception as e:
+#     import traceback
+#     print(f"⚠️  [APP] CLIP модель недоступна: {e}")
+#     print(f"   Traceback: {traceback.format_exc()}")
+#     print("ℹ️  [APP] Поиск по изображениям ОТКЛЮЧЕН")
 
 # Добавляем путь к модулям проекта
 sys.path.append(str(Path(__file__).parent.parent))
 
 from flask import Flask, render_template, jsonify, send_from_directory, request, redirect, url_for
 from flask import session as flask_session
-from werkzeug.utils import secure_filename
-from PIL import Image
-import io
-import tempfile
 import uuid
+# ВРЕМЕННО ОТКЛЮЧЕНО: Импорты для image search
+# from werkzeug.utils import secure_filename
+# from PIL import Image
+# import io
+# import tempfile
 
 # Патчим SQLAlchemy dialect ДО импорта моделей
 try:

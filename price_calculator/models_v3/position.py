@@ -17,7 +17,7 @@ class Position(Base):
     Для неё может быть несколько расчётов от разных фабрик и с разными тиражами.
     """
     
-    __tablename__ = 'positions'
+    __tablename__ = 'v3_positions'
     
     # Primary Key
     id = Column(Integer, primary_key=True, autoincrement=True)

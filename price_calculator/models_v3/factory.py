@@ -16,7 +16,7 @@ class Factory(Base):
     Хранит типичные условия работы с фабрикой (сроки, цены образцов).
     """
     
-    __tablename__ = 'factories'
+    __tablename__ = 'v3_factories'
     
     # Primary Key
     id = Column(Integer, primary_key=True, autoincrement=True)

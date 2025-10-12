@@ -1758,6 +1758,16 @@ try:
 except Exception as e:
     print(f"WARNING: Could not load categories router: {e}")
 
+# V3 API Routers
+try:
+    from api.v3 import factories_router, positions_router, calculations_router
+    app.include_router(factories_router)
+    app.include_router(positions_router)
+    app.include_router(calculations_router)
+    print("✅ V3 API routers connected (factories, positions, calculations)")
+except Exception as e:
+    print(f"⚠️ WARNING: Could not load V3 API routers: {e}")
+
 @app.get("/debug/categories-without-customs")
 async def debug_categories_without_customs():
     """Debug: Анализ категорий без данных по пошлинам"""
