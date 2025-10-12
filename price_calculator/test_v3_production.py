@@ -136,19 +136,27 @@ def test_v3_production():
     # 5. Тест пересчёта маршрутов
     print("\n5️⃣ Пересчёт маршрутов...")
     try:
-        response = requests.post(f"{BASE_URL}/api/v3/calculations/{calculation_id}/recalculate", allow_redirects=True)
+        recalc_data = {"category": "футболка"}  # Категория для пересчёта
+        response = requests.post(
+            f"{BASE_URL}/api/v3/calculations/{calculation_id}/recalculate",
+            json=recalc_data,
+            allow_redirects=True
+        )
         if response.status_code == 200:
-            result = response.json()
-            routes = result.get('routes', [])
+            routes = response.json()  # Напрямую список маршрутов
             print(f"✅ Маршруты пересчитаны: {len(routes)} маршрутов")
             for route in routes:
                 print(f"   📍 {route['route_name']}:")
-                print(f"      Себестоимость: {route.get('cost_price_rub', 0):.2f} ₽")
-                print(f"      Продажная цена: {route.get('sale_price_rub', 0):.2f} ₽")
+                cost_rub = float(route.get('cost_price_rub', 0) or 0)
+                sale_rub = float(route.get('sale_price_rub', 0) or 0)
+                print(f"      Себестоимость: {cost_rub:.2f} ₽")
+                print(f"      Продажная цена: {sale_rub:.2f} ₽")
         else:
             print(f"❌ Ошибка пересчёта: {response.status_code} - {response.text}")
     except Exception as e:
         print(f"❌ Exception при пересчёте: {e}")
+        import traceback
+        traceback.print_exc()
     
     # 6. Итоговая статистика
     print("\n" + "=" * 60)

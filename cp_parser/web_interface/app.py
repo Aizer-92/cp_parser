@@ -1253,7 +1253,7 @@ def api_kp_get():
                     po.route,
                     po.price_usd,
                     po.price_rub,
-                    po.delivery_days,
+                    po.delivery_time_days,
                     (SELECT image_url 
                      FROM product_images pi 
                      WHERE pi.product_id = p.id 
@@ -1300,7 +1300,7 @@ def api_kp_get():
                     }
                 })
             
-            return jsonify({'success': True, 'kp_items': kp_items, 'total_items': len(kp_items)})
+            return jsonify({'success': True, 'items': kp_items, 'kp_count': len(kp_items)})
         finally:
             db_session.close()
             
