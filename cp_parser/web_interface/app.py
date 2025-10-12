@@ -27,28 +27,47 @@ import os
 from pathlib import Path
 import sys
 
-# Проверка доступности векторного поиска (graceful fallback)
-# ОТКЛЮЧЕН: векторный поиск всё ещё даёт нерелевантные результаты
-# даже после регенерации embeddings только из названий
-VECTOR_SEARCH_AVAILABLE = False
+# ===== ВЕКТОРНЫЙ ПОИСК: pgvector (отдельная БД) =====
+PGVECTOR_ENABLED = False
+PGVECTOR_ENGINE = None
 OPENAI_CLIENT = None
 
-# try:
-#     from openai import OpenAI
-#     from dotenv import load_dotenv
-#     load_dotenv()
-#     api_key = os.getenv('OPENAI_API_KEY')
-#     if api_key:
-#         OPENAI_CLIENT = OpenAI(api_key=api_key)
-#         VECTOR_SEARCH_AVAILABLE = True
-#         print("✅ [APP] Векторный поиск доступен (OpenAI)")
-#         print("   📝 Embeddings из НАЗВАНИЙ товаров (v2.0 - улучшенная точность)")
-# except Exception as e:
-#     print("⚠️  [APP] Векторный поиск недоступен (OpenAI не установлен или ключ отсутствует)")
-#     print("   Используется обычный текстовый поиск")
+try:
+    from openai import OpenAI
+    from dotenv import load_dotenv
+    from sqlalchemy import create_engine
+    
+    load_dotenv()
+    
+    # 1. Подключение к pgvector БД
+    vector_db_url = os.getenv('VECTOR_DATABASE_URL')
+    if vector_db_url:
+        PGVECTOR_ENGINE = create_engine(vector_db_url, pool_pre_ping=True)
+        # Проверка подключения
+        with PGVECTOR_ENGINE.connect() as conn:
+            from sqlalchemy import text
+            conn.execute(text("SELECT 1"))
+        print("✅ [APP] pgvector БД подключена")
+        print(f"   URL: {vector_db_url[:50]}...")
+    
+    # 2. OpenAI API для генерации embeddings
+    api_key = os.getenv('OPENAI_API_KEY')
+    if api_key and PGVECTOR_ENGINE:
+        OPENAI_CLIENT = OpenAI(api_key=api_key)
+        PGVECTOR_ENABLED = True
+        print("✅ [APP] Векторный поиск через pgvector ВКЛЮЧЕН")
+        print("   📝 Поиск делает PostgreSQL (СУПЕР БЫСТРО!)")
+    elif not PGVECTOR_ENGINE:
+        print("ℹ️  [APP] VECTOR_DATABASE_URL не настроен")
+    elif not api_key:
+        print("ℹ️  [APP] OPENAI_API_KEY не настроен")
+        
+except Exception as e:
+    print(f"⚠️  [APP] pgvector недоступен: {e}")
+    PGVECTOR_ENABLED = False
 
-print("ℹ️  [APP] Векторный поиск ОТКЛЮЧЕН (решение пользователя)")
-print("   Используется точный текстовый поиск (ILIKE)")
+if not PGVECTOR_ENABLED:
+    print("ℹ️  [APP] Используется обычный текстовый поиск (ILIKE)")
 
 # Добавляем путь к модулям проекта
 sys.path.append(str(Path(__file__).parent.parent))
@@ -145,9 +164,75 @@ def cosine_similarity(vec1, vec2):
         return 0
     return dot_product / (magnitude1 * magnitude2)
 
+def vector_search_pgvector(search_query, limit=200):
+    """
+    Выполняет векторный поиск через pgvector БД (СУПЕР БЫСТРО!)
+    PostgreSQL делает поиск используя индекс ivfflat
+    
+    Возвращает: list of product_id или None (fallback)
+    """
+    if not PGVECTOR_ENABLED or not PGVECTOR_ENGINE or not OPENAI_CLIENT:
+        return None
+    
+    try:
+        import httpx
+        from sqlalchemy import text
+        import time
+        
+        start_time = time.time()
+        
+        # 1. Генерируем embedding для запроса
+        response = OPENAI_CLIENT.embeddings.create(
+            model="text-embedding-3-small",
+            input=search_query.strip(),
+            timeout=httpx.Timeout(10.0)
+        )
+        query_embedding = response.data[0].embedding
+        
+        embedding_time = time.time() - start_time
+        
+        # 2. ВЕКТОРНЫЙ ПОИСК в pgvector БД
+        #    PostgreSQL делает поиск (не Python!)
+        search_start = time.time()
+        
+        # Преобразуем list в строку для pgvector
+        # pgvector ожидает строку вида '[0.1, 0.2, ...]'
+        query_vector_str = '[' + ','.join(map(str, query_embedding)) + ']'
+        
+        with PGVECTOR_ENGINE.connect() as conn:
+            # Используем format SQL так как SQLAlchemy text() конфликтует с ::vector cast
+            sql_query = f"""
+                SELECT 
+                    product_id,
+                    1 - (name_embedding <=> '{query_vector_str}'::vector) as similarity
+                FROM product_embeddings
+                WHERE 1 - (name_embedding <=> '{query_vector_str}'::vector) >= 0.25
+                ORDER BY name_embedding <=> '{query_vector_str}'::vector
+                LIMIT {limit}
+            """
+            results = conn.execute(text(sql_query)).fetchall()
+        
+        search_time = time.time() - search_start
+        total_time = time.time() - start_time
+        
+        product_ids = [r[0] for r in results]
+        
+        print(f"🔍 [PGVECTOR] Найдено {len(product_ids)} товаров")
+        print(f"   ⏱️  Embedding: {embedding_time:.2f}с | Поиск: {search_time:.2f}с | Всего: {total_time:.2f}с")
+        
+        return product_ids if product_ids else None
+        
+    except Exception as e:
+        print(f"❌ [PGVECTOR] Ошибка: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
 def vector_search_products(session, query_embedding, limit=100):
     """
-    Выполняет векторный поиск товаров (работает БЕЗ pgvector!)
+    СТАРАЯ ФУНКЦИЯ: Векторный поиск через TEXT embeddings (медленно!)
+    Оставлена для обратной совместимости
     Возвращает список ID товаров, отсортированных по релевантности
     Если что-то не работает - возвращает None (fallback на обычный поиск)
     """
@@ -400,18 +485,16 @@ def products_list():
         where_conditions = []
         params = {}
         
-        # ===== УМНЫЙ ПОИСК: Векторный + fallback на текстовый =====
+        # ===== УМНЫЙ ПОИСК: pgvector → fallback на ILIKE =====
         vector_product_ids = None
         if search.strip():
-            # 1. Пробуем векторный поиск (если доступен)
-            query_embedding = generate_search_embedding(search.strip())
-            if query_embedding:
-                vector_product_ids = vector_search_products(session, query_embedding, limit=200)
+            # 1. Пробуем pgvector поиск (СУПЕР БЫСТРО!)
+            vector_product_ids = vector_search_pgvector(search.strip(), limit=200)
             
             # 2. Выбираем метод поиска
             if vector_product_ids:
-                # Векторный поиск успешен - ищем по ID
-                print(f"🔍 [SEARCH] Используем векторный поиск: {len(vector_product_ids)} товаров")
+                # pgvector поиск успешен - ищем по ID
+                print(f"🔍 [SEARCH] Используем pgvector поиск: {len(vector_product_ids)} товаров")
                 where_conditions.append(f"p.id IN :vector_ids")
                 params["vector_ids"] = tuple(vector_product_ids)
             else:
