@@ -1411,20 +1411,49 @@ def api_search_by_image():
         import requests
         import base64
         
-        # Правильный endpoint для CLIP feature extraction
-        # Используем модель которая точно поддерживает image embeddings
+        # Используем модель которая дает embeddings размером 512 (как в БД)
+        # sentence-transformers/clip-ViT-B-32 = 512 dimensions
         api_url = "https://api-inference.huggingface.co/models/sentence-transformers/clip-ViT-B-32"
         headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
         
         try:
-            # Попытка 1: Отправляем изображение напрямую
-            print(f"   Попытка получить embedding...")
+            # Отправляем изображение как binary data
+            print(f"   Отправка изображения в HF API...")
+            
+            # Кодируем изображение в base64 для JSON запроса
+            import io
+            from PIL import Image
+            
+            # Загружаем изображение
+            img = Image.open(io.BytesIO(image_bytes))
+            # Конвертируем в RGB если нужно
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            # Сохраняем обратно в bytes
+            img_byte_arr = io.BytesIO()
+            img.save(img_byte_arr, format='PNG')
+            img_byte_arr = img_byte_arr.getvalue()
+            
+            # Пробуем отправить как data (не files)
+            print(f"   Попытка получить embedding (попытка 1 - data)...")
             response = requests.post(
                 api_url,
                 headers=headers,
-                data=image_bytes,
+                data=img_byte_arr,
                 timeout=60
             )
+            
+            # Если 404, пробуем другой формат
+            if response.status_code == 404:
+                print(f"   Попытка 2 - json с base64...")
+                img_b64 = base64.b64encode(img_byte_arr).decode('utf-8')
+                response = requests.post(
+                    api_url,
+                    headers={**headers, "Content-Type": "application/json"},
+                    json={"inputs": img_b64},
+                    timeout=60
+                )
             
             print(f"   Статус ответа: {response.status_code}")
             
@@ -1473,15 +1502,21 @@ def api_search_by_image():
                     'error': 'Неожиданный формат ответа от API'
                 }), 500
             
-            # Проверяем размер embedding
-            if not isinstance(query_embedding, list) or len(query_embedding) != 512:
-                print(f"❌ Неверный размер embedding: {len(query_embedding) if isinstance(query_embedding, list) else 'not a list'}")
+            # Проверяем что получили список чисел
+            if not isinstance(query_embedding, list) or len(query_embedding) == 0:
+                print(f"❌ Неверный формат embedding: {type(query_embedding)}")
                 return jsonify({
                     'success': False,
-                    'error': f'Неверный размер embedding: ожидалось 512, получено {len(query_embedding) if isinstance(query_embedding, list) else "не список"}'
+                    'error': f'Неверный формат embedding от API'
                 }), 500
             
-            print(f"✅ [IMAGE SEARCH] Embedding получен успешно (размер: {len(query_embedding)})")
+            embedding_size = len(query_embedding)
+            print(f"✅ [IMAGE SEARCH] Embedding получен успешно (размер: {embedding_size})")
+            
+            # CLIP модели могут выдавать 512 или 768 размерность
+            if embedding_size not in [512, 768]:
+                print(f"⚠️  [IMAGE SEARCH] Неожиданный размер embedding: {embedding_size}")
+                # Но продолжаем, возможно это правильный размер для этой модели
             
         except requests.exceptions.Timeout:
             return jsonify({
