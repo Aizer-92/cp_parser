@@ -9,7 +9,7 @@ from models_v3 import get_db
 from services_v3 import PositionService
 from .schemas import PositionCreate, PositionUpdate, PositionResponse
 
-router = APIRouter(prefix="/api/v3/positions", tags=["Positions V3"])
+router = APIRouter(prefix="/api/v3/positions", tags=["Positions V3"], redirect_slashes=False)
 
 
 @router.get("/", response_model=List[PositionResponse])

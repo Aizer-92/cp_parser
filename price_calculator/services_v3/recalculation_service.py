@@ -57,28 +57,21 @@ class RecalculationService:
         Raises:
             ValueError: Если расчёт не найден или отсутствуют необходимые данные
         """
-        print(f"🔍 DEBUG: recalculate_routes вызван с calculation_id={calculation_id}, category={category}")
         
         # Загружаем расчёт с позицией
-        print("🔍 DEBUG: Загружаем calculation...")
         calculation = self.calculation_service.get_with_full_details(calculation_id)
-        print(f"🔍 DEBUG: Calculation загружен: {calculation is not None}")
         if not calculation:
             raise ValueError(f"Calculation {calculation_id} not found")
         
-        print(f"🔍 DEBUG: calculation.position = {calculation.position}")
         if not calculation.position:
             raise ValueError(f"Position not found for calculation {calculation_id}")
         
         # Определяем категорию
-        print("🔍 DEBUG: Определяем категорию...")
         category = category or calculation.position.category
-        print(f"🔍 DEBUG: category = {category}")
         if not category:
             raise ValueError("Category is required for calculation")
         
         # Проверяем вес для quick расчета
-        print(f"🔍 DEBUG: Проверяем тип расчета: {calculation.calculation_type}")
         if calculation.calculation_type == 'quick':
             if not calculation.weight_kg:
                 raise ValueError("Weight is required for quick calculation")
@@ -110,27 +103,19 @@ class RecalculationService:
         
         # Шаг 3: Выполняем расчёт
         try:
-            print("🔍 DEBUG: Вызываем orchestrator.calculate()...")
             calc_response = self.orchestrator.calculate()
-            print(f"🔍 DEBUG: Получен calc_response, тип = {type(calc_response)}")
             
             if not isinstance(calc_response, dict):
-                print(f"🔍 DEBUG: calc_response НЕ СЛОВАРЬ! Это: {type(calc_response)}")
-                print(f"🔍 DEBUG: Содержимое (первые 200 символов): {str(calc_response)[:200]}")
                 raise ValueError(f"orchestrator.calculate() returned {type(calc_response)} instead of dict")
             
-            print(f"🔍 DEBUG: calc_response keys = {list(calc_response.keys())}")
             
             if not calc_response.get('success'):
                 raise ValueError(calc_response.get('error', 'Unknown error'))
             
             result = calc_response['result']
-            print(f"🔍 DEBUG: result type = {type(result)}")
-            print(f"🔍 DEBUG: result keys = {list(result.keys()) if isinstance(result, dict) else 'NOT A DICT!'}")
         except ValueError:
             raise
         except Exception as e:
-            print(f"🔍 DEBUG: Exception во время расчёта: {type(e).__name__}: {e}")
             import traceback
             traceback.print_exc()
             raise ValueError(f"Calculation failed: {str(e)}")
@@ -138,31 +123,38 @@ class RecalculationService:
         # Сохраняем/обновляем маршруты
         routes = []
         result_routes = result.get('routes', {})
-        print(f"🔍 DEBUG: result_routes type = {type(result_routes)}")
-        print(f"🔍 DEBUG: result_routes keys = {list(result_routes.keys()) if isinstance(result_routes, dict) else 'NOT A DICT'}")
         
         # routes - это словарь {route_name: route_data}, а не список
         for route_key, route_data in result_routes.items():
-            print(f"🔍 DEBUG: Обрабатываем маршрут: {route_key}, type={type(route_data)}")
             route_name = self._normalize_route_name(route_key)
             
+            # Извлекаем данные из route_data
+            cost_rub = self._get_decimal(route_data.get('cost_per_unit_rub') or route_data.get('per_unit'))
+            cost_usd = self._get_decimal(route_data.get('cost_per_unit_usd') or route_data.get('cost_usd'))
+            sale_rub = self._get_decimal(route_data.get('sale_per_unit_rub') or route_data.get('sale_per_unit'))
+            sale_usd = self._get_decimal(route_data.get('sale_per_unit_usd') or route_data.get('sale_usd'))
+            
+            # Вычисляем прибыль если не указана явно
+            profit_rub = sale_rub - cost_rub if (sale_rub and cost_rub) else self._get_decimal(0)
+            profit_usd = sale_usd - cost_usd if (sale_usd and cost_usd) else self._get_decimal(0)
+            
             logistics_data = {
-                'custom_rate': self._get_decimal(route_data.get('logistics_rate')),
-                'duty_rate': self._get_decimal(route_data.get('duty_rate')),
-                'vat_rate': self._get_decimal(route_data.get('vat_rate')),
-                'specific_rate': self._get_decimal(route_data.get('specific_rate')),
-                'cost_price_rub': self._get_decimal(route_data.get('cost_per_unit_rub')),
-                'cost_price_usd': self._get_decimal(route_data.get('cost_per_unit_usd')),
-                'sale_price_rub': self._get_decimal(route_data.get('sale_per_unit_rub')),
-                'sale_price_usd': self._get_decimal(route_data.get('sale_per_unit_usd')),
-                'profit_rub': self._get_decimal(route_data.get('profit_per_unit_rub')),
-                'profit_usd': self._get_decimal(route_data.get('profit_per_unit_usd')),
-                'total_cost_rub': self._get_decimal(route_data.get('total_cost_rub')),
-                'total_cost_usd': self._get_decimal(route_data.get('total_cost_usd')),
-                'total_sale_rub': self._get_decimal(route_data.get('total_sale_rub')),
-                'total_sale_usd': self._get_decimal(route_data.get('total_sale_usd')),
-                'total_profit_rub': self._get_decimal(route_data.get('total_profit_rub')),
-                'total_profit_usd': self._get_decimal(route_data.get('total_profit_usd')),
+                'custom_rate': None,  # Будет заполняться при необходимости
+                'duty_rate': None,
+                'vat_rate': None,
+                'specific_rate': None,
+                'cost_price_rub': cost_rub,
+                'cost_price_usd': cost_usd,
+                'sale_price_rub': sale_rub,
+                'sale_price_usd': sale_usd,
+                'profit_rub': profit_rub,
+                'profit_usd': profit_usd,
+                'total_cost_rub': self._get_decimal(route_data.get('cost_rub')),
+                'total_cost_usd': self._get_decimal(route_data.get('cost_usd')),
+                'total_sale_rub': self._get_decimal(route_data.get('sale_rub')),
+                'total_sale_usd': self._get_decimal(route_data.get('sale_usd')),
+                'total_profit_rub': self._get_decimal(route_data.get('sale_rub')) - self._get_decimal(route_data.get('cost_rub')) if route_data.get('sale_rub') and route_data.get('cost_rub') else self._get_decimal(0),
+                'total_profit_usd': self._get_decimal(route_data.get('sale_usd')) - self._get_decimal(route_data.get('cost_usd')) if route_data.get('sale_usd') and route_data.get('cost_usd') else self._get_decimal(0),
             }
             
             route = self.logistics_service.update_route(

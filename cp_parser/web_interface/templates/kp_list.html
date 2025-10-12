@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}Коммерческое предложение - CP Parser{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <!-- Заголовок -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight text-gray-900">Коммерческое предложение</h1>
+                <p class="mt-2 text-sm text-gray-600">
+                    Выбрано товаров: <span id="kp-total-count" class="font-semibold text-gray-900">0</span>
+                </p>
+            </div>
+            
+            <!-- Действия -->
+            <div class="flex gap-3">
+                <button 
+                    onclick="clearKP()"
+                    class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Очистить всё
+                </button>
+                
+                <button 
+                    onclick="generateKP()"
+                    class="inline-flex items-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Скачать КП
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Список товаров -->
+    <div id="kp-items-container" class="space-y-4">
+        <!-- Товары загрузятся через JS -->
+    </div>
+    
+    <!-- Пустое состояние -->
+    <div id="kp-empty-state" class="hidden text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">Коммерческое предложение пусто</h3>
+        <p class="mt-1 text-sm text-gray-500">Добавьте товары через кнопку "В КП" на странице товара</p>
+        <div class="mt-6">
+            <a href="/" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Перейти к товарам
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Уведомления -->
+<div id="notification-container" class="fixed top-4 right-4 z-50"></div>
+
+<script>
+// Загрузка КП при загрузке страницы
+document.addEventListener('DOMContentLoaded', () => {
+    loadKP();
+});
+
+async function loadKP() {
+    try {
+        const response = await fetch('/api/kp');
+        const data = await response.json();
+        
+        if (data.success && data.items.length > 0) {
+            renderKP(data.items);
+            document.getElementById('kp-empty-state').classList.add('hidden');
+            document.getElementById('kp-items-container').classList.remove('hidden');
+        } else {
+            document.getElementById('kp-empty-state').classList.remove('hidden');
+            document.getElementById('kp-items-container').classList.add('hidden');
+        }
+        
+        updateTotalCount(data.items.length);
+    } catch (error) {
+        console.error('Ошибка загрузки КП:', error);
+        showNotification('Ошибка загрузки КП', 'error');
+    }
+}
+
+function renderKP(items) {
+    const container = document.getElementById('kp-items-container');
+    container.innerHTML = items.map(item => `
+        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-gray-300 transition-colors">
+            <div class="p-4">
+                <div class="flex gap-4">
+                    <!-- Изображение -->
+                    <div class="flex-shrink-0">
+                        ${item.product.image_url ? `
+                            <img src="${item.product.image_url}" 
+                                 alt="${item.product.name}"
+                                 class="h-20 w-20 rounded-lg object-cover border border-gray-200">
+                        ` : `
+                            <div class="h-20 w-20 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200">
+                                <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                        `}
+                    </div>
+                    
+                    <!-- Информация о товаре -->
+                    <div class="flex-grow min-w-0">
+                        <h3 class="text-base font-medium text-gray-900 truncate">
+                            <a href="/product/${item.product.id}" class="hover:text-indigo-600">
+                                ${item.product.name}
+                            </a>
+                        </h3>
+                        
+                        <!-- Детали предложения -->
+                        <div class="mt-2 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                            <div>
+                                <span class="text-gray-500">Тираж:</span>
+                                <span class="ml-1 font-medium text-gray-900">${parseInt(item.price_offer.quantity).toLocaleString()} шт</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">USD:</span>
+                                <span class="ml-1 font-medium text-gray-900">$${parseFloat(item.price_offer.price_usd).toFixed(2)}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">RUB:</span>
+                                <span class="ml-1 font-medium text-gray-900">₽${parseFloat(item.price_offer.price_rub).toFixed(2)}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Срок:</span>
+                                <span class="ml-1 font-medium text-gray-900">${item.price_offer.delivery_days || '-'} дн.</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-2 text-sm text-gray-500">
+                            <span class="inline-flex items-center gap-1">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                                </svg>
+                                ${item.price_offer.route || 'Не указано'}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Действия -->
+                    <div class="flex-shrink-0 flex items-start">
+                        <button 
+                            onclick="removeFromKP(${item.kp_item_id})"
+                            class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Удалить из КП">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function removeFromKP(kpItemId) {
+    if (!confirm('Удалить этот товар из КП?')) return;
+    
+    try {
+        const response = await fetch(`/api/kp/remove/${kpItemId}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('Товар удален из КП', 'success');
+            loadKP(); // Перезагружаем список
+            updateHeaderCount(data.kp_count);
+        } else {
+            showNotification(data.message || 'Ошибка удаления', 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка удаления:', error);
+        showNotification('Ошибка удаления из КП', 'error');
+    }
+}
+
+async function clearKP() {
+    if (!confirm('Очистить всё коммерческое предложение?')) return;
+    
+    try {
+        const response = await fetch('/api/kp/clear', {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('КП очищен', 'success');
+            loadKP();
+            updateHeaderCount(0);
+        } else {
+            showNotification(data.message || 'Ошибка очистки', 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка очистки:', error);
+        showNotification('Ошибка очистки КП', 'error');
+    }
+}
+
+function generateKP() {
+    showNotification('Генерация КП в разработке', 'info');
+    // TODO: Реализовать генерацию PDF/Excel/Google Sheets
+}
+
+function updateTotalCount(count) {
+    document.getElementById('kp-total-count').textContent = count;
+}
+
+function updateHeaderCount(count) {
+    const badge = document.getElementById('kp-count-badge');
+    if (badge) {
+        if (count > 0) {
+            badge.textContent = count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+}
+
+function showNotification(message, type = 'info') {
+    const container = document.getElementById('notification-container');
+    const colors = {
+        success: 'bg-green-50 text-green-800 border-green-200',
+        error: 'bg-red-50 text-red-800 border-red-200',
+        info: 'bg-blue-50 text-blue-800 border-blue-200'
+    };
+    
+    const notification = document.createElement('div');
+    notification.className = `${colors[type]} border rounded-lg p-4 mb-2 shadow-lg animate-slide-in`;
+    notification.innerHTML = `
+        <div class="flex items-center gap-2">
+            <span class="text-sm font-medium">${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-auto">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(notification);
+    setTimeout(() => notification.remove(), 5000);
+}
+</script>
+
+<style>
+@keyframes slide-in {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.animate-slide-in {
+    animation: slide-in 0.3s ease-out;
+}
+</style>
+
+{% endblock %}
+

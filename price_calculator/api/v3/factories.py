@@ -9,7 +9,7 @@ from models_v3 import get_db
 from services_v3 import FactoryService
 from .schemas import FactoryCreate, FactoryUpdate, FactoryResponse
 
-router = APIRouter(prefix="/api/v3/factories", tags=["Factories V3"])
+router = APIRouter(prefix="/api/v3/factories", tags=["Factories V3"], redirect_slashes=False)
 
 
 @router.get("/", response_model=List[FactoryResponse])

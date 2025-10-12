@@ -1067,6 +1067,12 @@ def product_detail(product_id):
                              price_offers=price_offers, 
                              images=images)
 
+@app.route('/kp')
+@login_required
+def kp_page():
+    """Страница коммерческого предложения"""
+    return render_template('kp_list.html')
+
 @app.route('/images/<path:filename>')
 def serve_image(filename):
     """Отдача изображений из облачного хранилища или локальной папки"""

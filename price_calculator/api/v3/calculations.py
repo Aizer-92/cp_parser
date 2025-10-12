@@ -16,7 +16,7 @@ from .schemas import (
     RecalculationRequest
 )
 
-router = APIRouter(prefix="/api/v3/calculations", tags=["Calculations V3"])
+router = APIRouter(prefix="/api/v3/calculations", tags=["Calculations V3"], redirect_slashes=False)
 
 
 @router.get("/", response_model=List[CalculationResponse])

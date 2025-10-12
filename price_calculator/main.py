@@ -1759,14 +1759,33 @@ except Exception as e:
     print(f"WARNING: Could not load categories router: {e}")
 
 # V3 API Routers
+v3_routers_loaded = False
+v3_error_message = None
 try:
     from api.v3 import factories_router, positions_router, calculations_router
     app.include_router(factories_router)
     app.include_router(positions_router)
     app.include_router(calculations_router)
+    v3_routers_loaded = True
     print("✅ V3 API routers connected (factories, positions, calculations)")
 except Exception as e:
+    v3_error_message = str(e)
     print(f"⚠️ WARNING: Could not load V3 API routers: {e}")
+    import traceback
+    traceback.print_exc()
+
+@app.get("/api/v3/status")
+async def v3_status():
+    """Проверка статуса V3 API"""
+    return {
+        "v3_loaded": v3_routers_loaded,
+        "error": v3_error_message,
+        "available_routes": [
+            "/api/v3/factories",
+            "/api/v3/positions",
+            "/api/v3/calculations"
+        ] if v3_routers_loaded else []
+    }
 
 @app.get("/debug/categories-without-customs")
 async def debug_categories_without_customs():
