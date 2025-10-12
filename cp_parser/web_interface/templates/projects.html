@@ -295,7 +295,7 @@
                         </td>
                         <td>
                             <span class="status {{ project.parsing_status }}">
-                                {% if project.parsing_status == 'completed' %}✅ Готово
+                                {% if project.parsing_status == 'complete' or project.parsing_status == 'completed' %}✅ Готово
                                 {% elif project.parsing_status == 'pending' %}⏳ Ожидает
                                 {% elif project.parsing_status == 'error' %}❌ Ошибка
                                 {% else %}{{ project.parsing_status }}{% endif %}

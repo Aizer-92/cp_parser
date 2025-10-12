@@ -57,3 +57,4 @@ def get_cloud_base_url():
 def get_cloud_images_prefix():
     """Получает префикс для изображений в облачном хранилище"""
     return CLOUD_IMAGES_PREFIX
+

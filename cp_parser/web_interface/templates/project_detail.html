@@ -48,10 +48,10 @@
             <div class="flex items-center space-x-4">
                 <!-- Статус -->
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
-                    {% if project.parsing_status == 'completed' %}bg-green-100 text-green-800
+                    {% if project.parsing_status == 'complete' or project.parsing_status == 'completed' %}bg-green-100 text-green-800
                     {% elif project.parsing_status == 'pending' %}bg-yellow-100 text-yellow-800
                     {% else %}bg-red-100 text-red-800{% endif %}">
-                    {% if project.parsing_status == 'completed' %}Завершен
+                    {% if project.parsing_status == 'complete' or project.parsing_status == 'completed' %}Завершен
                     {% elif project.parsing_status == 'pending' %}В ожидании
                     {% else %}Ошибка{% endif %}
                 </span>
@@ -286,6 +286,16 @@
     </div>
     {% endif %}
 </div>
+
+<style>
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>
+{% endblock %}
 
 <style>
 .line-clamp-2 {

@@ -153,6 +153,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RUB</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Доставка</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Срок</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
@@ -172,6 +173,18 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {% if offer.delivery_time_days %}{{ offer.delivery_time_days }} дн.{% else %}-{% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                                    <button 
+                                        type="button"
+                                        onclick="toggleKP({{ product.id }}, {{ offer.id }}, this)"
+                                        data-offer-id="{{ offer.id }}"
+                                        class="kp-btn inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-150">
+                                        <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        <span>В КП</span>
+                                    </button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -280,11 +293,151 @@
 </div>
 
 <script>
+// Смена главного изображения
 function changeMainImage(src) {
     const mainImage = document.getElementById('main-image');
     if (mainImage) {
         mainImage.src = src;
     }
 }
+
+// API КП
+async function toggleKP(productId, priceOfferId, buttonElement) {
+    const isInKP = buttonElement.classList.contains('in-kp');
+    
+    try {
+        // Показываем loading
+        const originalHTML = buttonElement.innerHTML;
+        buttonElement.disabled = true;
+        buttonElement.innerHTML = '<svg class="animate-spin h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Загрузка...</span>';
+        
+        if (isInKP) {
+            // Удаляем из КП (пока не реализовано, но можно добавить)
+            // TODO: реализовать удаление
+            return;
+        } else {
+            // Добавляем в КП
+            const response = await fetch('/api/kp/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    price_offer_id: priceOfferId
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Меняем состояние кнопки
+                buttonElement.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                buttonElement.classList.add('bg-green-600', 'hover:bg-green-700', 'in-kp');
+                buttonElement.innerHTML = '<svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>В КП</span>';
+                
+                // Обновляем счетчик
+                updateKPCount(data.kp_count);
+                
+                // Показываем уведомление
+                showNotification(data.message, 'success');
+            } else {
+                buttonElement.innerHTML = originalHTML;
+                buttonElement.disabled = false;
+                showNotification(data.error || 'Ошибка добавления', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        buttonElement.innerHTML = originalHTML;
+        buttonElement.disabled = false;
+        showNotification('Ошибка соединения с сервером', 'error');
+    }
+}
+
+// Обновление счетчика КП в header
+function updateKPCount(count) {
+    const badge = document.getElementById('kp-count-badge');
+    if (badge) {
+        if (count > 0) {
+            badge.textContent = count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+}
+
+// Уведомления
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 max-w-sm w-full ${type === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-lg shadow-lg p-4 transition-all duration-300 transform translate-x-0`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <svg class="h-5 w-5 ${type === 'success' ? 'text-green-400' : 'text-red-400'} mr-3" fill="currentColor" viewBox="0 0 20 20">
+                ${type === 'success' ? 
+                '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>' :
+                '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>'
+                }
+            </svg>
+            <p class="${type === 'success' ? 'text-green-800' : 'text-red-800'} text-sm font-medium">${message}</p>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Убираем через 3 секунды
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        notification.style.opacity = '0';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Проверяем какие варианты уже в КП при загрузке страницы
+async function checkKPStatus() {
+    const buttons = document.querySelectorAll('.kp-btn');
+    const priceOfferIds = Array.from(buttons).map(btn => parseInt(btn.dataset.offerId));
+    
+    if (priceOfferIds.length === 0) return;
+    
+    try {
+        const response = await fetch('/api/kp/check', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                price_offer_ids: priceOfferIds
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.in_kp) {
+            // Отмечаем кнопки которые уже в КП
+            buttons.forEach(btn => {
+                const offerId = parseInt(btn.dataset.offerId);
+                if (data.in_kp.includes(offerId)) {
+                    btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                    btn.classList.add('bg-green-600', 'hover:bg-green-700', 'in-kp');
+                    btn.innerHTML = '<svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>В КП</span>';
+                }
+            });
+        }
+        
+        // Получаем общее количество для счетчика
+        const kpResponse = await fetch('/api/kp');
+        const kpData = await kpResponse.json();
+        if (kpData.success) {
+            updateKPCount(kpData.total_items);
+        }
+    } catch (error) {
+        console.error('Error checking KP status:', error);
+    }
+}
+
+// Запускаем проверку при загрузке страницы
+document.addEventListener('DOMContentLoaded', checkKPStatus);
 </script>
 {% endblock %}

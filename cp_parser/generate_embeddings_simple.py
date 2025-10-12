@@ -195,3 +195,5 @@ if __name__ == '__main__':
             print("⚠️  Не удалось проверить статус. Запустите setup_embeddings_simple.py сначала")
 
 
+
+

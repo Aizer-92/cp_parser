@@ -47,14 +47,14 @@
                                 <div class="flex items-center space-x-3">
                                     <div class="flex-shrink-0">
                                         <span class="inline-flex items-center justify-center h-10 w-10 rounded-full 
-                                            {% if project.parsing_status == 'completed' %}bg-green-100
+                                            {% if project.parsing_status == 'complete' or project.parsing_status == 'completed' %}bg-green-100
                                             {% elif project.parsing_status == 'pending' %}bg-yellow-100
                                             {% else %}bg-red-100{% endif %}">
                                             <span class="text-sm font-medium 
-                                                {% if project.parsing_status == 'completed' %}text-green-800
+                                                {% if project.parsing_status == 'complete' or project.parsing_status == 'completed' %}text-green-800
                                                 {% elif project.parsing_status == 'pending' %}text-yellow-800
                                                 {% else %}text-red-800{% endif %}">
-                                                {% if project.parsing_status == 'completed' %}✓
+                                                {% if project.parsing_status == 'complete' or project.parsing_status == 'completed' %}✓
                                                 {% elif project.parsing_status == 'pending' %}⏳
                                                 {% else %}✗{% endif %}
                                             </span>
@@ -86,10 +86,10 @@
                                 
                                 <!-- Статус -->
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                    {% if project.parsing_status == 'completed' %}bg-green-100 text-green-800
+                                    {% if project.parsing_status == 'complete' or project.parsing_status == 'completed' %}bg-green-100 text-green-800
                                     {% elif project.parsing_status == 'pending' %}bg-yellow-100 text-yellow-800
                                     {% else %}bg-red-100 text-red-800{% endif %}">
-                                    {% if project.parsing_status == 'completed' %}Завершен
+                                    {% if project.parsing_status == 'complete' or project.parsing_status == 'completed' %}Завершен
                                     {% elif project.parsing_status == 'pending' %}В ожидании
                                     {% else %}Ошибка{% endif %}
                                 </span>
@@ -190,6 +190,28 @@
                     </a>
                     {% else %}
                     <span class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-300 ring-1 ring-inset ring-gray-300">
+                        <span class="text-sm">→</span>
+                    </span>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <!-- Пустое состояние -->
+    <div class="text-center py-12">
+        <div class="mx-auto h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center">
+            <span class="text-gray-400 font-medium">П</span>
+        </div>
+        <h3 class="mt-2 text-sm font-semibold text-gray-900">Проекты не найдены</h3>
+        <p class="mt-1 text-sm text-gray-500">Пока нет проектов для отображения.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
                         <span class="text-sm">→</span>
                     </span>
                     {% endif %}

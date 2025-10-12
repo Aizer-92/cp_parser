@@ -1076,6 +1076,226 @@ def api_search():
         
         return jsonify(results)
 
+# ===== API ДЛЯ КП (КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ) =====
+
+import uuid
+from flask import g
+
+def get_session_id():
+    """Получает или создает session_id для пользователя"""
+    if 'session_id' not in session:
+        session['session_id'] = str(uuid.uuid4())
+        session.permanent = True
+    return session['session_id']
+
+@app.route('/api/kp/add', methods=['POST'])
+def api_kp_add():
+    """Добавляет вариант цены (price_offer) в КП"""
+    
+    try:
+        data = request.get_json()
+        product_id = data.get('product_id')
+        price_offer_id = data.get('price_offer_id')
+        
+        if not product_id or not price_offer_id:
+            return jsonify({'success': False, 'error': 'Не указан product_id или price_offer_id'}), 400
+        
+        session_id = get_session_id()
+        db_session = db_manager.Session()
+        
+        try:
+            # Проверяем существование товара и варианта цены
+            result = db_session.execute(text("""
+                SELECT p.name, po.quantity, po.route
+                FROM products p
+                JOIN price_offers po ON po.product_id = p.id
+                WHERE p.id = :product_id AND po.id = :price_offer_id
+            """), {'product_id': product_id, 'price_offer_id': price_offer_id})
+            
+            row = result.fetchone()
+            if not row:
+                return jsonify({'success': False, 'error': 'Товар или вариант цены не найден'}), 404
+            
+            # Добавляем в КП
+            db_session.execute(text("""
+                INSERT INTO kp_items (session_id, product_id, price_offer_id)
+                VALUES (:session_id, :product_id, :price_offer_id)
+                ON CONFLICT (session_id, price_offer_id) DO NOTHING
+            """), {'session_id': session_id, 'product_id': product_id, 'price_offer_id': price_offer_id})
+            db_session.commit()
+            
+            # Количество товаров в КП
+            result = db_session.execute(text("SELECT COUNT(*) FROM kp_items WHERE session_id = :session_id"), {'session_id': session_id})
+            kp_count = result.scalar()
+            
+            return jsonify({
+                'success': True,
+                'message': f'Добавлено в КП: {row[0]} ({row[1]} шт, {row[2]})',
+                'kp_count': kp_count
+            })
+        finally:
+            db_session.close()
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/kp/remove/<int:kp_item_id>', methods=['DELETE'])
+def api_kp_remove(kp_item_id):
+    """Удаляет товар из КП"""
+    
+    try:
+        session_id = get_session_id()
+        db_session = db_manager.Session()
+        
+        try:
+            db_session.execute(text("""
+                DELETE FROM kp_items
+                WHERE id = :kp_item_id AND session_id = :session_id
+            """), {'kp_item_id': kp_item_id, 'session_id': session_id})
+            db_session.commit()
+            
+            result = db_session.execute(text("SELECT COUNT(*) FROM kp_items WHERE session_id = :session_id"), {'session_id': session_id})
+            kp_count = result.scalar()
+            
+            return jsonify({'success': True, 'message': 'Удалено из КП', 'kp_count': kp_count})
+        finally:
+            db_session.close()
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/kp', methods=['GET'])
+def api_kp_get():
+    """Получает все товары в КП"""
+    
+    try:
+        session_id = get_session_id()
+        db_session = db_manager.Session()
+        
+        try:
+            result = db_session.execute(text("""
+                SELECT 
+                    ki.id as kp_item_id,
+                    ki.quantity,
+                    ki.added_at,
+                    p.id as product_id,
+                    p.name as product_name,
+                    p.description,
+                    po.id as price_offer_id,
+                    po.quantity as offer_quantity,
+                    po.route,
+                    po.price_usd,
+                    po.price_rub,
+                    po.delivery_days,
+                    (SELECT image_url 
+                     FROM product_images pi 
+                     WHERE pi.product_id = p.id 
+                     AND pi.image_url IS NOT NULL
+                     ORDER BY CASE WHEN pi.column_number = 1 THEN 0 ELSE 1 END, pi.id
+                     LIMIT 1) as image_url,
+                    (SELECT image_filename 
+                     FROM product_images pi 
+                     WHERE pi.product_id = p.id 
+                     AND pi.image_filename IS NOT NULL
+                     ORDER BY CASE WHEN pi.column_number = 1 THEN 0 ELSE 1 END, pi.id
+                     LIMIT 1) as image_filename
+                FROM kp_items ki
+                JOIN products p ON p.id = ki.product_id
+                JOIN price_offers po ON po.id = ki.price_offer_id
+                WHERE ki.session_id = :session_id
+                ORDER BY ki.added_at DESC
+            """), {'session_id': session_id})
+            
+            kp_items = []
+            for row in result:
+                # Формируем URL изображения
+                image_url = row[12]
+                if not image_url and row[13]:
+                    image_url = f"https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods/images/{row[13]}"
+                
+                kp_items.append({
+                    'kp_item_id': row[0],
+                    'quantity': row[1],
+                    'added_at': row[2].isoformat() if row[2] else None,
+                    'product': {
+                        'id': row[3],
+                        'name': row[4],
+                        'description': row[5],
+                        'image_url': image_url
+                    },
+                    'price_offer': {
+                        'id': row[6],
+                        'quantity': row[7],
+                        'route': row[8],
+                        'price_usd': float(row[9]) if row[9] else None,
+                        'price_rub': float(row[10]) if row[10] else None,
+                        'delivery_days': row[11]
+                    }
+                })
+            
+            return jsonify({'success': True, 'kp_items': kp_items, 'total_items': len(kp_items)})
+        finally:
+            db_session.close()
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/kp/clear', methods=['DELETE'])
+def api_kp_clear():
+    """Очищает весь КП"""
+    
+    try:
+        session_id = get_session_id()
+        db_session = db_manager.Session()
+        
+        try:
+            db_session.execute(text("DELETE FROM kp_items WHERE session_id = :session_id"), {'session_id': session_id})
+            db_session.commit()
+            
+            return jsonify({'success': True, 'message': 'КП очищен', 'kp_count': 0})
+        finally:
+            db_session.close()
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/kp/check', methods=['POST'])
+def api_kp_check():
+    """Проверяет какие price_offer_id уже добавлены в КП"""
+    
+    try:
+        data = request.get_json()
+        price_offer_ids = data.get('price_offer_ids', [])
+        
+        if not price_offer_ids:
+            return jsonify({'success': True, 'in_kp': []})
+        
+        session_id = get_session_id()
+        db_session = db_manager.Session()
+        
+        try:
+            placeholders = ','.join([f':id{i}' for i in range(len(price_offer_ids))])
+            params = {'session_id': session_id}
+            params.update({f'id{i}': pid for i, pid in enumerate(price_offer_ids)})
+            
+            result = db_session.execute(text(f"""
+                SELECT price_offer_id
+                FROM kp_items
+                WHERE session_id = :session_id
+                AND price_offer_id IN ({placeholders})
+            """), params)
+            
+            in_kp = [row[0] for row in result.fetchall()]
+            
+            return jsonify({'success': True, 'in_kp': in_kp})
+        finally:
+            db_session.close()
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+print("✅ [APP] API КП зарегистрирован (/api/kp/*)")
+
 if __name__ == '__main__':
     # Получаем порт из переменной окружения (Railway использует PORT)
     port = int(os.getenv('PORT', 5000))
