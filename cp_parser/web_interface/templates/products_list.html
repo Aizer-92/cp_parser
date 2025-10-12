@@ -508,6 +508,18 @@ form.addEventListener('submit', async (e) => {
             body: formData
         });
         
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API Error:', response.status, errorText);
+            alert(`Ошибка API: ${response.status}. ${errorText || 'Попробуйте позже.'}`);
+            searchBtn.disabled = false;
+            loadingIcon.classList.add('hidden');
+            searchBtnText.textContent = 'Найти похожие';
+            return;
+        }
+        
         const data = await response.json();
         
         if (data.success) {
