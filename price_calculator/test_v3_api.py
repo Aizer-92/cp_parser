@@ -160,14 +160,17 @@ def test_v3_api():
             
             for route in routes:
                 print(f"📍 {route.route_name}:")
-                print(f"   Себестоимость: {route.cost_price_rub:.2f} ₽ / {route.cost_price_usd:.2f} $")
-                print(f"   Продажная цена: {route.sale_price_rub:.2f} ₽ / {route.sale_price_usd:.2f} $")
-                print(f"   Прибыль: {route.profit_rub:.2f} ₽ / {route.profit_usd:.2f} $")
-                print(f"   Общая себестоимость: {route.total_cost_rub:.2f} ₽")
+                print(f"   Себестоимость: {route.cost_price_rub or 0:.2f} ₽ / {route.cost_price_usd or 0:.2f} $")
+                print(f"   Продажная цена: {route.sale_price_rub or 0:.2f} ₽ / {route.sale_price_usd or 0:.2f} $")
+                print(f"   Прибыль: {route.profit_rub or 0:.2f} ₽ / {route.profit_usd or 0:.2f} $")
+                print(f"   Общая себестоимость: {route.total_cost_rub or 0:.2f} ₽")
                 print()
             
+        except ValueError as e:
+            print(f"❌ Ошибка при пересчёте маршрутов (ValueError): {e}")
         except Exception as e:
-            print(f"❌ Ошибка при пересчёте маршрутов: {e}")
+            print(f"❌ Ошибка при пересчёте маршрутов (Exception): {e}")
+            print(f"   Тип ошибки: {type(e).__name__}")
             import traceback
             traceback.print_exc()
         

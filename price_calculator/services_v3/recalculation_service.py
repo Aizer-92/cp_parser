@@ -33,7 +33,9 @@ class RecalculationService:
         
         # Загружаем категории и создаем оркестратор
         calculator = PriceCalculator()
-        self.orchestrator = CalculationOrchestrator(calculator.categories)
+        # Конвертируем список категорий в словарь {category_name: category_data}
+        categories_dict = {cat['category']: cat for cat in calculator.categories}
+        self.orchestrator = CalculationOrchestrator(categories_dict)
     
     def recalculate_routes(
         self, 
@@ -55,20 +57,28 @@ class RecalculationService:
         Raises:
             ValueError: Если расчёт не найден или отсутствуют необходимые данные
         """
+        print(f"🔍 DEBUG: recalculate_routes вызван с calculation_id={calculation_id}, category={category}")
+        
         # Загружаем расчёт с позицией
+        print("🔍 DEBUG: Загружаем calculation...")
         calculation = self.calculation_service.get_with_full_details(calculation_id)
+        print(f"🔍 DEBUG: Calculation загружен: {calculation is not None}")
         if not calculation:
             raise ValueError(f"Calculation {calculation_id} not found")
         
+        print(f"🔍 DEBUG: calculation.position = {calculation.position}")
         if not calculation.position:
             raise ValueError(f"Position not found for calculation {calculation_id}")
         
         # Определяем категорию
+        print("🔍 DEBUG: Определяем категорию...")
         category = category or calculation.position.category
+        print(f"🔍 DEBUG: category = {category}")
         if not category:
             raise ValueError("Category is required for calculation")
         
         # Проверяем вес для quick расчета
+        print(f"🔍 DEBUG: Проверяем тип расчета: {calculation.calculation_type}")
         if calculation.calculation_type == 'quick':
             if not calculation.weight_kg:
                 raise ValueError("Weight is required for quick calculation")
@@ -100,19 +110,41 @@ class RecalculationService:
         
         # Шаг 3: Выполняем расчёт
         try:
+            print("🔍 DEBUG: Вызываем orchestrator.calculate()...")
             calc_response = self.orchestrator.calculate()
+            print(f"🔍 DEBUG: Получен calc_response, тип = {type(calc_response)}")
+            
+            if not isinstance(calc_response, dict):
+                print(f"🔍 DEBUG: calc_response НЕ СЛОВАРЬ! Это: {type(calc_response)}")
+                print(f"🔍 DEBUG: Содержимое (первые 200 символов): {str(calc_response)[:200]}")
+                raise ValueError(f"orchestrator.calculate() returned {type(calc_response)} instead of dict")
+            
+            print(f"🔍 DEBUG: calc_response keys = {list(calc_response.keys())}")
             
             if not calc_response.get('success'):
                 raise ValueError(calc_response.get('error', 'Unknown error'))
             
             result = calc_response['result']
+            print(f"🔍 DEBUG: result type = {type(result)}")
+            print(f"🔍 DEBUG: result keys = {list(result.keys()) if isinstance(result, dict) else 'NOT A DICT!'}")
+        except ValueError:
+            raise
         except Exception as e:
+            print(f"🔍 DEBUG: Exception во время расчёта: {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
             raise ValueError(f"Calculation failed: {str(e)}")
         
         # Сохраняем/обновляем маршруты
         routes = []
-        for route_data in result.get('routes', []):
-            route_name = self._normalize_route_name(route_data.get('route_name', route_data.get('name', '')))
+        result_routes = result.get('routes', {})
+        print(f"🔍 DEBUG: result_routes type = {type(result_routes)}")
+        print(f"🔍 DEBUG: result_routes keys = {list(result_routes.keys()) if isinstance(result_routes, dict) else 'NOT A DICT'}")
+        
+        # routes - это словарь {route_name: route_data}, а не список
+        for route_key, route_data in result_routes.items():
+            print(f"🔍 DEBUG: Обрабатываем маршрут: {route_key}, type={type(route_data)}")
+            route_name = self._normalize_route_name(route_key)
             
             logistics_data = {
                 'custom_rate': self._get_decimal(route_data.get('logistics_rate')),

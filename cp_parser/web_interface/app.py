@@ -104,11 +104,16 @@ sys.path.append(str(Path(__file__).parent.parent))
 from flask import Flask, render_template, jsonify, send_from_directory, request, redirect, url_for
 from flask import session as flask_session
 import uuid
-# ВРЕМЕННО ОТКЛЮЧЕНО: Импорты для image search
-# from werkzeug.utils import secure_filename
-# from PIL import Image
-# import io
-# import tempfile
+
+# ВРЕМЕННО ОТКЛЮЧЕНО: Импорты для image search (но нужны для endpoint)
+try:
+    from werkzeug.utils import secure_filename
+    from PIL import Image
+    import io
+    import tempfile
+except ImportError:
+    # Если не установлены - endpoint вернет 503
+    pass
 
 # Патчим SQLAlchemy dialect ДО импорта моделей
 try:
@@ -1353,22 +1358,13 @@ print("✅ [APP] API КП зарегистрирован (/api/kp/*)")
 
 @app.route('/api/search-by-image', methods=['POST'])
 def api_search_by_image():
-    """Поиск товаров по загруженному изображению"""
+    """Поиск товаров по загруженному изображению через Hugging Face CLIP API"""
     
-    if not IMAGE_SEARCH_ENABLED:
-        # Определяем причину
-        if not PGVECTOR_ENGINE:
-            reason = "Отсутствует подключение к pgvector БД (проверьте VECTOR_DATABASE_URL)"
-        elif not OPENAI_CLIENT:
-            reason = "Отсутствует OpenAI API (проверьте OPENAI_API_KEY)"
-        elif not CLIP_MODEL:
-            reason = "CLIP модель не загрузилась (проверьте логи запуска)"
-        else:
-            reason = "Неизвестная причина"
-        
+    # Проверяем доступность pgvector БД
+    if not PGVECTOR_ENGINE:
         return jsonify({
             'success': False, 
-            'error': f'Поиск по изображениям отключен: {reason}'
+            'error': 'Поиск по изображениям недоступен: отсутствует подключение к БД'
         }), 503
     
     try:
@@ -1388,12 +1384,55 @@ def api_search_by_image():
         
         # Загружаем изображение
         image_bytes = file.read()
-        image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
         
-        # Генерируем embedding
-        print(f"🔍 [IMAGE SEARCH] Генерация embedding для загруженного изображения...")
-        embedding = CLIP_MODEL.encode(image)
-        query_embedding = embedding.tolist()
+        # Конвертируем в base64 для API
+        import base64
+        image_b64 = base64.b64encode(image_bytes).decode('utf-8')
+        
+        # Генерируем embedding через Hugging Face Inference API
+        print(f"🔍 [IMAGE SEARCH] Генерация embedding через Hugging Face API...")
+        
+        HF_API_TOKEN = os.getenv('HUGGINGFACE_API_TOKEN')
+        if not HF_API_TOKEN:
+            return jsonify({
+                'success': False,
+                'error': 'Не настроен HUGGINGFACE_API_TOKEN. Добавьте в переменные окружения.'
+            }), 503
+        
+        import requests
+        
+        # Используем Hugging Face Inference API для CLIP
+        hf_url = "https://api-inference.huggingface.co/models/openai/clip-vit-base-patch32"
+        headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
+        
+        # Отправляем изображение
+        response = requests.post(
+            hf_url,
+            headers=headers,
+            data=image_bytes,
+            timeout=30
+        )
+        
+        if response.status_code != 200:
+            print(f"❌ [IMAGE SEARCH] Hugging Face API error: {response.status_code}")
+            print(f"   Response: {response.text}")
+            return jsonify({
+                'success': False,
+                'error': f'Ошибка API: {response.status_code}. Попробуйте позже.'
+            }), 503
+        
+        # Получаем embedding из ответа
+        result = response.json()
+        
+        # Hugging Face возвращает embedding напрямую для feature extraction
+        if isinstance(result, list) and len(result) > 0:
+            query_embedding = result[0]
+        else:
+            print(f"❌ [IMAGE SEARCH] Неожиданный формат ответа: {result}")
+            return jsonify({
+                'success': False,
+                'error': 'Неожиданный формат ответа от API'
+            }), 500
         
         # Ищем похожие изображения в pgvector БД
         query_vector_str = '[' + ','.join(map(str, query_embedding)) + ']'
@@ -1415,7 +1454,7 @@ def api_search_by_image():
         # Извлекаем product_ids
         product_ids = [row[0] for row in results]
         
-        print(f"🔍 [IMAGE SEARCH] Найдено {len(product_ids)} похожих товаров")
+        print(f"✅ [IMAGE SEARCH] Найдено {len(product_ids)} похожих товаров")
         
         if not product_ids:
             return jsonify({
