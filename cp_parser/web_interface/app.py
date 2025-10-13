@@ -524,7 +524,11 @@ def products_list():
         # ВАЖНО: для SELECT DISTINCT все поля в ORDER BY должны быть в SELECT
         # Используем offer_created_at (TIMESTAMP) вместо offer_creation_date (TEXT) для корректной сортировки
         base_select = """p.id, p.project_id, p.name, p.description, p.article_number, 
-                   p.sample_price, p.sample_delivery_time, p.row_number, pr.region, pr.offer_created_at"""
+                   p.sample_price, p.sample_delivery_time, p.row_number, pr.region, pr.offer_created_at,
+                   (SELECT MAX(ki.added_at) FROM kp_items ki WHERE ki.product_id = p.id AND ki.session_id = :session_id_kp) as kp_added_at"""
+        
+        # Добавляем session_id для подзапроса kp_added_at
+        params["session_id_kp"] = get_session_id()
         
         order_by = "p.id DESC"  # По умолчанию
         select_fields = base_select
@@ -594,7 +598,9 @@ def products_list():
             product.row_number = int(row[7]) if row[7] is not None else None
             product.region = row[8]  # Регион проекта
             # row[9] = offer_created_at (TIMESTAMP, используется для сортировки, не нужно присваивать)
-            # row[10] = min_price (только для сортировки по цене, если применимо)
+            product.kp_added_at = row[10]  # Дата добавления в КП
+            # row[11] = min_price (только для сортировки по цене, если применимо)
+            # row[12] = relevance_rank (только для поиска)
             
             # Получаем изображения для товара
             images_sql = text("""
