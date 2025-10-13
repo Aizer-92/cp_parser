@@ -99,3 +99,4 @@ class BaseService(Generic[ModelType]):
         """Получить общее количество объектов"""
         return self.db.query(self.model).count()
 
+

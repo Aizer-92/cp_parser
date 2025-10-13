@@ -27,12 +27,11 @@ window.PriceCalculatorAppV3 = {
     
     data() {
         return {
-            activeTab: 'quick',
+            activeTab: 'positions',
             tabs: [
-                { id: 'quick', label: 'Быстрый', component: 'QuickModeV3' },
                 { id: 'positions', label: 'Позиции', component: 'PositionsListV3' },
-                { id: 'factories', label: 'Фабрики', component: 'FactoriesManagerV3' },
-                { id: 'history', label: 'История', component: 'HistoryV3' }
+                { id: 'quick', label: 'Быстрый расчёт', component: 'QuickModeV3' },
+                { id: 'factories', label: 'Фабрики', component: 'FactoriesManagerV3' }
             ]
         };
     },
@@ -54,4 +53,5 @@ window.PriceCalculatorAppV3 = {
         }
     }
 };
+
 

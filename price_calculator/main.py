@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from typing import Optional, List, Dict, Any
 import json
 from datetime import datetime
@@ -191,6 +191,31 @@ class CalculationRequest(BaseModel):
     custom_logistics: Optional[Dict[str, Dict[str, Any]]] = None
     # Принудительная категория (переопределяет автоопределение)
     forced_category: Optional[str] = None
+    
+    @model_validator(mode='after')
+    def validate_and_calculate_weight(self):
+        """Валидация режима расчёта и автоматический расчёт веса"""
+        if self.is_precise_calculation:
+            # Проверяем все поля упаковки
+            if not all([
+                self.packing_units_per_box,
+                self.packing_box_weight,
+                self.packing_box_length,
+                self.packing_box_width,
+                self.packing_box_height
+            ]):
+                raise ValueError("Для точного расчёта требуются все параметры упаковки: packing_box_weight, packing_box_length, packing_box_width, packing_box_height")
+            
+            # Автоматически рассчитываем вес единицы если не указан
+            if not self.weight_kg:
+                self.weight_kg = self.packing_box_weight / self.packing_units_per_box
+                print(f"✅ Вес единицы рассчитан автоматически: {self.weight_kg:.4f} кг")
+        else:
+            # Для быстрого режима weight_kg обязателен
+            if not self.weight_kg or self.weight_kg <= 0:
+                raise ValueError("Для быстрого расчёта укажите вес единицы товара (weight_kg)")
+        
+        return self
 
 class CalculationResponse(BaseModel):
     """Модель ответа с результатами расчета цены"""
@@ -1248,8 +1273,9 @@ async def debug_calculate(request: CalculationRequest):
 
 @app.post("/api/calculate", response_model=CalculationResponse)
 async def calculate_price(request: CalculationRequest, auth: bool = Depends(require_auth)):
-    """Расчет цены товара (требует авторизацию)"""
-    return await _calculate_price_logic(request)
+    """Расчет цены товара V2 (требует авторизацию)"""
+    # Используем V2 логику (calculation_id=None для создания нового)
+    return await _perform_calculation_and_save(request, calculation_id=None)
 
 @app.post("/api/v2/calculate", response_model=CalculationResponse)
 async def calculate_price_v2(request: CalculationRequest):
@@ -2435,6 +2461,54 @@ async def execute_calculation_v3(request: ProductInputDTO):
             if 'vat_rate' in customs and isinstance(customs['vat_rate'], str):
                 if customs['vat_rate'].endswith('%'):
                     customs['vat_rate'] = float(customs['vat_rate'].rstrip('%'))
+        
+        # Преобразуем breakdown для каждого маршрута в формат для фронтенда
+        if 'routes' in result:
+            for route_key, route_data in result['routes'].items():
+                if 'breakdown' in route_data and route_data['breakdown']:
+                    bd = route_data['breakdown']
+                    
+                    # Стоимость в Китае (с процентами)
+                    china_cost = bd.get('factory_price', 0)
+                    route_data['china_cost_per_unit_rub'] = china_cost
+                    route_data['price_rub_per_unit'] = bd.get('base_price_rub', 0)
+                    route_data['sourcing_fee_per_unit'] = bd.get('toni_commission_rub', 0)
+                    route_data['local_delivery_per_unit'] = bd.get('local_delivery', 0)
+                    
+                    # Логистика
+                    route_data['logistics_per_unit_rub'] = bd.get('logistics', 0)
+                    route_data['delivery_cost_per_unit'] = bd.get('logistics', 0)
+                    
+                    # Пошлины и НДС (берем из customs_info если есть)
+                    customs_calc = result.get('customs_calculation', {})
+                    quantity = result.get('quantity', 1)
+                    route_data['duty_per_unit'] = customs_calc.get('duty_amount_usd', 0) * calc.currencies.get("usd_to_rub", 105) / quantity if customs_calc.get('duty_amount_usd') else 0
+                    route_data['vat_per_unit'] = customs_calc.get('vat_amount_usd', 0) * calc.currencies.get("usd_to_rub", 105) / quantity if customs_calc.get('vat_amount_usd') else 0
+                    
+                    # Прочие расходы
+                    other_costs = bd.get('msk_pickup', 0) + bd.get('other_costs', 0)
+                    route_data['other_costs_per_unit'] = other_costs
+                    route_data['moscow_pickup_per_unit'] = bd.get('msk_pickup', 0)
+                    route_data['misc_costs_per_unit'] = bd.get('other_costs', 0) * 0.4  # 2.5% от стоимости
+                    route_data['fixed_costs_per_unit'] = bd.get('other_costs', 0) * 0.6
+                    
+                    # Процентные соотношения
+                    cost_per_unit = route_data.get('cost_per_unit_rub', 0) or route_data.get('per_unit', 0)
+                    if cost_per_unit > 0:
+                        route_data['china_cost_percentage'] = round((china_cost / cost_per_unit) * 100, 1)
+                        route_data['logistics_percentage'] = round((route_data['logistics_per_unit_rub'] / cost_per_unit) * 100, 1)
+                        route_data['other_costs_percentage'] = round((other_costs / cost_per_unit) * 100, 1)
+                    else:
+                        route_data['china_cost_percentage'] = 0
+                        route_data['logistics_percentage'] = 0
+                        route_data['other_costs_percentage'] = 0
+                    
+                    # Отображаемые значения
+                    route_data['price_yuan_display'] = bd.get('base_price_yuan', request.price_yuan)
+                    route_data['weight_display'] = f"{bd.get('weight_kg', 0)} кг × {bd.get('logistics_rate', 0)}$/кг"
+                    route_data['duty_rate_display'] = f"{result.get('customs_info', {}).get('duty_rate', 9.6)}%"
+                    route_data['vat_rate_display'] = f"{result.get('customs_info', {}).get('vat_rate', 20)}%"
+                    route_data['logistics_type_display'] = route_data.get('name', '')
         
         # Возвращаем результат в формате совместимом с V2
         return result

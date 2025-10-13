@@ -88,3 +88,4 @@ class PositionService(BaseService[Position]):
         categories = self.db.query(Position.category).distinct().all()
         return [cat[0] for cat in categories if cat[0]]
 
+

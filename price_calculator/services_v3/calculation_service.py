@@ -122,3 +122,4 @@ class CalculationService(BaseService[Calculation]):
             Calculation.quantity <= max_qty
         ).order_by(Calculation.quantity).all()
 
+

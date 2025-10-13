@@ -80,3 +80,4 @@ def drop_all_tables():
     Base.metadata.drop_all(bind=engine)
     print("⚠️ All tables dropped")
 
+

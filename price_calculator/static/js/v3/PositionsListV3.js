@@ -1,81 +1,123 @@
-// PositionsListV3.js - Список позиций
+// PositionsListV3.js - Список всех позиций товаров
 window.PositionsListV3 = {
     template: `
     <div class="positions-list">
-        <!-- Заголовок -->
         <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">Позиции</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 class="card-title">Позиции товаров</h2>
                 <button @click="createPosition" class="btn-primary">
-                    Новая позиция
+                    + Создать позицию
                 </button>
             </div>
             
             <!-- Поиск и фильтры -->
-            <div class="search-bar">
+            <div class="filters-bar">
                 <input
                     v-model="searchQuery"
                     type="text"
-                    placeholder="Поиск позиций..."
+                    placeholder="Поиск по названию или категории..."
                     class="form-input"
-                    @input="onSearch"
+                    style="flex: 1;"
                 />
-                <select v-model="filterCategory" class="form-input" style="max-width: 200px;">
+                <select v-model="categoryFilter" class="form-input" style="width: 200px;">
                     <option value="">Все категории</option>
                     <option v-for="cat in categories" :key="cat" :value="cat">
                         {{ cat }}
                     </option>
                 </select>
             </div>
-        </div>
-        
-        <!-- Список позиций -->
-        <div v-if="loading" class="card">
-            <p>Загрузка...</p>
-        </div>
-        
-        <div v-else-if="filteredPositions.length === 0" class="card">
-            <p>Позиций пока нет. Создайте первую!</p>
-        </div>
-        
-        <div v-else class="positions-grid">
-            <div
-                v-for="position in filteredPositions"
-                :key="position.id"
-                class="position-card card"
-                @click="openPosition(position.id)"
-            >
-                <!-- Фото (если есть) -->
-                <div v-if="position.design_files_urls && position.design_files_urls.length > 0" class="position-photo">
-                    <img :src="position.design_files_urls[0]" :alt="position.name" />
-                </div>
-                
-                <!-- Информация -->
-                <div class="position-info">
-                    <h3 class="position-name">{{ position.name }}</h3>
-                    <p class="position-category">{{ position.category || 'Без категории' }}</p>
-                    <div class="position-meta">
-                        <span v-if="position.design_files_urls">
-                            Фото: {{ position.design_files_urls.length }} шт
-                        </span>
-                        <span v-if="position.calculations_count">
-                            Расчётов: {{ position.calculations_count }}
-                        </span>
-                        <span v-if="position.updated_at">
-                            {{ formatDate(position.updated_at) }}
-                        </span>
+            
+            <!-- Загрузка -->
+            <div v-if="isLoading" class="loading-state">
+                <div class="spinner"></div>
+                <p>Загрузка позиций...</p>
+            </div>
+            
+            <!-- Пустой список -->
+            <div v-else-if="filteredPositions.length === 0" class="empty-state">
+                <p>Нет позиций</p>
+                <button @click="createPosition" class="btn-secondary">
+                    Создать первую позицию
+                </button>
+            </div>
+            
+            <!-- Список позиций -->
+            <div v-else class="positions-grid">
+                <div
+                    v-for="position in filteredPositions"
+                    :key="position.id"
+                    class="position-card"
+                    @click="openPosition(position.id)"
+                >
+                    <!-- Фото -->
+                    <div class="position-image">
+                        <img
+                            :src="(position.design_files_urls && position.design_files_urls.length > 0) ? position.design_files_urls[0] : 'https://via.placeholder.com/300x200?text=No+Image'"
+                            :alt="position.name"
+                            @error="$event.target.src='https://via.placeholder.com/300x200?text=No+Image'"
+                        />
+                    </div>
+                    
+                    <!-- Информация -->
+                    <div class="position-info">
+                        <h3 class="position-name">{{ position.name }}</h3>
+                        <p v-if="position.category" class="position-category">
+                            {{ position.category }}
+                        </p>
+                        <p v-if="position.description" class="position-description">
+                            {{ truncate(position.description, 80) }}
+                        </p>
+                        
+                        <!-- Метаданные -->
+                        <div class="position-meta">
+                            <span class="meta-item">
+                                ID: {{ position.id }}
+                            </span>
+                            <span class="meta-item">
+                                {{ formatDate(position.created_at) }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Действия -->
+                    <div class="position-actions">
+                        <button
+                            @click.stop="editPosition(position.id)"
+                            class="btn-icon"
+                            title="Редактировать"
+                        >
+                            ✎
+                        </button>
+                        <button
+                            @click.stop="deletePosition(position.id)"
+                            class="btn-icon btn-danger"
+                            title="Удалить"
+                        >
+                            ×
+                        </button>
                     </div>
                 </div>
-                
-                <!-- Действия -->
-                <div class="position-actions" @click.stop>
-                    <button @click="editPosition(position.id)" class="btn-text btn-sm">
-                        Редактировать
-                    </button>
-                    <button @click="deletePosition(position.id)" class="btn-text btn-sm" style="color: var(--color-danger);">
-                        Удалить
-                    </button>
-                </div>
+            </div>
+            
+            <!-- Пагинация -->
+            <div v-if="totalPages > 1" class="pagination">
+                <button
+                    @click="prevPage"
+                    :disabled="currentPage === 1"
+                    class="btn-secondary btn-sm"
+                >
+                    ← Назад
+                </button>
+                <span class="pagination-info">
+                    Страница {{ currentPage }} из {{ totalPages }}
+                </span>
+                <button
+                    @click="nextPage"
+                    :disabled="currentPage === totalPages"
+                    class="btn-secondary btn-sm"
+                >
+                    Вперёд →
+                </button>
             </div>
         </div>
     </div>
@@ -84,10 +126,13 @@ window.PositionsListV3 = {
     data() {
         return {
             positions: [],
-            searchQuery: '',
-            filterCategory: '',
             categories: [],
-            loading: true
+            isLoading: false,
+            searchQuery: '',
+            categoryFilter: '',
+            currentPage: 1,
+            itemsPerPage: 12,
+            totalPositions: 0
         };
     },
     
@@ -95,104 +140,127 @@ window.PositionsListV3 = {
         filteredPositions() {
             let filtered = this.positions;
             
-            // Поиск
+            // Поиск по названию или категории
             if (this.searchQuery) {
                 const query = this.searchQuery.toLowerCase();
                 filtered = filtered.filter(p =>
                     p.name.toLowerCase().includes(query) ||
+                    (p.category && p.category.toLowerCase().includes(query)) ||
                     (p.description && p.description.toLowerCase().includes(query))
                 );
             }
             
             // Фильтр по категории
-            if (this.filterCategory) {
-                filtered = filtered.filter(p => p.category === this.filterCategory);
+            if (this.categoryFilter) {
+                filtered = filtered.filter(p => p.category === this.categoryFilter);
             }
             
             return filtered;
+        },
+        
+        totalPages() {
+            return Math.ceil(this.totalPositions / this.itemsPerPage);
         }
     },
     
     async mounted() {
         await this.loadPositions();
-        this.extractCategories();
+        await this.loadCategories();
     },
     
     methods: {
         async loadPositions() {
-            this.loading = true;
+            this.isLoading = true;
             try {
-                const api = window.usePositionsV3();
-                const response = await api.getPositions(0, 1000);
-                this.positions = response.items || response || [];
+                const positionsAPI = window.usePositionsV3();
+                const response = await positionsAPI.getPositions(
+                    (this.currentPage - 1) * this.itemsPerPage,
+                    this.itemsPerPage
+                );
                 
-                // Загружаем количество расчётов для каждой позиции
-                await this.loadCalculationsCounts();
+                // API возвращает массив напрямую
+                this.positions = Array.isArray(response) ? response : (response.items || []);
+                this.totalPositions = response.total || this.positions.length;
+                
+                console.log('✅ Загружено позиций:', this.positions.length);
             } catch (error) {
-                console.error('Ошибка загрузки позиций:', error);
+                console.error('❌ Ошибка загрузки позиций:', error);
                 alert('Не удалось загрузить позиции');
             } finally {
-                this.loading = false;
+                this.isLoading = false;
             }
         },
         
-        async loadCalculationsCounts() {
-            const calcApi = window.useCalculationsV3();
-            for (const position of this.positions) {
-                try {
-                    const calcs = await calcApi.getCalculationsByPosition(position.id);
-                    position.calculations_count = calcs.length;
-                } catch (error) {
-                    position.calculations_count = 0;
-                }
+        async loadCategories() {
+            try {
+                // Используем прямой запрос к API
+                const response = await axios.get(`${window.location.origin}/api/v3/categories`);
+                const data = response.data;
+                
+                // Извлекаем уникальные категории
+                const categories = data.categories || [];
+                this.categories = [...new Set(categories.map(c => c.category || c.name || c))];
+                
+                console.log('✅ Загружено категорий:', this.categories.length);
+            } catch (error) {
+                console.error('❌ Ошибка загрузки категорий:', error);
             }
-        },
-        
-        extractCategories() {
-            const cats = new Set();
-            this.positions.forEach(p => {
-                if (p.category) cats.add(p.category);
-            });
-            this.categories = Array.from(cats).sort();
-        },
-        
-        onSearch() {
-            // Дебаунс уже работает через v-model
         },
         
         createPosition() {
-            this.$emit('switch-tab', 'position-form');
-            // TODO: открыть форму создания
+            this.$emit('create-position');
         },
         
-        openPosition(positionId) {
-            console.log('Открыть позицию:', positionId);
-            this.$emit('open-position', positionId);
-            // TODO: переключиться на детали позиции
+        openPosition(id) {
+            this.$emit('open-position', id);
         },
         
-        editPosition(positionId) {
-            console.log('Редактировать позицию:', positionId);
-            // TODO: открыть форму редактирования
+        editPosition(id) {
+            this.$emit('edit-position', id);
         },
         
-        async deletePosition(positionId) {
-            if (!confirm('Удалить эту позицию и все её расчёты?')) return;
+        async deletePosition(id) {
+            if (!confirm('Удалить эту позицию?')) return;
             
             try {
-                const api = window.usePositionsV3();
-                await api.deletePosition(positionId);
+                const positionsAPI = window.usePositionsV3();
+                await positionsAPI.delete(id);
+                
+                console.log('✅ Позиция удалена:', id);
                 await this.loadPositions();
             } catch (error) {
-                console.error('Ошибка удаления:', error);
+                console.error('❌ Ошибка удаления позиции:', error);
                 alert('Не удалось удалить позицию');
             }
         },
         
+        async prevPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+                await this.loadPositions();
+            }
+        },
+        
+        async nextPage() {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+                await this.loadPositions();
+            }
+        },
+        
+        truncate(text, length) {
+            if (!text) return '';
+            return text.length > length ? text.substring(0, length) + '...' : text;
+        },
+        
         formatDate(dateString) {
+            if (!dateString) return '';
             const date = new Date(dateString);
-            return date.toLocaleDateString('ru-RU');
+            return date.toLocaleDateString('ru-RU', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
         }
     }
 };
-

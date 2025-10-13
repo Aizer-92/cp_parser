@@ -88,14 +88,14 @@ window.PriceCalculatorAppV2 = {
         // Загрузка списка категорий (только названия для автокомплита)
         async loadCategories() {
             try {
-                // V3 API - получаем полные данные категорий
-                const v3 = window.useCalculationV3();
-                const categories = await v3.getCategories();
+                // V2 API - получаем список категорий
+                const response = await axios.get('/api/categories');
+                const categories = response.data;
                 
                 // Извлекаем только названия для автокомплита
                 this.availableCategories = categories.map(cat => cat.category);
                 
-                console.log('📦 Загружено категорий (V3):', this.availableCategories.length);
+                console.log('📦 Загружено категорий (V2):', this.availableCategories.length);
             } catch (error) {
                 console.error('❌ Ошибка загрузки категорий:', error);
             }
@@ -563,25 +563,26 @@ window.PriceCalculatorAppV2 = {
                     calculationData.custom_logistics = this.customLogistics;
                 }
                 
-                console.log('📤 Отправка данных на расчет (V3):', calculationData);
+                console.log('📤 Отправка данных на расчет (V2):', calculationData);
                 
-                // ✨ V3 API - используем composable
-                const v3 = window.useCalculationV3();
+                // ✨ V2 API - прямой вызов axios
                 let result;
                 
                 if (this.productData.calculation_id) {
                     // Обновление существующего расчета
                     console.log(`🔄 Обновление расчета #${this.productData.calculation_id}`);
-                    result = await v3.updateCalculation(this.productData.calculation_id, calculationData);
+                    const response = await axios.put(`/api/history/${this.productData.calculation_id}`, calculationData);
+                    result = response.data;
                     console.log(`✅ Расчет #${this.productData.calculation_id} обновлён`);
                     
                     // ✅ Перезагружаем историю чтобы обновить цены
                     await this.loadHistory();
                     console.log('🔄 История обновлена после изменения расчёта');
                 } else {
-                    // Создание нового расчета через V3
-                    console.log('✨ Создание нового расчета (V3)');
-                    result = await v3.calculate(calculationData);
+                    // Создание нового расчета через V2
+                    console.log('✨ Создание нового расчета (V2)');
+                    const response = await axios.post('/api/calculate', calculationData);
+                    result = response.data;
                     
                     // Сохраняем ID нового расчета
                     if (result.id) {
@@ -594,7 +595,7 @@ window.PriceCalculatorAppV2 = {
                     }
                 }
                 
-                console.log('📦 Получен результат от API (V3):', result);
+                console.log('📦 Получен результат от API (V2):', result);
                 
                 // Обновляем результаты расчета
                 this.calculationResult = result;

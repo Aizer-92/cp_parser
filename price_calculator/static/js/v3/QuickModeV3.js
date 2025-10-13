@@ -7,136 +7,120 @@ window.QuickModeV3 = {
             
             <form @submit.prevent="calculate" class="form">
                 
-                <!-- ========================================== -->
-                <!-- СЕКЦИЯ 1: ТОВАР (Position)                -->
-                <!-- ========================================== -->
-                <div class="form-section">
-                    <h3 class="section-title">📦 Товар</h3>
-                    
-                    <!-- Название товара -->
-                    <div class="form-group">
-                        <label for="product-name">Название товара *</label>
+                <!-- Название товара -->
+                <div class="form-group">
+                    <label for="product-name">Название товара *</label>
+                    <input
+                        id="product-name"
+                        v-model="productName"
+                        type="text"
+                        placeholder="Например: Футболка хлопковая"
+                        required
+                        class="form-input"
+                        @input="detectCategory"
+                    />
+                </div>
+                
+                <!-- Категория (автоопределяется) -->
+                <div class="form-group">
+                    <label for="category">
+                        Категория 
+                        <span style="color: #6b7280; font-size: 13px;">(автоопределяется)</span>
+                    </label>
+                    <input
+                        id="category"
+                        v-model="category"
+                        type="text"
+                        list="categories-list"
+                        placeholder="Определится автоматически"
+                        class="form-input"
+                    />
+                    <datalist id="categories-list">
+                        <option v-for="cat in availableCategories" :key="cat" :value="cat">
+                    </datalist>
+                </div>
+                
+                <!-- Фабрика -->
+                <div class="form-group">
+                    <label for="factory">Фабрика (WeChat / URL)</label>
+                    <input
+                        id="factory"
+                        v-model="factoryUrl"
+                        type="text"
+                        placeholder="https://... или WeChat ID"
+                        class="form-input"
+                    />
+                </div>
+                
+                <!-- Цена и Количество -->
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label for="price">Цена (¥) *</label>
                         <input
-                            id="product-name"
-                            v-model="position.name"
-                            type="text"
-                            placeholder="Например: Футболка хлопковая"
+                            id="price"
+                            v-model.number="priceYuan"
+                            type="number"
+                            step="0.01"
                             required
                             class="form-input"
                         />
                     </div>
                     
-                    <!-- Категория (автоопределяется) -->
-                    <div class="form-group">
-                        <label for="category">
-                            Категория 
-                            <span style="color: #6b7280; font-size: 13px;">(автоопределяется)</span>
-                        </label>
+                    <div class="form-group flex-1">
+                        <label for="quantity">Кол-во *</label>
                         <input
-                            id="category"
-                            v-model="position.category"
-                            type="text"
-                            list="categories-list"
-                            placeholder="Определится автоматически"
+                            id="quantity"
+                            v-model.number="quantity"
+                            type="number"
+                            required
                             class="form-input"
                         />
-                        <datalist id="categories-list">
-                            <option v-for="cat in availableCategories" :key="cat" :value="cat">
-                        </datalist>
-                    </div>
-                    
-                    <!-- Описание товара -->
-                    <div class="form-group">
-                        <label for="description">Описание товара</label>
-                        <textarea
-                            id="description"
-                            v-model="position.description"
-                            rows="2"
-                            placeholder="Описание товара, характеристики..."
-                            class="form-input"
-                        ></textarea>
-                    </div>
-                    
-                    <!-- Фотографии -->
-                    <div class="form-group">
-                        <label>Фотографии товара</label>
-                        <div class="photo-dropzone" @click="$refs.photoInput.click()" @drop.prevent="handlePhotoDrop" @dragover.prevent>
-                            <input
-                                ref="photoInput"
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                style="display: none;"
-                                @change="handlePhotoSelect"
-                            />
-                            <div v-if="position.photos.length === 0" class="dropzone-placeholder">
-                                <span>Перетащите фото сюда или нажмите для выбора</span>
-                            </div>
-                            <div v-else class="photos-preview">
-                                <div v-for="(photo, index) in position.photos" :key="index" class="photo-item">
-                                    <img :src="photo.preview" :alt="photo.name" />
-                                    <span v-if="index === 0" class="main-badge">основная</span>
-                                    <button type="button" @click.stop="removePhoto(index)" class="remove-photo">×</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Кастомизация -->
-                    <div class="form-group">
-                        <label for="customization">Кастомизация товара</label>
-                        <textarea
-                            id="customization"
-                            v-model="position.customization"
-                            rows="2"
-                            placeholder="Опишите требования к кастомизации (печать, гравировка и т.д.)"
-                            class="form-input"
-                        ></textarea>
                     </div>
                 </div>
+                    
+                <!-- Переключатель режимов -->
+                <div class="mode-toggle">
+                    <label class="toggle-label">
+                        <input
+                            type="radio"
+                            :value="false"
+                            v-model="detailedMode"
+                            class="toggle-radio"
+                        />
+                        <span>По весу</span>
+                    </label>
+                    <label class="toggle-label">
+                        <input
+                            type="radio"
+                            :value="true"
+                            v-model="detailedMode"
+                            class="toggle-radio"
+                        />
+                        <span>Детальный (упаковка)</span>
+                    </label>
+                </div>
                 
-                <!-- ========================================== -->
-                <!-- СЕКЦИЯ 2: РАСЧЁТ (Calculation)            -->
-                <!-- ========================================== -->
-                <div class="form-section">
-                    <h3 class="section-title">💰 Расчёт</h3>
-                    
-                    <!-- Фабрика -->
-                    <div class="form-group">
-                        <label for="factory">🏭 Фабрика (WeChat / URL)</label>
-                        <div class="input-with-button">
-                            <input
-                                id="factory"
-                                v-model="calculation.factory_url"
-                                type="text"
-                                placeholder="https://... или WeChat ID"
-                                class="form-input"
-                            />
-                            <button type="button" @click="selectFactory" class="btn-secondary btn-sm">
-                                Из списка
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Основные параметры: Цена, Количество, Срок производства -->
+                <!-- Вес (быстрый режим) -->
+                <div v-if="!detailedMode" class="form-group">
+                    <label for="weight">Вес 1 единицы (кг) *</label>
+                    <input
+                        id="weight"
+                        v-model.number="weightKg"
+                        type="number"
+                        step="0.01"
+                        required
+                        class="form-input"
+                    />
+                </div>
+                
+                <!-- Паккинг (детальный режим) -->
+                <div v-else class="packing-section">
                     <div class="form-row">
                         <div class="form-group flex-1">
-                            <label for="price">Цена (¥) *</label>
+                            <label for="units-per-box">Штук в коробке *</label>
                             <input
-                                id="price"
-                                v-model.number="calculation.price_yuan"
-                                type="number"
-                                step="0.01"
-                                required
-                                class="form-input"
-                            />
-                        </div>
-                        
-                        <div class="form-group flex-1">
-                            <label for="quantity">Кол-во *</label>
-                            <input
-                                id="quantity"
-                                v-model.number="calculation.quantity"
+                                id="units-per-box"
+                                v-model.number="packingUnitsPerBox"
                                 type="number"
                                 required
                                 class="form-input"
@@ -144,46 +128,10 @@ window.QuickModeV3 = {
                         </div>
                         
                         <div class="form-group flex-1">
-                            <label for="production-time">Срок производства (дни)</label>
+                            <label for="box-weight">Вес коробки (кг) *</label>
                             <input
-                                id="production-time"
-                                v-model.number="calculation.production_time_days"
-                                type="number"
-                                min="0"
-                                class="form-input"
-                            />
-                        </div>
-                    </div>
-                    
-                    <!-- Переключатель режимов упаковки -->
-                    <div class="mode-toggle">
-                        <label class="toggle-label">
-                            <input
-                                type="radio"
-                                :value="false"
-                                v-model="calculation.detailedMode"
-                                class="toggle-radio"
-                            />
-                            <span>Быстрый расчёт (по весу)</span>
-                        </label>
-                        <label class="toggle-label">
-                            <input
-                                type="radio"
-                                :value="true"
-                                v-model="calculation.detailedMode"
-                                class="toggle-radio"
-                            />
-                            <span>Детальный расчёт (упаковка)</span>
-                        </label>
-                    </div>
-                    
-                    <!-- Вес (быстрый режим) -->
-                    <div v-if="!calculation.detailedMode" class="weight-section">
-                        <div class="form-group">
-                            <label for="weight">Вес 1 единицы (кг) *</label>
-                            <input
-                                id="weight"
-                                v-model.number="calculation.weight_kg"
+                                id="box-weight"
+                                v-model.number="packingBoxWeight"
                                 type="number"
                                 step="0.01"
                                 required
@@ -192,129 +140,38 @@ window.QuickModeV3 = {
                         </div>
                     </div>
                     
-                    <!-- Паккинг (детальный режим) -->
-                    <div v-else class="packing-section">
-                        <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 12px;">📦 Упаковка *</h4>
-                        
-                        <div class="form-row">
-                            <div class="form-group flex-1">
-                                <label for="units-per-box">Штук в коробке</label>
-                                <input
-                                    id="units-per-box"
-                                    v-model.number="calculation.packing_units_per_box"
-                                    type="number"
-                                    required
-                                    class="form-input"
-                                />
-                            </div>
-                            
-                            <div class="form-group flex-1">
-                                <label for="box-weight">Вес коробки (кг)</label>
-                                <input
-                                    id="box-weight"
-                                    v-model.number="calculation.packing_box_weight"
-                                    type="number"
-                                    step="0.01"
-                                    required
-                                    class="form-input"
-                                />
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group flex-1">
-                                <label for="box-length">Длина (м)</label>
-                                <input
-                                    id="box-length"
-                                    v-model.number="calculation.packing_box_length"
-                                    type="number"
-                                    step="0.01"
-                                    required
-                                    class="form-input"
-                                />
-                            </div>
-                            
-                            <div class="form-group flex-1">
-                                <label for="box-width">Ширина (м)</label>
-                                <input
-                                    id="box-width"
-                                    v-model.number="calculation.packing_box_width"
-                                    type="number"
-                                    step="0.01"
-                                    required
-                                    class="form-input"
-                                />
-                            </div>
-                            
-                            <div class="form-group flex-1">
-                                <label for="box-height">Высота (м)</label>
-                                <input
-                                    id="box-height"
-                                    v-model.number="calculation.packing_box_height"
-                                    type="number"
-                                    step="0.01"
-                                    required
-                                    class="form-input"
-                                />
-                            </div>
-                        </div>
-                        
-                        <!-- Расчётные значения -->
-                        <div v-if="calculatedWeightPerUnit" class="calculated-values">
-                            <div class="calc-item">
-                                <span class="calc-label">Вес 1 шт:</span>
-                                <span class="calc-value">{{ calculatedWeightPerUnit }} кг</span>
-                            </div>
-                            <div class="calc-item">
-                                <span class="calc-label">Объём коробки:</span>
-                                <span class="calc-value">{{ calculatedBoxVolume }} м³</span>
-                            </div>
-                            <div v-if="calculatedDensity" class="calc-item">
-                                <span class="calc-label">Плотность:</span>
-                                <span class="calc-value">{{ calculatedDensity }} кг/м³</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Образец (отдельный блок) -->
-                    <div class="sample-section">
-                        <h4 style="font-size: 15px; font-weight: 600; margin: 16px 0 12px;">🎨 Образец</h4>
-                        <div class="form-row">
-                            <div class="form-group flex-1">
-                                <label for="sample-time">Срок образца (дни)</label>
-                                <input
-                                    id="sample-time"
-                                    v-model.number="calculation.sample_time_days"
-                                    type="number"
-                                    min="0"
-                                    class="form-input"
-                                />
-                            </div>
-                            
-                            <div class="form-group flex-1">
-                                <label for="sample-price">Цена образца (¥)</label>
-                                <input
-                                    id="sample-price"
-                                    v-model.number="calculation.sample_price_yuan"
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    class="form-input"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Наценка (в самом конце) -->
-                    <div class="markup-section">
-                        <h4 style="font-size: 15px; font-weight: 600; margin: 16px 0 12px;">💵 Наценка</h4>
-                        <div class="form-group">
-                            <label for="markup">Наценка *</label>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="box-length">Длина (м) *</label>
                             <input
-                                id="markup"
-                                v-model.number="calculation.markup"
+                                id="box-length"
+                                v-model.number="packingBoxLength"
                                 type="number"
-                                step="0.1"
+                                step="0.01"
+                                required
+                                class="form-input"
+                            />
+                        </div>
+                        
+                        <div class="form-group flex-1">
+                            <label for="box-width">Ширина (м) *</label>
+                            <input
+                                id="box-width"
+                                v-model.number="packingBoxWidth"
+                                type="number"
+                                step="0.01"
+                                required
+                                class="form-input"
+                            />
+                        </div>
+                        
+                        <div class="form-group flex-1">
+                            <label for="box-height">Высота (м) *</label>
+                            <input
+                                id="box-height"
+                                v-model.number="packingBoxHeight"
+                                type="number"
+                                step="0.01"
                                 required
                                 class="form-input"
                             />
@@ -322,49 +179,177 @@ window.QuickModeV3 = {
                     </div>
                 </div>
                 
-                <!-- Кнопки -->
+                <!-- Наценка -->
+                <div class="form-group">
+                    <label for="markup">Наценка *</label>
+                    <input
+                        id="markup"
+                        v-model.number="markup"
+                        type="number"
+                        step="0.01"
+                        required
+                        class="form-input"
+                    />
+                </div>
+                
+                <!-- Кнопка расчёта -->
                 <div class="form-actions">
                     <button
                         type="submit"
-                        :disabled="isCalculating || !isFormValid"
+                        :disabled="isCalculating"
                         class="btn-primary"
                     >
                         {{ isCalculating ? 'Расчёт...' : 'Рассчитать' }}
-                    </button>
-                    <button
-                        v-if="result"
-                        type="button"
-                        @click="saveAsPosition"
-                        class="btn-secondary"
-                    >
-                        Сохранить в Позиции
                     </button>
                 </div>
             </form>
         </div>
         
-        <!-- Результаты - компактный вид -->
-        <div v-if="result" class="results-compact">
-            <div class="card-header">
-                <h2 class="card-title">Результаты</h2>
+        <!-- Результаты - детальный вид -->
+        <div v-if="result" class="card" style="margin-top: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 class="card-title">Результаты расчёта</h2>
                 <button @click="reset" class="btn-text">Новый расчёт</button>
             </div>
             
-            <!-- Компактный список маршрутов -->
-            <div v-for="(route, key) in result.routes" :key="key" class="result-row">
-                <span class="route-name">{{ formatRouteName(key) }}:</span>
-                <span class="route-prices">
-                    {{ formatPrice(route.cost_per_unit_rub) }}₽
-                    <span class="route-arrow">→</span>
-                    {{ formatPrice(route.sale_per_unit_rub) }}₽
-                </span>
-                <span class="route-profit" :class="{ negative: route.profit_rub < 0 }">
-                    (прибыль {{ formatPrice(route.profit_rub) }}₽)
-                </span>
+            <!-- Информация о товаре -->
+            <div class="result-summary">
+                <div class="summary-row">
+                    <span>Товар:</span>
+                    <strong>{{ result.product_name }}</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Категория:</span>
+                    <strong>{{ result.category }}</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Количество:</span>
+                    <strong>{{ result.quantity }} шт</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Наценка:</span>
+                    <strong>{{ result.markup }}x</strong>
+                </div>
+            </div>
+            
+            <!-- Краткие результаты по маршрутам (раскрываются по клику) -->
+            <div v-for="(route, key) in result.routes" :key="key" class="route-details">
+                <div class="route-header" @click="toggleRoute(key)">
+                    <h3 class="route-title">{{ formatRouteName(key) }}</h3>
+                    <div class="route-quick-info">
+                        <span class="route-price">{{ formatPrice(route.cost_per_unit_rub || 0) }}₽</span>
+                        <span class="route-arrow">{{ expandedRoutes[key] ? '▼' : '▶' }}</span>
+                    </div>
+                </div>
+                
+                <!-- Детали (раскрываются) -->
+                <div v-show="expandedRoutes[key]" class="route-expanded">
+                    <!-- Сводка (вверху) -->
+                    <div class="route-summary">
+                        <div class="summary-item">
+                            <span>СЕБЕСТОИМОСТЬ 1 ШТ</span>
+                            <strong>{{ formatPrice(route.cost_per_unit_rub || 0) }}₽</strong>
+                        </div>
+                        <div class="summary-item">
+                            <span>ЦЕНА ПРОДАЖИ 1 ШТ</span>
+                            <strong>{{ formatPrice(route.sale_per_unit_rub || 0) }}₽</strong>
+                        </div>
+                        <div class="summary-item">
+                            <span>ПРИБЫЛЬ 1 ШТ</span>
+                            <strong>{{ formatPrice((route.sale_per_unit_rub || 0) - (route.cost_per_unit_rub || 0)) }}₽</strong>
+                        </div>
+                    </div>
+                
+                <!-- Структура затрат (за 1 шт) -->
+                <div class="cost-breakdown">
+                    <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Структура затрат (за 1 шт)</h4>
+                    
+                    <!-- Стоимость в Китае -->
+                    <div class="cost-section">
+                        <div class="cost-section-header">
+                            <strong>Стоимость в Китае</strong>
+                            <strong>{{ formatPrice(route.china_cost_per_unit_rub) }}₽ ({{ route.china_cost_percentage }}%)</strong>
+                        </div>
+                        <div class="cost-item">
+                            <span>Цена в юанях</span>
+                            <span>{{ route.price_yuan_display || result.price_yuan }}¥</span>
+                            <span>{{ formatPrice(route.price_rub_per_unit) }}₽</span>
+                        </div>
+                        <div class="cost-item">
+                            <span>Пошлина за выкуп (5%)</span>
+                            <span></span>
+                            <span>{{ formatPrice(route.sourcing_fee_per_unit) }}₽</span>
+                        </div>
+                        <div class="cost-item">
+                            <span>Локальная доставка</span>
+                            <span></span>
+                            <span>{{ formatPrice(route.local_delivery_per_unit) }}₽</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Логистика -->
+                    <div class="cost-section">
+                        <div class="cost-section-header">
+                            <strong>Логистика</strong>
+                            <strong>{{ formatPrice(route.logistics_per_unit_rub) }}₽ ({{ route.logistics_percentage }}%)</strong>
+                        </div>
+                        <div class="cost-item">
+                            <span>Доставка {{ route.logistics_type_display || key }}</span>
+                            <span>{{ route.weight_display || '' }}</span>
+                            <span>{{ formatPrice(route.delivery_cost_per_unit) }}₽</span>
+                        </div>
+                        <div class="cost-item">
+                            <span>Пошлины</span>
+                            <span>{{ route.duty_rate_display || '9.6%' }}</span>
+                            <span>{{ formatPrice(route.duty_per_unit) }}₽</span>
+                        </div>
+                        <div class="cost-item">
+                            <span>НДС</span>
+                            <span>{{ route.vat_rate_display || '20%' }}</span>
+                            <span>{{ formatPrice(route.vat_per_unit) }}₽</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Прочие расходы -->
+                    <div class="cost-section">
+                        <div class="cost-section-header">
+                            <strong>Прочие расходы</strong>
+                            <strong>{{ formatPrice(route.other_costs_per_unit) }}₽ ({{ route.other_costs_percentage }}%)</strong>
+                        </div>
+                        <div class="cost-item">
+                            <span>Забор МСК</span>
+                            <span></span>
+                            <span>{{ formatPrice(route.moscow_pickup_per_unit) }}₽</span>
+                        </div>
+                        <div class="cost-item">
+                            <span>Прочие (2.5%)</span>
+                            <span></span>
+                            <span>{{ formatPrice(route.misc_costs_per_unit) }}₽</span>
+                        </div>
+                        <div class="cost-item">
+                            <span>Фиксированные расходы</span>
+                            <span></span>
+                            <span>{{ formatPrice(route.fixed_costs_per_unit) }}₽</span>
+                        </div>
+                    </div>
+                </div>
+                
+                    <!-- Итоги (внизу) -->
+                    <div class="route-totals">
+                        <div class="total-row">
+                            <span>ОБЩАЯ СЕБЕСТОИМОСТЬ</span>
+                            <strong>{{ formatPrice(route.cost_rub || 0) }}₽</strong>
+                        </div>
+                        <div class="total-row">
+                            <span>ЦЕНА ПРОДАЖИ</span>
+                            <strong>{{ formatPrice(route.sale_rub || 0) }}₽</strong>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <!-- Кнопки действий -->
-            <div class="form-actions" style="margin-top: 16px;">
+            <div class="form-actions" style="margin-top: 24px;">
                 <button @click="saveCalculation" class="btn-secondary">Сохранить расчёт</button>
                 <button @click="saveAsPosition" class="btn-secondary">Сохранить в Позиции</button>
             </div>
@@ -374,147 +359,63 @@ window.QuickModeV3 = {
     
     data() {
         return {
-            // ПОЗИЦИЯ (Position) - ЧТО мы продаем
-            position: {
-                name: '',
-                category: '',
-                description: '',
-                customization: '',
-                photos: []
-            },
+            // Основные поля
+            productName: '',
+            category: '',
+            factoryUrl: '',
+            priceYuan: 0,
+            quantity: 1000,
+            markup: 1.7,
             
-            // РАСЧЁТ (Calculation) - весь расчёт от фабрики
-            calculation: {
-                // Фабрика
-                factory_url: '',
-                
-                // Основной расчёт
-                price_yuan: 0,
-                quantity: 1000,
-                production_time_days: 0,
-                
-                // Режим расчёта
-                detailedMode: false,
-                weight_kg: 0.2,
-                
-                // Паккинг (если детальный)
-                packing_units_per_box: 0,
-                packing_box_weight: 0,
-                packing_box_length: 0,
-                packing_box_width: 0,
-                packing_box_height: 0,
-                
-                // Образец (отдельный блок)
-                sample_time_days: 0,
-                sample_price_yuan: 0,
-                
-                // Наценка (в конце)
-                markup: 1.7
-            },
+            // Режим расчёта
+            detailedMode: false,
             
-            availableCategories: [],
+            // Вес (быстрый режим)
+            weightKg: 0.2,
+            
+            // Паккинг (детальный режим)
+            packingUnitsPerBox: 0,
+            packingBoxWeight: 0,
+            packingBoxLength: 0,
+            packingBoxWidth: 0,
+            packingBoxHeight: 0,
+            
+            // Состояние
             isCalculating: false,
-            result: null
+            result: null,
+            expandedRoutes: {}, // Отслеживание развернутых маршрутов
+            availableCategories: []
         };
-    },
-    
-    computed: {
-        calculatedWeightPerUnit() {
-            if (!this.calculation.detailedMode) return null;
-            
-            if (!this.calculation.packing_units_per_box || !this.calculation.packing_box_weight) {
-                return null;
-            }
-            
-            return (this.calculation.packing_box_weight / this.calculation.packing_units_per_box).toFixed(4);
-        },
-        
-        calculatedBoxVolume() {
-            if (!this.calculation.detailedMode) return null;
-            
-            const l = this.calculation.packing_box_length;
-            const w = this.calculation.packing_box_width;
-            const h = this.calculation.packing_box_height;
-            
-            if (!l || !w || !h) return null;
-            
-            return (l * w * h).toFixed(4);
-        },
-        
-        calculatedDensity() {
-            if (!this.calculation.detailedMode) return null;
-            
-            const volume = this.calculatedBoxVolume;
-            const weight = this.calculation.packing_box_weight;
-            
-            if (!volume || !weight) return null;
-            
-            return (weight / parseFloat(volume)).toFixed(1);
-        },
-        
-        isFormValid() {
-            // Проверка позиции
-            if (!this.position.name || !this.calculation.price_yuan || !this.calculation.quantity) {
-                return false;
-            }
-            
-            // Проверка расчёта по режиму
-            if (this.calculation.detailedMode) {
-                return this.calculation.packing_units_per_box > 0 &&
-                       this.calculation.packing_box_weight > 0 &&
-                       this.calculation.packing_box_length > 0 &&
-                       this.calculation.packing_box_width > 0 &&
-                       this.calculation.packing_box_height > 0;
-            } else {
-                return this.calculation.weight_kg > 0;
-            }
-        }
-    },
-    
-    watch: {
-        // Автоопределение категории при изменении названия товара
-        'position.name'(newName) {
-            if (newName && newName.length > 2) {
-                clearTimeout(this._categoryDetectTimer);
-                this._categoryDetectTimer = setTimeout(() => {
-                    this.detectCategory(newName);
-                }, 500);
-            }
-        }
     },
     
     async mounted() {
         await this.loadCategories();
     },
     
+    
     methods: {
         async loadCategories() {
             try {
-                const v3 = window.useCalculationV3();
-                const categories = await v3.getCategories();
-                this.availableCategories = categories.map(c => c.category || c.name || c);
+                const response = await axios.get(`${window.location.origin}/api/v3/categories`);
+                const data = response.data;
+                this.availableCategories = data.categories.map(c => c.category || c.name || c);
                 console.log('✅ Загружено категорий:', this.availableCategories.length);
             } catch (error) {
                 console.error('❌ Ошибка загрузки категорий:', error);
             }
         },
         
-        detectCategory(productName) {
-            if (!productName || !this.availableCategories.length) return;
+        detectCategory() {
+            if (!this.productName || this.productName.length < 2) return;
             
-            const nameLower = productName.toLowerCase();
-            
-            // Ищем категорию по вхождению названия
+            const nameLower = this.productName.toLowerCase();
             const detected = this.availableCategories.find(cat => 
                 nameLower.includes(cat.toLowerCase())
             );
             
-            if (detected && detected !== this.position.category) {
-                this.position.category = detected;
+            if (detected && detected !== this.category) {
+                this.category = detected;
                 console.log('✅ Автоопределена категория:', detected);
-            } else if (!detected && !this.position.category) {
-                this.position.category = 'Новая категория';
-                console.log('⚠️ Категория не определена, установлена "Новая категория"');
             }
         },
         
@@ -527,24 +428,24 @@ window.QuickModeV3 = {
                 
                 // Подготавливаем данные для API
                 const requestData = {
-                    product_name: this.position.name,
-                    product_url: this.calculation.factory_url || '',
-                    price_yuan: this.calculation.price_yuan,
-                    quantity: this.calculation.quantity,
-                    markup: this.calculation.markup,
-                    forced_category: this.position.category || undefined,
-                    is_precise_calculation: this.calculation.detailedMode
+                    product_name: this.productName,
+                    product_url: this.factoryUrl || '',
+                    price_yuan: this.priceYuan,
+                    quantity: this.quantity,
+                    markup: this.markup,
+                    forced_category: this.category || undefined,
+                    is_precise_calculation: this.detailedMode
                 };
                 
                 // Добавляем данные упаковки или веса
-                if (this.calculation.detailedMode) {
-                    requestData.packing_units_per_box = this.calculation.packing_units_per_box;
-                    requestData.packing_box_weight = this.calculation.packing_box_weight;
-                    requestData.packing_box_length = this.calculation.packing_box_length;
-                    requestData.packing_box_width = this.calculation.packing_box_width;
-                    requestData.packing_box_height = this.calculation.packing_box_height;
+                if (this.detailedMode) {
+                    requestData.packing_units_per_box = this.packingUnitsPerBox;
+                    requestData.packing_box_weight = this.packingBoxWeight;
+                    requestData.packing_box_length = this.packingBoxLength;
+                    requestData.packing_box_width = this.packingBoxWidth;
+                    requestData.packing_box_height = this.packingBoxHeight;
                 } else {
-                    requestData.weight_kg = this.calculation.weight_kg;
+                    requestData.weight_kg = this.weightKg;
                 }
                 
                 console.log('📤 Отправка данных на расчет:', requestData);
@@ -566,56 +467,17 @@ window.QuickModeV3 = {
         
         reset() {
             this.result = null;
-            this.position.name = '';
-            this.position.category = '';
-            this.position.description = '';
-            this.position.customization = '';
-            this.position.photos = [];
+            this.productName = '';
+            this.factoryUrl = '';
+            this.priceYuan = 0;
+            this.quantity = 1000;
+            this.weightKg = 0.2;
+            this.markup = 1.7;
+            this.expandedRoutes = {};
         },
         
-        selectFactory() {
-            alert('Функция выбора фабрики будет реализована в следующем этапе');
-        },
-        
-        saveCalculation() {
-            alert('Функция сохранения расчёта будет реализована');
-        },
-        
-        saveAsPosition() {
-            this.$emit('save-as-position', {
-                position: this.position,
-                calculation: this.calculation,
-                result: this.result
-            });
-        },
-        
-        // Методы работы с фотографиями
-        handlePhotoSelect(event) {
-            const files = Array.from(event.target.files);
-            this.addPhotos(files);
-        },
-        
-        handlePhotoDrop(event) {
-            const files = Array.from(event.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-            this.addPhotos(files);
-        },
-        
-        addPhotos(files) {
-            files.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.position.photos.push({
-                        file: file,
-                        name: file.name,
-                        preview: e.target.result
-                    });
-                };
-                reader.readAsDataURL(file);
-            });
-        },
-        
-        removePhoto(index) {
-            this.position.photos.splice(index, 1);
+        toggleRoute(key) {
+            this.$set(this.expandedRoutes, key, !this.expandedRoutes[key]);
         },
         
         formatRouteName(key) {

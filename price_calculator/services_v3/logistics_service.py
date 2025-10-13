@@ -128,3 +128,4 @@ class LogisticsService(BaseService[LogisticsRoute]):
         self.db.commit()
         return deleted
 
+

@@ -223,12 +223,14 @@ class KPGoogleSheetsGenerator:
                     }
                 
                 # Добавляем ценовое предложение
+                # row[7] = price_offer_id, row[8] = quantity, row[9] = route, 
+                # row[10] = price_usd, row[11] = price_rub, row[12] = delivery_time_days
                 products_grouped[product_id]['offers'].append({
-                    'quantity': row[7],
-                    'route': row[8],
-                    'price_usd': float(row[9]) if row[9] else None,
-                    'price_rub': float(row[10]) if row[10] else None,
-                    'delivery_days': row[11]
+                    'quantity': row[8],
+                    'route': row[9],
+                    'price_usd': float(row[10]) if row[10] else None,
+                    'price_rub': float(row[11]) if row[11] else None,
+                    'delivery_days': row[12]
                 })
             
             # Получаем все изображения для каждого товара

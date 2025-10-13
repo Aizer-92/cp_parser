@@ -71,3 +71,4 @@ class FactoryService(BaseService[Factory]):
         factory = self.create(factory_data)
         return factory, True
 
+

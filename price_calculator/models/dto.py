@@ -5,7 +5,7 @@ Data Transfer Objects (DTOs) для API v3
 Соответствует спецификации DATA_CONTRACT.md v3.0
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, model_validator
 from typing import Optional, Dict, List, Literal, Any
 from datetime import datetime
 
@@ -61,8 +61,8 @@ class ProductInputDTO(BaseModel):
     product_name: str = Field(..., min_length=1, max_length=500, description="Название товара")
     price_yuan: float = Field(..., gt=0, description="Цена за единицу в юанях")
     quantity: int = Field(..., gt=0, description="Количество единиц")
-    weight_kg: float = Field(..., gt=0, description="Вес единицы товара в кг")
-    markup: float = Field(default=1.7, ge=1.0, description="Наценка (1.7 = 70% наценка)")
+    weight_kg: Optional[float] = Field(None, gt=0, description="Вес единицы товара в кг (опционально для детального расчёта)")
+    markup: float = Field(default=1.7, gt=0, description="Наценка (1.45 = 45% наценка, 1.7 = 70% наценка)")
     
     # Опциональные поля
     product_url: Optional[str] = Field(None, max_length=1000, description="URL товара")
@@ -85,20 +85,35 @@ class ProductInputDTO(BaseModel):
     
     @validator('markup')
     def validate_markup(cls, v):
-        """Наценка должна быть >= 1.0 (минимум 100% от себестоимости)"""
-        if v < 1.0:
-            raise ValueError('Наценка должна быть >= 1.0 (100% от себестоимости)')
+        """Наценка должна быть > 0 (например, 1.45 = 45% наценки, 1.7 = 70% наценки)"""
+        if v <= 0:
+            raise ValueError('Наценка должна быть больше 0')
         return v
     
-    @validator('packing_units_per_box')
-    def validate_packing_consistency(cls, v, values):
-        """Если указан один параметр упаковки, должны быть указаны все"""
-        if v is not None:
-            required_fields = ['packing_box_weight', 'packing_box_length', 'packing_box_width', 'packing_box_height']
-            for field in required_fields:
-                if values.get(field) is None:
-                    raise ValueError(f'Для точного расчёта требуются все параметры упаковки: {", ".join(required_fields)}')
-        return v
+    @model_validator(mode='after')
+    def validate_and_calculate_weight(self):
+        """Валидация режима расчёта и автоматический расчёт веса"""
+        if self.is_precise_calculation:
+            # Проверяем все поля упаковки
+            if not all([
+                self.packing_units_per_box,
+                self.packing_box_weight,
+                self.packing_box_length,
+                self.packing_box_width,
+                self.packing_box_height
+            ]):
+                raise ValueError("Для точного расчёта требуются все параметры упаковки")
+            
+            # Автоматически рассчитываем вес единицы если не указан
+            if not self.weight_kg:
+                self.weight_kg = self.packing_box_weight / self.packing_units_per_box
+                print(f"✅ Вес единицы рассчитан автоматически: {self.weight_kg:.4f} кг")
+        else:
+            # Для быстрого режима weight_kg обязателен
+            if not self.weight_kg or self.weight_kg <= 0:
+                raise ValueError("Для быстрого расчёта укажите вес единицы товара (weight_kg)")
+        
+        return self
     
     class Config:
         json_schema_extra = {
