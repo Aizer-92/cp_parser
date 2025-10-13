@@ -662,6 +662,76 @@ class KPGoogleSheetsGenerator:
         except Exception as e:
             print(f"⚠️  [Google Sheets] Ошибка установки прав: {e}")
     
+    def copy_info_sheets_from_template(self, destination_spreadsheet_id):
+        """Копирует информационные листы (Таймлайн, Особенности, Сводка) из шаблона"""
+        if not self.sheets_service or not self.drive_service:
+            print("⚠️  [Google Sheets] API не инициализированы - пропускаю копирование листов")
+            return
+        
+        # ID шаблона из переменной окружения
+        template_id = os.environ.get('GOOGLE_SHEETS_TEMPLATE_ID', '1z_sxPTsIM3N9W3iWXtklCC0ygjKs5vs-gX3zZ-ug0J4')
+        
+        if not template_id:
+            print("⚠️  [Google Sheets] GOOGLE_SHEETS_TEMPLATE_ID не указан - пропускаю копирование листов")
+            return
+        
+        # Листы для копирования
+        info_sheets = ['Таймлайн', 'Особенности', 'Сводка']
+        
+        try:
+            # Получаем список листов в шаблоне
+            template = self.sheets_service.spreadsheets().get(
+                spreadsheetId=template_id
+            ).execute()
+            
+            template_sheets = template.get('sheets', [])
+            
+            # Находим листы по названию
+            copied_count = 0
+            for sheet_name in info_sheets:
+                matching_sheets = [s for s in template_sheets if s['properties']['title'] == sheet_name]
+                
+                if matching_sheets:
+                    source_sheet = matching_sheets[0]
+                    source_sheet_id = source_sheet['properties']['sheetId']
+                    
+                    print(f"📄 [Google Sheets] Копирую лист '{sheet_name}' из шаблона...")
+                    
+                    try:
+                        # Копируем лист из шаблона в новый файл
+                        copy_request = {
+                            'destinationSpreadsheetId': destination_spreadsheet_id
+                        }
+                        
+                        result = self.sheets_service.spreadsheets().sheets().copyTo(
+                            spreadsheetId=template_id,
+                            sheetId=source_sheet_id,
+                            body=copy_request
+                        ).execute()
+                        
+                        copied_count += 1
+                        print(f"   ✅ Лист '{sheet_name}' скопирован (ID: {result['sheetId']})")
+                        
+                    except HttpError as copy_error:
+                        print(f"   ⚠️  Не удалось скопировать лист '{sheet_name}': HTTP {copy_error.resp.status}")
+                        print(f"      {copy_error}")
+                else:
+                    print(f"   ⚠️  Лист '{sheet_name}' не найден в шаблоне")
+            
+            if copied_count > 0:
+                print(f"✅ [Google Sheets] Скопировано {copied_count} информационных листов из шаблона")
+            else:
+                print(f"⚠️  [Google Sheets] Не удалось скопировать листы из шаблона")
+                
+        except HttpError as e:
+            print(f"❌ [Google Sheets] Ошибка доступа к шаблону {template_id}: HTTP {e.resp.status}")
+            if e.resp.status == 404:
+                print(f"   Шаблон не найден. Проверь GOOGLE_SHEETS_TEMPLATE_ID")
+            elif e.resp.status == 403:
+                print(f"   Нет доступа к шаблону. Расшарь шаблон с Service Account!")
+        except Exception as e:
+            print(f"❌ [Google Sheets] Ошибка копирования листов: {e}")
+    
     def update_cells(self, spreadsheet_id, range_name, values):
         """Обновляет ячейки в Google Spreadsheet"""
         if not self.sheets_service:
@@ -1056,7 +1126,11 @@ class KPGoogleSheetsGenerator:
         # Применяем форматирование
         self.format_sheet(spreadsheet_id)
         
-        print(f"✅ [Google Sheets] КП создано: {spreadsheet_url}")
+        # Копируем информационные листы из шаблона
+        print(f"\n📋 [Google Sheets] Копирую информационные листы из шаблона...")
+        self.copy_info_sheets_from_template(spreadsheet_id)
+        
+        print(f"\n✅ [Google Sheets] КП создано: {spreadsheet_url}")
         
         return {
             'spreadsheet_id': spreadsheet_id,
