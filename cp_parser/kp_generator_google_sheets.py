@@ -272,7 +272,7 @@ class KPGoogleSheetsGenerator:
         current_row += 1
         
         # ЗАГОЛОВОК ТАБЛИЦЫ
-        rows.append(['Фото', 'Название', 'Дизайн', 'Характеристики', 'Тираж', 'USD/шт', 'RUB/шт', 'Маршрут', 'Срок', 'Доп. фото'])
+        rows.append(['Фото', 'Название', 'Дизайн', 'Характеристики', 'Образец', 'Тираж', 'USD/шт', 'RUB/шт', 'Маршрут', 'Срок', 'Доп. фото'])
         current_row += 1
         
         # Генерируем товары
@@ -284,7 +284,8 @@ class KPGoogleSheetsGenerator:
             print(f"   Обрабатываю: {product_info['name']} ({len(offers)} вариантов, {len(images)} изображений)")
             
             # Подготовка данных
-            main_image = f'=IMAGE("{images[0]}"; 2)' if images else ''
+            # ФОТО: параметр 1 = сохранять пропорции (не искажать)
+            main_image = f'=IMAGE("{images[0]}"; 1)' if images else ''
             
             # ДИЗАЙН - текстовое поле из БД (custom_field)
             design_text = product_info.get('custom_field') or '-'
@@ -293,19 +294,24 @@ class KPGoogleSheetsGenerator:
             characteristics = []
             if product_info['description']:
                 characteristics.append(product_info['description'][:150])
-            # Добавляем образец если есть
-            if product_info['sample_price']:
-                characteristics.append(f"Образец: ${product_info['sample_price']:.2f}")
-            if product_info['sample_delivery_time']:
-                characteristics.append(f"Срок образца: {product_info['sample_delivery_time']} дн.")
             characteristics_text = '\n'.join(characteristics) if characteristics else '-'
             
-            # Дополнительные фото (2-3-4-5 изображения, все кроме первого)
-            additional_photos = []
+            # ОБРАЗЕЦ - отдельная строка (не в характеристиках)
+            sample_info = []
+            if product_info['sample_price']:
+                sample_info.append(f"Образец: ${product_info['sample_price']:.2f}")
+            if product_info['sample_delivery_time']:
+                sample_info.append(f"Срок: {product_info['sample_delivery_time']} дн.")
+            sample_text = ' | '.join(sample_info) if sample_info else '-'
+            
+            # Дополнительные фото (2-3-4-5 изображения) - ОТДЕЛЬНО каждое в своей строке
+            additional_photos_text = ''
             if len(images) > 1:
-                for img_url in images[1:5]:  # До 4 дополнительных (со 2-го по 5-е)
-                    additional_photos.append(f'=IMAGE("{img_url}"; 1)')
-            additional_photos_text = ' '.join(additional_photos) if additional_photos else ''
+                # Берем до 3 дополнительных фото (2-е, 3-е, 4-е)
+                additional_images = images[1:4]
+                # Формируем текст с IMAGE формулами, каждая на новой строке
+                photo_formulas = [f'=IMAGE("{img}"; 1)' for img in additional_images]
+                additional_photos_text = '\n'.join(photo_formulas)
             
             # Запоминаем начальную строку для merge
             start_row = current_row
@@ -319,6 +325,7 @@ class KPGoogleSheetsGenerator:
                         product_info['name'],  # Название
                         design_text,  # Дизайн (текст из БД)
                         characteristics_text,  # Характеристики
+                        sample_text,  # Образец (будет объединено)
                         f"{offer['quantity']:,.0f}".replace(',', ' '),  # Тираж
                         f"${offer['price_usd']:.2f}" if offer['price_usd'] else '-',  # USD
                         f"₽{offer['price_rub']:.2f}" if offer['price_rub'] else '-',  # RUB
@@ -333,6 +340,7 @@ class KPGoogleSheetsGenerator:
                         '',  # Название (пустая)
                         '',  # Дизайн (пустая)
                         '',  # Характеристики (пустая)
+                        '',  # Образец (пустая, будет merge)
                         f"{offer['quantity']:,.0f}".replace(',', ' '),  # Тираж
                         f"${offer['price_usd']:.2f}" if offer['price_usd'] else '-',  # USD
                         f"₽{offer['price_rub']:.2f}" if offer['price_rub'] else '-',  # RUB
@@ -344,7 +352,7 @@ class KPGoogleSheetsGenerator:
                 rows.append(row_data)
                 current_row += 1
             
-            # Запоминаем merge для фото и доп. фото (колонки 0 и 9)
+            # Запоминаем merge для фото, названия, дизайна, характеристик, образца и доп. фото
             if len(offers) > 1:
                 end_row = current_row - 1
                 # Merge для основного фото (колонка A = 0)
@@ -375,12 +383,19 @@ class KPGoogleSheetsGenerator:
                     'startColumnIndex': 3,
                     'endColumnIndex': 4
                 })
-                # Merge для доп. фото (колонка J = 9)
+                # Merge для образца (колонка E = 4)
                 merge_requests.append({
                     'startRowIndex': start_row,
                     'endRowIndex': end_row + 1,
-                    'startColumnIndex': 9,
-                    'endColumnIndex': 10
+                    'startColumnIndex': 4,
+                    'endColumnIndex': 5
+                })
+                # Merge для доп. фото (колонка K = 10)
+                merge_requests.append({
+                    'startRowIndex': start_row,
+                    'endRowIndex': end_row + 1,
+                    'startColumnIndex': 10,
+                    'endColumnIndex': 11
                 })
         
         return rows, merge_requests
@@ -654,7 +669,7 @@ class KPGoogleSheetsGenerator:
                         'startRowIndex': 0,
                         'endRowIndex': 1,
                         'startColumnIndex': 0,
-                        'endColumnIndex': 10
+                        'endColumnIndex': 11
                     },
                     'cell': {
                         'userEnteredFormat': {
@@ -677,7 +692,7 @@ class KPGoogleSheetsGenerator:
                         'startRowIndex': 1,
                         'endRowIndex': 2,
                         'startColumnIndex': 0,
-                        'endColumnIndex': 10
+                        'endColumnIndex': 11
                     },
                     'cell': {
                         'userEnteredFormat': {
@@ -699,7 +714,7 @@ class KPGoogleSheetsGenerator:
                         'startRowIndex': 3,
                         'endRowIndex': 4,
                         'startColumnIndex': 0,
-                        'endColumnIndex': 10
+                        'endColumnIndex': 11
                     },
                     'cell': {
                         'userEnteredFormat': {
@@ -719,27 +734,47 @@ class KPGoogleSheetsGenerator:
                 }
             })
             
-            # 4. Автоподбор ширины колонок (до 10 колонок для таблицы)
+            # 4. ШИРИНА колонки A (Фото) - узкая, 120 пикселей
+            requests.append({
+                'updateDimensionProperties': {
+                    'range': {
+                        'sheetId': 0,
+                        'dimension': 'COLUMNS',
+                        'startIndex': 0,
+                        'endIndex': 1
+                    },
+                    'properties': {
+                        'pixelSize': 120
+                    },
+                    'fields': 'pixelSize'
+                }
+            })
+            
+            # 5. Автоподбор ширины остальных колонок (B-K, индексы 1-11)
             requests.append({
                 'autoResizeDimensions': {
                     'dimensions': {
                         'sheetId': 0,
                         'dimension': 'COLUMNS',
-                        'startIndex': 0,
-                        'endIndex': 10
+                        'startIndex': 1,
+                        'endIndex': 11
                     }
                 }
             })
             
-            # 5. Автоподбор высоты строк для таблицы
+            # 6. ВЫСОТА строк с товарами - 200 пикселей (больше места для фото)
             requests.append({
-                'autoResizeDimensions': {
-                    'dimensions': {
+                'updateDimensionProperties': {
+                    'range': {
                         'sheetId': 0,
                         'dimension': 'ROWS',
-                        'startIndex': 0,
+                        'startIndex': 4,  # Начиная с 5-й строки (первые товары)
                         'endIndex': 1000
-                    }
+                    },
+                    'properties': {
+                        'pixelSize': 200
+                    },
+                    'fields': 'pixelSize'
                 }
             })
             
