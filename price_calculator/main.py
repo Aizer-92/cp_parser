@@ -4,7 +4,7 @@ Price Calculator Web Application
 FastAPI + Vue.js интерфейс для расчета цен товаров
 """
 
-from fastapi import FastAPI, HTTPException, Request, Response, Depends
+from fastapi import FastAPI, HTTPException, Request, Response, Depends, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
@@ -2498,6 +2498,17 @@ async def v2_page(request: Request):
     
     return FileResponse('index_v2.html')
 
+# 🆕 V3 - Новая архитектура с позициями и расчётами
+@app.get("/v3", response_class=HTMLResponse)
+async def v3_page(request: Request):
+    """V3 интерфейс с позициями, фабриками и расчётами"""
+    # Проверяем авторизацию
+    session_token = request.cookies.get("session_token")
+    if not verify_session(session_token):
+        return RedirectResponse(url="/login", status_code=302)
+    
+    return FileResponse('index_v3.html')
+
 @app.get("/precise", response_class=HTMLResponse)
 async def precise_page(request: Request):
     return await serve_spa(request)
@@ -2509,6 +2520,82 @@ async def history_page(request: Request):
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
     return await serve_spa(request)
+
+
+# ==================== UPLOAD API ====================
+
+@app.post("/api/v3/upload/photo")
+async def upload_photo(
+    file: UploadFile = File(...),
+    position_id: int = Form(...)
+):
+    """
+    Загрузка фото на SFTP сервер Beget Cloud
+    
+    Args:
+        file: файл изображения
+        position_id: ID позиции для организации файлов
+        
+    Returns:
+        {"url": "https://..."}
+    """
+    try:
+        # Проверка типа файла
+        allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp']
+        if file.content_type not in allowed_types:
+            raise HTTPException(400, f"Недопустимый тип файла: {file.content_type}")
+        
+        # Читаем содержимое файла
+        content = await file.read()
+        
+        # Загружаем на SFTP
+        from services.sftp_uploader import SFTPUploader
+        uploader = SFTPUploader()
+        url = uploader.upload_photo(content, file.filename, position_id)
+        
+        return {"url": url}
+        
+    except Exception as e:
+        print(f"❌ Ошибка загрузки фото: {e}")
+        raise HTTPException(500, f"Ошибка загрузки: {str(e)}")
+
+
+@app.post("/api/v3/upload/photos")
+async def upload_multiple_photos(
+    files: List[UploadFile] = File(...),
+    position_id: int = Form(...)
+):
+    """
+    Загрузка нескольких фото
+    
+    Args:
+        files: список файлов изображений
+        position_id: ID позиции
+        
+    Returns:
+        {"urls": ["https://...", ...]}
+    """
+    try:
+        from services.sftp_uploader import SFTPUploader
+        uploader = SFTPUploader()
+        
+        urls = []
+        for file in files:
+            # Проверка типа
+            allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp']
+            if file.content_type not in allowed_types:
+                continue
+            
+            content = await file.read()
+            url = uploader.upload_photo(content, file.filename, position_id)
+            urls.append(url)
+        
+        return {"urls": urls}
+        
+    except Exception as e:
+        print(f"❌ Ошибка загрузки фото: {e}")
+        raise HTTPException(500, f"Ошибка загрузки: {str(e)}")
+
 
 if __name__ == "__main__":
     import uvicorn

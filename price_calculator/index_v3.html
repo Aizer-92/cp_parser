@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Price Calculator V3</title>
+    
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <!-- V3 Styles -->
+    <link rel="stylesheet" href="/static/css/v3-styles.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f3f4f6;
+            color: #111827;
+        }
+        
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    
+    <!-- V2 API Composable (переиспользуем) -->
+    <script src="/static/js/v2/useCalculationV3.js"></script>
+    
+    <!-- V3 Composables -->
+    <script src="/static/js/v3/useFactoriesV3.js"></script>
+    <script src="/static/js/v3/usePositionsV3.js"></script>
+    <script src="/static/js/v3/useCalculationsV3.js"></script>
+    <script src="/static/js/v3/useSFTPUpload.js"></script>
+    
+    <!-- V3 Components -->
+    <script src="/static/js/v3/QuickModeV3.js"></script>
+    <script src="/static/js/v3/PositionsListV3.js"></script>
+    <script src="/static/js/v3/PositionFormV3.js"></script>
+    <script src="/static/js/v3/PriceCalculatorAppV3.js"></script>
+    
+    <!-- Заглушки для еще не созданных компонентов -->
+    <script>
+        // Временные заглушки (будут заменены реальными компонентами)
+        window.FactoriesManagerV3 = {
+            template: '<div class="card"><h2>Фабрики</h2><p>В разработке...</p></div>'
+        };
+        
+        window.HistoryV3 = {
+            template: '<div class="card"><h2>История</h2><p>В разработке...</p></div>'
+        };
+    </script>
+    
+    <!-- Инициализация приложения -->
+    <script>
+        const { createApp } = Vue;
+        
+        const app = createApp(window.PriceCalculatorAppV3);
+        
+        // Регистрируем компоненты
+        app.component('QuickModeV3', window.QuickModeV3);
+        app.component('PositionsListV3', window.PositionsListV3);
+        app.component('PositionFormV3', window.PositionFormV3);
+        app.component('FactoriesManagerV3', window.FactoriesManagerV3);
+        app.component('HistoryV3', window.HistoryV3);
+        
+        app.mount('#app');
+        
+        console.log('✅ Price Calculator V3 запущен!');
+    </script>
+</body>
+</html>
+

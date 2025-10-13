@@ -1,0 +1,563 @@
+/* V3 Styles - Минималистичный дизайн без эмодзи */
+
+:root {
+    --color-primary: #3b82f6;
+    --color-primary-hover: #2563eb;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+    --color-gray-50: #f9fafb;
+    --color-gray-100: #f3f4f6;
+    --color-gray-200: #e5e7eb;
+    --color-gray-300: #d1d5db;
+    --color-gray-400: #9ca3af;
+    --color-gray-500: #6b7280;
+    --color-gray-700: #374151;
+    --color-gray-900: #111827;
+    --border-radius: 8px;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* App Container */
+.app-v3 {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Tabs Navigation */
+.tabs-nav {
+    display: flex;
+    gap: 8px;
+    background: white;
+    padding: 12px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+}
+
+.tab {
+    flex: 1;
+    padding: 12px 24px;
+    background: transparent;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab:hover {
+    background: var(--color-gray-100);
+}
+
+.tab-active {
+    background: var(--color-primary);
+    color: white;
+}
+
+/* Tab Content */
+.tab-content {
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Card */
+.card {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.card-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0;
+}
+
+/* Form */
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-gray-700);
+}
+
+.form-input {
+    padding: 10px 12px;
+    border: 1px solid var(--color-gray-300);
+    border-radius: var(--border-radius);
+    font-size: 15px;
+    transition: all 0.2s;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+}
+
+.flex-1 { flex: 1; }
+.flex-2 { flex: 2; }
+
+.input-with-button {
+    display: flex;
+    gap: 8px;
+}
+
+.input-with-button .form-input {
+    flex: 1;
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    gap: 12px;
+    padding-top: 12px;
+}
+
+/* Buttons */
+.btn-primary,
+.btn-secondary,
+.btn-text,
+.btn-sm {
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: var(--color-primary);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: var(--color-gray-100);
+    color: var(--color-gray-700);
+}
+
+.btn-secondary:hover {
+    background: var(--color-gray-200);
+}
+
+.btn-text {
+    background: transparent;
+    color: var(--color-primary);
+    padding: 8px 12px;
+}
+
+.btn-text:hover {
+    background: var(--color-gray-100);
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.btn-close {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    color: var(--color-gray-500);
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--border-radius);
+}
+
+.btn-close:hover {
+    background: var(--color-gray-100);
+}
+
+/* Routes List */
+.routes-list {
+    display: grid;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.route-card {
+    background: var(--color-gray-50);
+    border: 2px solid var(--color-gray-200);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    transition: all 0.2s;
+}
+
+.route-card:hover {
+    border-color: var(--color-gray-300);
+}
+
+.route-best {
+    border-color: var(--color-success);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), transparent);
+}
+
+.route-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.route-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0;
+}
+
+.badge-best {
+    background: var(--color-success);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.route-prices {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.price-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 15px;
+}
+
+.price-label {
+    color: var(--color-gray-600);
+}
+
+.price-value {
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.price-value.primary {
+    color: var(--color-primary);
+}
+
+.price-value.success {
+    color: var(--color-success);
+}
+
+.route-total {
+    padding-top: 12px;
+    border-top: 1px solid var(--color-gray-200);
+    font-size: 14px;
+    color: var(--color-gray-600);
+    margin-bottom: 12px;
+}
+
+.route-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s;
+}
+
+.modal-content {
+    background: white;
+    border-radius: var(--border-radius);
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: auto;
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--color-gray-200);
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-body pre {
+    background: var(--color-gray-50);
+    padding: 16px;
+    border-radius: var(--border-radius);
+    overflow-x: auto;
+    font-size: 13px;
+}
+
+/* Positions List */
+.search-bar {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.positions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.position-card {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.position-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.position-photo {
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    border-radius: var(--border-radius);
+    margin-bottom: 16px;
+}
+
+.position-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.position-info {
+    margin-bottom: 12px;
+}
+
+.position-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin-bottom: 8px;
+}
+
+.position-category {
+    color: var(--color-gray-600);
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.position-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--color-gray-500);
+}
+
+.position-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-gray-200);
+}
+
+/* Position Form */
+.form-section {
+    margin-bottom: 24px;
+}
+
+.form-section h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin-bottom: 16px;
+}
+
+.form-section textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Photo Dropzone */
+.photo-dropzone {
+    border: 2px dashed var(--color-gray-300);
+    border-radius: var(--border-radius);
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--color-gray-50);
+}
+
+.photo-dropzone:hover,
+.dropzone-active {
+    border-color: var(--color-primary);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.photos-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.photo-item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.photo-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.photo-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.photo-item:hover .photo-overlay {
+    opacity: 1;
+}
+
+.photo-badge {
+    background: var(--color-primary);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+}
+
+.photo-badge.secondary {
+    background: var(--color-gray-700);
+}
+
+.photo-remove {
+    background: var(--color-danger);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.upload-progress {
+    margin-top: 12px;
+    color: var(--color-primary);
+    font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .tabs-nav {
+        flex-direction: column;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .input-with-button {
+        flex-direction: column;
+    }
+    
+    .positions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .photos-preview {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+}
+

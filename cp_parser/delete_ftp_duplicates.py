@@ -5,12 +5,15 @@
 """
 
 import csv
-from ftplib import FTP
+from ftplib import FTP_TLS
 import os
-from dotenv import load_dotenv
 from collections import defaultdict
 
-load_dotenv()
+# FTP настройки (Beget Cloud Storage)
+FTP_HOST = "ftp.ru1.storage.beget.cloud"
+FTP_USER = "RECD00AQJIM4300MLJ0W"
+FTP_PASS = "FIucJ3i9iIWZ5ieJvabvI0OxEn2Yv4gG5XRUeSNf"
+FTP_DIR = "/73d16f7545b3-promogoods/images"
 
 
 def load_duplicates_summary(csv_file):
@@ -90,12 +93,15 @@ def delete_files_from_ftp(files_to_delete, dry_run=True):
         return 0, 0
     
     print("\n🔌 Подключение к FTP...")
+    print(f"   Host: {FTP_HOST}")
+    print(f"   User: {FTP_USER}")
+    print(f"   Path: {FTP_DIR}")
     
     try:
-        ftp = FTP()
-        ftp.connect(os.getenv('FTP_HOST'), int(os.getenv('FTP_PORT', 21)))
-        ftp.login(os.getenv('FTP_USER'), os.getenv('FTP_PASSWORD'))
-        ftp.cwd('/73d16f7545b3-promogoods/images')
+        ftp = FTP_TLS(FTP_HOST)
+        ftp.login(FTP_USER, FTP_PASS)
+        ftp.prot_p()
+        ftp.cwd(FTP_DIR)
         
         print("✅ Подключено к FTP")
         print(f"\n🗑️  Удаление {len(files_to_delete):,} файлов...")
