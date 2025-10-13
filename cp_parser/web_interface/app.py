@@ -489,8 +489,8 @@ def products_list():
         search_mode = None  # Для определения сортировки
         if search.strip():
             # Используем только текстовый поиск (быстро и надежно)
-            print(f"🔍 [SEARCH] Используем текстовый поиск (ILIKE) с приоритетом по названию")
-            where_conditions.append("(p.name ILIKE :search OR p.description ILIKE :search)")
+            print(f"🔍 [SEARCH] Используем текстовый поиск (ILIKE) с приоритетом: название → дизайн/проект → описание")
+            where_conditions.append("(p.name ILIKE :search OR p.custom_field ILIKE :search OR pr.project_name ILIKE :search OR p.description ILIKE :search)")
             params["search"] = f"%{search.strip()}%"
             search_mode = 'active'  # Флаг для применения релевантной сортировки
         
@@ -551,15 +551,17 @@ def products_list():
             select_fields = base_select + """, (SELECT MIN(CAST(po.price_rub AS NUMERIC)) FROM price_offers po WHERE po.product_id = p.id) as min_price"""
             order_by = "min_price DESC NULLS LAST, p.id DESC"
         elif search_mode == 'active' and not sort_by:
-            # ПРИОРИТЕТ: При поиске БЕЗ явной сортировки - сортируем по релевантности (название > описание)
+            # ПРИОРИТЕТ: При поиске БЕЗ явной сортировки - сортируем по релевантности
+            # 1 = название товара, 2 = дизайн/проект, 3 = описание
             select_fields = base_select + """, 
                 CASE 
                     WHEN p.name ILIKE :search THEN 1
-                    WHEN p.description ILIKE :search THEN 2
-                    ELSE 3
+                    WHEN p.custom_field ILIKE :search OR pr.project_name ILIKE :search THEN 2
+                    WHEN p.description ILIKE :search THEN 3
+                    ELSE 4
                 END as relevance_rank"""
             order_by = "relevance_rank ASC, p.id DESC"
-            print(f"   → Сортировка: сначала по названию, потом по описанию")
+            print(f"   → Сортировка: название (1) → дизайн/проект (2) → описание (3)")
         
         # Подсчитываем общее количество с фильтрами
         count_sql = text(f"""
