@@ -56,12 +56,19 @@
                 </button>
                 
                 <button 
+                    id="google-sheets-btn"
                     onclick="generateKP('google-sheets')"
-                    class="inline-flex items-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    class="inline-flex items-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <!-- Иконка (видна по умолчанию) -->
+                    <svg id="google-sheets-icon" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
-                    Google Sheets
+                    <!-- Спиннер (скрыт по умолчанию) -->
+                    <svg id="google-sheets-spinner" class="hidden h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="google-sheets-text">Google Sheets</span>
                 </button>
             </div>
         </div>
@@ -267,6 +274,20 @@ async function generateKP(format = 'excel') {
             'pdf': 'application/pdf'
         };
         
+        // Показываем индикатор загрузки для Google Sheets
+        if (format === 'google-sheets') {
+            const btn = document.getElementById('google-sheets-btn');
+            const icon = document.getElementById('google-sheets-icon');
+            const spinner = document.getElementById('google-sheets-spinner');
+            const text = document.getElementById('google-sheets-text');
+            
+            // Отключаем кнопку и показываем спиннер
+            btn.disabled = true;
+            icon.classList.add('hidden');
+            spinner.classList.remove('hidden');
+            text.textContent = 'Генерирую...';
+        }
+        
         showNotification(`Генерирую ${formatNames[format]} файл...`, 'info');
         
         const response = await fetch(`/api/kp/generate/${format}`, {
@@ -276,12 +297,21 @@ async function generateKP(format = 'excel') {
         if (!response.ok) {
             const data = await response.json();
             showNotification('Ошибка: ' + (data.error || 'Не удалось создать файл'), 'error');
+            
+            // Возвращаем кнопку в исходное состояние
+            if (format === 'google-sheets') {
+                resetGoogleSheetsButton();
+            }
             return;
         }
         
         // Google Sheets возвращает JSON с URL
         if (format === 'google-sheets') {
             const data = await response.json();
+            
+            // Возвращаем кнопку в исходное состояние
+            resetGoogleSheetsButton();
+            
             if (data.success && data.spreadsheet_url) {
                 showNotification('Google Sheets создан! Открываю в новой вкладке...', 'success');
                 
@@ -315,6 +345,11 @@ async function generateKP(format = 'excel') {
     } catch (error) {
         console.error('Ошибка генерации:', error);
         showNotification('Ошибка генерации файла', 'error');
+        
+        // Возвращаем кнопку в исходное состояние при ошибке
+        if (format === 'google-sheets') {
+            resetGoogleSheetsButton();
+        }
     }
 }
 
@@ -368,6 +403,20 @@ function showGoogleSheetsLink(url, title) {
         const titleText = title || 'последнее КП';
         linkElement.querySelector('span').textContent = `Открыть ${titleText} в Google Sheets`;
         linkContainer.classList.remove('hidden');
+    }
+}
+
+function resetGoogleSheetsButton() {
+    const btn = document.getElementById('google-sheets-btn');
+    const icon = document.getElementById('google-sheets-icon');
+    const spinner = document.getElementById('google-sheets-spinner');
+    const text = document.getElementById('google-sheets-text');
+    
+    if (btn && icon && spinner && text) {
+        btn.disabled = false;
+        icon.classList.remove('hidden');
+        spinner.classList.add('hidden');
+        text.textContent = 'Google Sheets';
     }
 }
 </script>
