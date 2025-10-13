@@ -8,6 +8,7 @@ window.PositionsListV3 = {
             :position="editingPosition"
             @close="closeForm"
             @saved="onPositionSaved"
+            @calculate-routes="onCalculateRoutes"
         />
         
         <div class="card">
@@ -243,6 +244,13 @@ window.PositionsListV3 = {
         
         async onPositionSaved() {
             await this.loadPositions();
+        },
+        
+        async onCalculateRoutes(position) {
+            console.log('🚀 Переход на расчет маршрутов для позиции:', position);
+            
+            // Переключаемся на вкладку "Быстрый расчёт" и передаем данные позиции
+            this.$emit('switch-to-quick-calc', position);
         },
         
         confirmDelete(id) {

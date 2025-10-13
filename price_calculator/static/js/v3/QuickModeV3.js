@@ -411,6 +411,29 @@ window.QuickModeV3 = {
         };
     },
     
+    props: {
+        position: {
+            type: Object,
+            default: null
+        }
+    },
+    
+    watch: {
+        position: {
+            immediate: true,
+            handler(newPosition) {
+                if (newPosition) {
+                    console.log('📥 Получена позиция для расчета:', newPosition);
+                    this.fillFromPosition(newPosition);
+                    // Автоматически запускаем расчет через 100мс
+                    setTimeout(() => {
+                        this.calculate();
+                    }, 100);
+                }
+            }
+        }
+    },
+    
     async mounted() {
         await this.loadCategories();
     },
@@ -426,6 +449,30 @@ window.QuickModeV3 = {
             } catch (error) {
                 console.error('❌ Ошибка загрузки категорий:', error);
             }
+        },
+        
+        fillFromPosition(position) {
+            // Заполняем поля из позиции
+            this.productName = position.name || '';
+            this.category = position.category || '';
+            this.factoryUrl = position.factory_url || '';
+            this.priceYuan = position.price_yuan || 0;
+            
+            // Если есть паккинг - используем детальный режим
+            if (position.packing_units_per_box && position.packing_box_weight) {
+                this.detailedMode = true;
+                this.packingUnitsPerBox = position.packing_units_per_box;
+                this.packingBoxWeight = position.packing_box_weight;
+                this.packingBoxLength = position.packing_box_length || 0;
+                this.packingBoxWidth = position.packing_box_width || 0;
+                this.packingBoxHeight = position.packing_box_height || 0;
+            } else if (position.weight_kg) {
+                // Иначе используем простой режим
+                this.detailedMode = false;
+                this.weightKg = position.weight_kg;
+            }
+            
+            console.log('✅ Форма заполнена из позиции');
         },
         
         detectCategory() {

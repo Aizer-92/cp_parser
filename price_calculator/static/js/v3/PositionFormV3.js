@@ -30,11 +30,12 @@ window.PositionFormV3 = {
                                     placeholder="Например: Футболка хлопковая"
                                     required
                                     class="form-input"
+                                    @input="detectCategory"
                                 />
                             </div>
                             
                             <div class="form-group">
-                                <label for="category">Категория *</label>
+                                <label for="category">Категория * <span style="font-size: 12px; color: #9ca3af;">(автоопределяется)</span></label>
                                 <input
                                     id="category"
                                     v-model="form.category"
@@ -83,18 +84,29 @@ window.PositionFormV3 = {
                                     <div v-if="form.design_files_urls.length === 0" class="dropzone-placeholder">
                                         <div style="text-align: center;">
                                             <div style="font-size: 14px; color: #6b7280; margin-bottom: 12px;">
-                                                Перетащите фото сюда<br>или введите ссылку
+                                                Перетащите фото сюда, выберите файл<br>или введите ссылку
                                             </div>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                multiple
+                                                @change="handleFileSelect"
+                                                style="display: none;"
+                                                ref="fileInput"
+                                            />
+                                            <button type="button" @click="$refs.fileInput.click()" class="btn-primary btn-sm" style="margin-bottom: 8px;">
+                                                Выбрать файлы
+                                            </button>
                                             <input
                                                 v-model="photoUrl"
                                                 type="url"
-                                                placeholder="Вставьте ссылку на фото"
+                                                placeholder="Или вставьте ссылку на фото"
                                                 class="form-input"
                                                 style="margin-bottom: 8px;"
                                                 @keyup.enter="addPhoto"
                                             />
                                             <button type="button" @click="addPhoto" class="btn-secondary btn-sm">
-                                                Добавить фото
+                                                Добавить по ссылке
                                             </button>
                                         </div>
                                     </div>
@@ -107,13 +119,25 @@ window.PositionFormV3 = {
                                         </div>
                                         <div class="photo-add-more">
                                             <input
+                                                type="file"
+                                                accept="image/*"
+                                                multiple
+                                                @change="handleFileSelect"
+                                                style="display: none;"
+                                                ref="fileInputMore"
+                                            />
+                                            <button type="button" @click="$refs.fileInputMore.click()" class="btn-primary btn-sm" style="margin-bottom: 8px;">
+                                                📁 Файл
+                                            </button>
+                                            <input
                                                 v-model="photoUrl"
                                                 type="url"
-                                                placeholder="Ссылка на фото"
+                                                placeholder="Ссылка"
                                                 class="form-input"
                                                 @keyup.enter="addPhoto"
+                                                style="font-size: 12px;"
                                             />
-                                            <button type="button" @click="addPhoto" class="btn-secondary btn-sm">+</button>
+                                            <button type="button" @click="addPhoto" class="btn-secondary btn-sm">+ Ссылка</button>
                                         </div>
                                     </div>
                                 </div>
@@ -299,6 +323,7 @@ window.PositionFormV3 = {
             currentStep: 1,
             useSimpleWeight: false,
             isDragging: false,
+            availableCategories: [],
             form: {
                 name: '',
                 category: '',
@@ -336,7 +361,10 @@ window.PositionFormV3 = {
         }
     },
     
-    mounted() {
+    async mounted() {
+        // Загружаем категории для автоопределения
+        await this.loadCategories();
+        
         if (this.position) {
             this.form = { 
                 ...this.position,
@@ -424,15 +452,23 @@ window.PositionFormV3 = {
                     }
                 });
                 
+                let savedPosition;
                 if (this.isEdit) {
-                    await positionsAPI.updatePosition(this.position.id, data);
+                    savedPosition = await positionsAPI.updatePosition(this.position.id, data);
                     console.log('✅ Позиция обновлена');
                 } else {
-                    await positionsAPI.createPosition(data);
-                    console.log('✅ Позиция создана');
+                    savedPosition = await positionsAPI.createPosition(data);
+                    console.log('✅ Позиция создана:', savedPosition);
                 }
                 
-                this.$emit('saved');
+                // После создания/обновления - сразу запускаем расчет
+                if (!this.isEdit) {
+                    this.$emit('saved', savedPosition);
+                    this.$emit('calculate-routes', savedPosition);
+                } else {
+                    this.$emit('saved');
+                }
+                
                 this.close();
             } catch (error) {
                 console.error('❌ Ошибка сохранения:', error);
@@ -443,13 +479,97 @@ window.PositionFormV3 = {
             }
         },
         
+        async loadCategories() {
+            try {
+                const response = await axios.get('/api/v3/categories');
+                this.availableCategories = response.data || [];
+                console.log('✅ Категории загружены:', this.availableCategories);
+            } catch (error) {
+                console.error('❌ Ошибка загрузки категорий:', error);
+            }
+        },
+        
+        detectCategory() {
+            if (!this.form.name || this.form.name.length < 3) return;
+            
+            const name = this.form.name.toLowerCase();
+            
+            for (const cat of this.availableCategories) {
+                const category = cat.category?.toLowerCase();
+                if (!category) continue;
+                
+                // Если категория содержится в названии
+                if (name.includes(category)) {
+                    this.form.category = cat.category;
+                    console.log('✅ Категория автоопределена:', cat.category);
+                    return;
+                }
+                
+                // Или если название содержится в категории
+                if (category.includes(name)) {
+                    this.form.category = cat.category;
+                    console.log('✅ Категория автоопределена:', cat.category);
+                    return;
+                }
+            }
+        },
+        
         handleDrop(e) {
             this.isDragging = false;
+            
+            // Проверяем файлы
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                this.handleFileUpload(e.dataTransfer.files);
+                return;
+            }
+            
+            // Проверяем URL
             const url = e.dataTransfer.getData('text/plain');
             if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
                 this.form.design_files_urls.push(url);
             } else {
-                alert('Пожалуйста, перетащите ссылку на изображение (начинается с http:// или https://)');
+                alert('Пожалуйста, перетащите изображение или ссылку на него');
+            }
+        },
+        
+        handleFileSelect(e) {
+            const files = e.target.files;
+            if (files && files.length > 0) {
+                this.handleFileUpload(files);
+            }
+        },
+        
+        async handleFileUpload(files) {
+            console.log('📤 Загрузка файлов:', files.length);
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                // Проверка типа файла
+                if (!file.type.startsWith('image/')) {
+                    alert(`Файл ${file.name} не является изображением`);
+                    continue;
+                }
+                
+                try {
+                    // Создаем FormData для загрузки
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('folder', 'calc');
+                    
+                    // Загружаем на SFTP
+                    const response = await axios.post('/api/sftp/upload', formData, {
+                        headers: { 'Content-Type': 'multipart/form-data' }
+                    });
+                    
+                    if (response.data.url) {
+                        this.form.design_files_urls.push(response.data.url);
+                        console.log('✅ Фото загружено:', response.data.url);
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка загрузки фото:', error);
+                    alert(`Не удалось загрузить ${file.name}`);
+                }
             }
         },
         

@@ -18,8 +18,10 @@ window.PriceCalculatorAppV3 = {
         <div class="tab-content">
             <component
                 :is="currentTabComponent"
+                :position="positionForCalculation"
                 @save-as-position="handleSaveAsPosition"
                 @switch-tab="activeTab = $event"
+                @switch-to-quick-calc="handleSwitchToQuickCalc"
             />
         </div>
     </div>
@@ -32,7 +34,8 @@ window.PriceCalculatorAppV3 = {
                 { id: 'positions', label: 'Позиции', component: 'PositionsListV3' },
                 { id: 'quick', label: 'Быстрый расчёт', component: 'QuickModeV3' },
                 { id: 'factories', label: 'Фабрики', component: 'FactoriesManagerV3' }
-            ]
+            ],
+            positionForCalculation: null
         };
     },
     
@@ -50,6 +53,17 @@ window.PriceCalculatorAppV3 = {
             // this.$emit('create-position', data);
             // this.activeTab = 'positions';
             alert('Создание позиции будет реализовано в следующем этапе');
+        },
+        
+        handleSwitchToQuickCalc(position) {
+            console.log('🚀 Переключение на QuickMode с позицией:', position);
+            this.positionForCalculation = position;
+            this.activeTab = 'quick';
+            
+            // Очищаем данные позиции через 100мс, чтобы QuickMode успел их принять
+            setTimeout(() => {
+                this.positionForCalculation = null;
+            }, 100);
         }
     }
 };

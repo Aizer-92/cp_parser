@@ -886,6 +886,36 @@ class KPGoogleSheetsGenerator:
         except Exception as e:
             print(f"⚠️  [Google Sheets] Ошибка объединения ячеек: {e}")
     
+    def freeze_rows(self, spreadsheet_id, row_count):
+        """Закрепляет первые N строк"""
+        if not self.sheets_service:
+            return
+        
+        try:
+            requests = [{
+                'updateSheetProperties': {
+                    'properties': {
+                        'sheetId': 0,
+                        'gridProperties': {
+                            'frozenRowCount': row_count
+                        }
+                    },
+                    'fields': 'gridProperties.frozenRowCount'
+                }
+            }]
+            
+            body = {'requests': requests}
+            
+            self.sheets_service.spreadsheets().batchUpdate(
+                spreadsheetId=spreadsheet_id,
+                body=body
+            ).execute()
+            
+            print(f"✅ [Google Sheets] Закреплено {row_count} строк")
+            
+        except Exception as e:
+            print(f"⚠️  [Google Sheets] Ошибка закрепления строк: {e}")
+    
     def format_sheet(self, spreadsheet_id):
         """Применяет форматирование к Google Spreadsheet"""
         if not self.sheets_service:
@@ -894,7 +924,7 @@ class KPGoogleSheetsGenerator:
         try:
             requests = []
             
-            # 1. Шапка с логотипом (строка 1, перенос текста)
+            # 1. Логотип в A1 - центрирование по вертикали и горизонтали
             requests.append({
                 'repeatCell': {
                     'range': {
@@ -902,6 +932,26 @@ class KPGoogleSheetsGenerator:
                         'startRowIndex': 0,
                         'endRowIndex': 1,
                         'startColumnIndex': 0,
+                        'endColumnIndex': 1
+                    },
+                    'cell': {
+                        'userEnteredFormat': {
+                            'verticalAlignment': 'MIDDLE',
+                            'horizontalAlignment': 'CENTER'
+                        }
+                    },
+                    'fields': 'userEnteredFormat(verticalAlignment,horizontalAlignment)'
+                }
+            })
+            
+            # 1.1. Остальные ячейки шапки (B-M) - перенос текста
+            requests.append({
+                'repeatCell': {
+                    'range': {
+                        'sheetId': 0,
+                        'startRowIndex': 0,
+                        'endRowIndex': 1,
+                        'startColumnIndex': 1,
                         'endColumnIndex': 13
                     },
                     'cell': {
@@ -976,8 +1026,22 @@ class KPGoogleSheetsGenerator:
                     }
                 })
             
-            # 4.1.1. ШИРИНА колонок E-F (Тираж, USD) - одинаковая ширина (авто)
-            # Оставляем автоподбор, но E и F будут одинаковыми
+            # 4.1.1. ШИРИНА колонок F-G-H (USD, RUB, Маршрут) - 100 пикселей (одинаковая)
+            for col_idx in [5, 6, 7]:  # F, G, H
+                requests.append({
+                    'updateDimensionProperties': {
+                        'range': {
+                            'sheetId': 0,
+                            'dimension': 'COLUMNS',
+                            'startIndex': col_idx,
+                            'endIndex': col_idx + 1
+                        },
+                        'properties': {
+                            'pixelSize': 100
+                        },
+                        'fields': 'pixelSize'
+                    }
+                })
             
             # 4.2. ШИРИНА колонок K-M (Доп. фото) - 250 пикселей (УВЕЛИЧЕНО)
             for col_idx in [10, 11, 12]:  # K, L, M
@@ -1194,6 +1258,9 @@ class KPGoogleSheetsGenerator:
         
         # Применяем форматирование
         self.format_sheet(spreadsheet_id)
+        
+        # Закрепляем первые 2 строки
+        self.freeze_rows(spreadsheet_id, 2)
         
         # Копируем информационные листы из шаблона
         print(f"\n📋 [Google Sheets] Копирую информационные листы из шаблона...")

@@ -1212,6 +1212,15 @@ def api_kp_get():
                 if not image_url and row[13]:
                     image_url = f"https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods/images/{row[13]}"
                 
+                # ИСПРАВЛЕНИЕ: Заменяем FTP на S3 (как в kp_generator_google_sheets.py)
+                if image_url:
+                    # Проверка домена: ftp.ru1.storage.beget.cloud → s3.ru1.storage.beget.cloud
+                    if 'ftp.ru1.storage.beget.cloud' in image_url:
+                        image_url = image_url.replace('ftp.ru1.storage.beget.cloud', 's3.ru1.storage.beget.cloud')
+                    # Проверка протокола: ftp://
+                    elif image_url.lower().startswith('ftp://'):
+                        image_url = image_url.replace('ftp://', 'https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods/')
+                
                 kp_items.append({
                     'kp_item_id': row[0],
                     'quantity': row[1],
