@@ -296,10 +296,44 @@ class KPGoogleSheetsGenerator:
         }
     
     def create_spreadsheet(self, title):
-        """Создает новый Google Spreadsheet"""
+        """Создает новый Google Spreadsheet (с workaround через копирование template)"""
         if not self.sheets_service:
             raise Exception("Google Sheets API не инициализирован")
         
+        # WORKAROUND: Пробуем скопировать существующий template вместо создания нового
+        template_id = os.environ.get('GOOGLE_SHEETS_TEMPLATE_ID')
+        
+        if template_id:
+            print(f"🔄 [Google Sheets] Пробую скопировать template: {template_id}")
+            try:
+                file_metadata = {
+                    'name': title,
+                    'mimeType': 'application/vnd.google-apps.spreadsheet'
+                }
+                
+                result = self.drive_service.files().copy(
+                    fileId=template_id,
+                    body=file_metadata,
+                    fields='id, webViewLink'
+                ).execute()
+                
+                spreadsheet_id = result['id']
+                spreadsheet_url = result['webViewLink']
+                
+                print(f"✅ [Google Sheets] Скопирован template!")
+                print(f"   ID: {spreadsheet_id}")
+                print(f"   URL: {spreadsheet_url}")
+                
+                # Делаем публичным с правами на редактирование
+                self._make_public_editable(spreadsheet_id)
+                
+                return spreadsheet_id, spreadsheet_url
+                
+            except HttpError as copy_error:
+                print(f"⚠️  [Google Sheets] Не удалось скопировать template: HTTP {copy_error.resp.status}")
+                print(f"   Пробую создать новый файл...")
+        
+        # Если нет template или копирование не удалось - пробуем создать новый
         try:
             spreadsheet = {
                 'properties': {
@@ -330,12 +364,29 @@ class KPGoogleSheetsGenerator:
             print(f"❌ [Google Sheets] HTTP Error {e.resp.status}: {e._get_reason()}")
             print(f"   URI: {e.uri}")
             print(f"   Details: {error_details}")
-            print("\n🔍 ДИАГНОСТИКА:")
-            print("1. Проверь что Google Sheets API включен:")
-            print("   https://console.cloud.google.com/apis/library/sheets.googleapis.com")
-            print("2. Проверь что Service Account имеет права:")
-            print("   https://console.cloud.google.com/iam-admin/serviceaccounts")
-            print("3. Попробуй создать новый Service Account и обнови credentials")
+            
+            if e.resp.status == 403:
+                print("\n🔍 ДИАГНОЗ: Organization Policy блокирует создание новых файлов!")
+                print("\n💡 WORKAROUND: Используй TEMPLATE!")
+                print("\n📝 ИНСТРУКЦИЯ:")
+                print("1. Создай Google Sheet вручную:")
+                print("   https://docs.google.com/spreadsheets/")
+                print("   Название: 'КП Template'")
+                print("\n2. Расшарь с Service Account (дай права Editor):")
+                print(f"   {os.environ.get('GOOGLE_CREDENTIALS_JSON', '')[:100]}...")
+                print("   (найди client_email в credentials)")
+                print("\n3. Скопируй Spreadsheet ID из URL:")
+                print("   https://docs.google.com/spreadsheets/d/[THIS_IS_ID]/edit")
+                print("\n4. Добавь переменную на Railway:")
+                print("   GOOGLE_SHEETS_TEMPLATE_ID = 'твой-template-id'")
+                print("\n5. Перезапусти Railway - теперь будет копировать template вместо создания!")
+            else:
+                print("\n🔍 ДИАГНОСТИКА:")
+                print("1. Проверь что Google Sheets API включен:")
+                print("   https://console.cloud.google.com/apis/library/sheets.googleapis.com")
+                print("2. Проверь что Service Account имеет права:")
+                print("   https://console.cloud.google.com/iam-admin/serviceaccounts")
+            
             raise
     
     def _make_public_editable(self, spreadsheet_id):
