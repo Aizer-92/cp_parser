@@ -270,60 +270,59 @@ class KPGoogleSheetsGenerator:
             
             print(f"   Обрабатываю: {product_info['name']} ({len(offers)} вариантов, {len(images)} изображений)")
             
-            # Строка 1: Основное изображение | Название товара
-            main_image_formula = ''
+            # Строка 1: Основное изображение (большое - 2 ячейки высоты)
             if images:
-                # Формула IMAGE для Google Sheets (автоматически показывает картинку)
-                main_image_formula = f'=IMAGE("{images[0]}")'
+                # Формула IMAGE с размером 2 (средний размер)
+                main_image_formula = f'=IMAGE("{images[0]}"; 2)'
+                rows.append([main_image_formula])
+            else:
+                rows.append([''])
             
-            rows.append([main_image_formula, product_info['name'], '', '', '', '', ''])
+            # Строка 2: Название товара (жирный)
+            rows.append([product_info['name']])
             
-            # Строка 2: Дополнительные изображения (до 4 штук)
+            # Строка 3: Дополнительные изображения (если есть)
             if len(images) > 1:
-                additional_images = []
+                additional_images_row = []
                 for img_url in images[1:5]:  # До 4 дополнительных
-                    additional_images.append(f'=IMAGE("{img_url}")')
-                
-                # Размещаем дополнительные изображения горизонтально
-                img_row = [''] + additional_images + [''] * (6 - len(additional_images))
-                rows.append(img_row[:7])  # Ограничиваем 7 столбцами
+                    # Размер 1 = маленькие изображения
+                    additional_images_row.append(f'=IMAGE("{img_url}"; 1)')
+                rows.append(additional_images_row)
             
-            # Описание (если есть)
+            # Строка 4: Описание (если есть)
             if product_info['description']:
                 desc_text = product_info['description'][:300]
-                rows.append(['', desc_text, '', '', '', '', ''])
+                rows.append([desc_text])
             
-            # Информация об образце (если есть)
+            # Строка 5: Информация об образце (если есть)
             if product_info['sample_price'] or product_info['sample_delivery_time']:
                 sample_parts = []
                 if product_info['sample_price']:
                     sample_parts.append(f"Образец: ${product_info['sample_price']:.2f}")
                 if product_info['sample_delivery_time']:
-                    sample_parts.append(f"Срок доставки образца: {product_info['sample_delivery_time']} дн.")
-                rows.append(['', ' | '.join(sample_parts), '', '', '', '', ''])
+                    sample_parts.append(f"Срок: {product_info['sample_delivery_time']} дн.")
+                rows.append([' | '.join(sample_parts)])
             
-            # Пустая строка перед таблицей цен
-            rows.append(['', '', '', '', '', '', ''])
+            # Пустая строка
+            rows.append([''])
             
-            # Заголовок таблицы с ценами
-            rows.append(['', 'Тираж', 'USD за шт', 'RUB за шт', 'Маршрут', 'Срок доставки', ''])
+            # Заголовок таблицы с ценами (КАЖДЫЙ в своей ячейке!)
+            rows.append(['Тираж', 'USD за шт', 'RUB за шт', 'Маршрут', 'Срок доставки'])
             
             # Ценовые предложения
             for offer in offers:
                 row_data = [
-                    '',  # Пустая колонка слева
                     f"{offer['quantity']:,.0f}".replace(',', ' '),
                     f"${offer['price_usd']:.2f}" if offer['price_usd'] else '-',
                     f"₽{offer['price_rub']:.2f}" if offer['price_rub'] else '-',
                     offer['route'] or '-',
-                    f"{offer['delivery_days']} дн." if offer['delivery_days'] else '-',
-                    ''
+                    f"{offer['delivery_days']} дн." if offer['delivery_days'] else '-'
                 ]
                 rows.append(row_data)
             
             # 2 пустые строки между товарами
-            rows.append(['', '', '', '', '', '', ''])
-            rows.append(['', '', '', '', '', '', ''])
+            rows.append([''])
+            rows.append([''])
         
         return rows
     
@@ -563,7 +562,7 @@ class KPGoogleSheetsGenerator:
                         'startRowIndex': 0,
                         'endRowIndex': 1,
                         'startColumnIndex': 0,
-                        'endColumnIndex': 6
+                        'endColumnIndex': 10
                     },
                     'cell': {
                         'userEnteredFormat': {
@@ -586,7 +585,7 @@ class KPGoogleSheetsGenerator:
                         'startRowIndex': 1,
                         'endRowIndex': 2,
                         'startColumnIndex': 0,
-                        'endColumnIndex': 6
+                        'endColumnIndex': 10
                     },
                     'cell': {
                         'userEnteredFormat': {
@@ -600,14 +599,26 @@ class KPGoogleSheetsGenerator:
                 }
             })
             
-            # 3. Автоподбор ширины колонок
+            # 3. Автоподбор ширины колонок (до 10 колонок для таблицы)
             requests.append({
                 'autoResizeDimensions': {
                     'dimensions': {
                         'sheetId': 0,
                         'dimension': 'COLUMNS',
                         'startIndex': 0,
-                        'endIndex': 6
+                        'endIndex': 10
+                    }
+                }
+            })
+            
+            # 4. Автоподбор высоты строк (для изображений)
+            requests.append({
+                'autoResizeDimensions': {
+                    'dimensions': {
+                        'sheetId': 0,
+                        'dimension': 'ROWS',
+                        'startIndex': 0,
+                        'endIndex': 1000
                     }
                 }
             })
