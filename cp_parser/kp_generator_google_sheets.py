@@ -271,8 +271,8 @@ class KPGoogleSheetsGenerator:
         rows.append([''])  # Пустая строка
         current_row += 1
         
-        # ЗАГОЛОВОК ТАБЛИЦЫ
-        rows.append(['Фото', 'Название', 'Дизайн', 'Характеристики', 'Образец', 'Тираж', 'USD/шт', 'RUB/шт', 'Маршрут', 'Срок', 'Доп. фото'])
+        # ЗАГОЛОВОК ТАБЛИЦЫ (11 колонок: 10 основных + 3 доп. фото)
+        rows.append(['Фото', 'Название', 'Дизайн', 'Характеристики', 'Образец', 'Тираж', 'USD/шт', 'RUB/шт', 'Маршрут', 'Срок', 'Доп.1', 'Доп.2', 'Доп.3'])
         current_row += 1
         
         # Генерируем товары
@@ -304,14 +304,10 @@ class KPGoogleSheetsGenerator:
                 sample_info.append(f"Срок: {product_info['sample_delivery_time']} дн.")
             sample_text = ' | '.join(sample_info) if sample_info else '-'
             
-            # Дополнительные фото (2-3-4-5 изображения) - ОТДЕЛЬНО каждое в своей строке
-            additional_photos_text = ''
-            if len(images) > 1:
-                # Берем до 3 дополнительных фото (2-е, 3-е, 4-е)
-                additional_images = images[1:4]
-                # Формируем текст с IMAGE формулами, каждая на новой строке
-                photo_formulas = [f'=IMAGE("{img}"; 1)' for img in additional_images]
-                additional_photos_text = '\n'.join(photo_formulas)
+            # Дополнительные фото (2-3-4-5 изображения) - ГОРИЗОНТАЛЬНО в разных колонках
+            additional_photo_1 = f'=IMAGE("{images[1]}"; 1)' if len(images) > 1 else ''
+            additional_photo_2 = f'=IMAGE("{images[2]}"; 1)' if len(images) > 2 else ''
+            additional_photo_3 = f'=IMAGE("{images[3]}"; 1)' if len(images) > 3 else ''
             
             # Запоминаем начальную строку для merge
             start_row = current_row
@@ -327,11 +323,13 @@ class KPGoogleSheetsGenerator:
                         characteristics_text,  # Характеристики
                         sample_text,  # Образец (будет объединено)
                         f"{offer['quantity']:,.0f}".replace(',', ' '),  # Тираж
-                        f"${offer['price_usd']:.2f}" if offer['price_usd'] else '-',  # USD
-                        f"₽{offer['price_rub']:.2f}" if offer['price_rub'] else '-',  # RUB
+                        offer['price_usd'] if offer['price_usd'] else '',  # USD (БЕЗ $)
+                        offer['price_rub'] if offer['price_rub'] else '',  # RUB (БЕЗ ₽)
                         offer['route'] or '-',  # Маршрут
                         f"{offer['delivery_days']} дн." if offer['delivery_days'] else '-',  # Срок
-                        additional_photos_text  # Доп. фото (будет объединено)
+                        additional_photo_1,  # Доп. фото 1 (будет объединено)
+                        additional_photo_2,  # Доп. фото 2 (будет объединено)
+                        additional_photo_3   # Доп. фото 3 (будет объединено)
                     ]
                 else:
                     # Остальные строки - только цены и маршруты
@@ -342,11 +340,13 @@ class KPGoogleSheetsGenerator:
                         '',  # Характеристики (пустая)
                         '',  # Образец (пустая, будет merge)
                         f"{offer['quantity']:,.0f}".replace(',', ' '),  # Тираж
-                        f"${offer['price_usd']:.2f}" if offer['price_usd'] else '-',  # USD
-                        f"₽{offer['price_rub']:.2f}" if offer['price_rub'] else '-',  # RUB
+                        offer['price_usd'] if offer['price_usd'] else '',  # USD (БЕЗ $)
+                        offer['price_rub'] if offer['price_rub'] else '',  # RUB (БЕЗ ₽)
                         offer['route'] or '-',  # Маршрут
                         f"{offer['delivery_days']} дн." if offer['delivery_days'] else '-',  # Срок
-                        ''  # Доп. фото (пустая, будет merge)
+                        '',  # Доп. фото 1 (пустая, будет merge)
+                        '',  # Доп. фото 2 (пустая, будет merge)
+                        ''   # Доп. фото 3 (пустая, будет merge)
                     ]
                 
                 rows.append(row_data)
@@ -390,12 +390,26 @@ class KPGoogleSheetsGenerator:
                     'startColumnIndex': 4,
                     'endColumnIndex': 5
                 })
-                # Merge для доп. фото (колонка K = 10)
+                # Merge для доп. фото 1 (колонка K = 10)
                 merge_requests.append({
                     'startRowIndex': start_row,
                     'endRowIndex': end_row + 1,
                     'startColumnIndex': 10,
                     'endColumnIndex': 11
+                })
+                # Merge для доп. фото 2 (колонка L = 11)
+                merge_requests.append({
+                    'startRowIndex': start_row,
+                    'endRowIndex': end_row + 1,
+                    'startColumnIndex': 11,
+                    'endColumnIndex': 12
+                })
+                # Merge для доп. фото 3 (колонка M = 12)
+                merge_requests.append({
+                    'startRowIndex': start_row,
+                    'endRowIndex': end_row + 1,
+                    'startColumnIndex': 12,
+                    'endColumnIndex': 13
                 })
         
         return rows, merge_requests
@@ -669,7 +683,7 @@ class KPGoogleSheetsGenerator:
                         'startRowIndex': 0,
                         'endRowIndex': 1,
                         'startColumnIndex': 0,
-                        'endColumnIndex': 11
+                        'endColumnIndex': 13
                     },
                     'cell': {
                         'userEnteredFormat': {
@@ -692,7 +706,7 @@ class KPGoogleSheetsGenerator:
                         'startRowIndex': 1,
                         'endRowIndex': 2,
                         'startColumnIndex': 0,
-                        'endColumnIndex': 11
+                        'endColumnIndex': 13
                     },
                     'cell': {
                         'userEnteredFormat': {
@@ -714,7 +728,7 @@ class KPGoogleSheetsGenerator:
                         'startRowIndex': 3,
                         'endRowIndex': 4,
                         'startColumnIndex': 0,
-                        'endColumnIndex': 11
+                        'endColumnIndex': 13
                     },
                     'cell': {
                         'userEnteredFormat': {
@@ -750,14 +764,14 @@ class KPGoogleSheetsGenerator:
                 }
             })
             
-            # 5. Автоподбор ширины остальных колонок (B-K, индексы 1-11)
+            # 5. Автоподбор ширины остальных колонок (B-M, индексы 1-13)
             requests.append({
                 'autoResizeDimensions': {
                     'dimensions': {
                         'sheetId': 0,
                         'dimension': 'COLUMNS',
                         'startIndex': 1,
-                        'endIndex': 11
+                        'endIndex': 13
                     }
                 }
             })
@@ -777,6 +791,30 @@ class KPGoogleSheetsGenerator:
                     'fields': 'pixelSize'
                 }
             })
+            
+            # 7. ФОРМАТИРОВАНИЕ ТЕКСТОВЫХ КОЛОНОК: вертикаль по центру, горизонталь по левому краю + перенос текста
+            # Колонки B (Название), C (Дизайн), D (Характеристики), E (Образец), I (Маршрут)
+            text_columns = [1, 2, 3, 4, 8]  # B, C, D, E, I
+            for col_index in text_columns:
+                requests.append({
+                    'repeatCell': {
+                        'range': {
+                            'sheetId': 0,
+                            'startRowIndex': 4,  # Начиная с 5-й строки (товары)
+                            'endRowIndex': 1000,
+                            'startColumnIndex': col_index,
+                            'endColumnIndex': col_index + 1
+                        },
+                        'cell': {
+                            'userEnteredFormat': {
+                                'verticalAlignment': 'MIDDLE',  # Вертикально по центру
+                                'horizontalAlignment': 'LEFT',   # Горизонтально по левому краю
+                                'wrapStrategy': 'WRAP'            # Перенос текста
+                            }
+                        },
+                        'fields': 'userEnteredFormat(verticalAlignment,horizontalAlignment,wrapStrategy)'
+                    }
+                })
             
             body = {
                 'requests': requests
