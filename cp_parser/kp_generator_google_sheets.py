@@ -246,21 +246,25 @@ class KPGoogleSheetsGenerator:
                 
                 for img_row in img_result:
                     image_url = img_row[0]
+                    original_url = image_url  # Сохраняем оригинальный URL для логирования
+                    
                     if not image_url and img_row[1]:
                         image_url = f"https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods/images/{img_row[1]}"
                     
                     # ИСПРАВЛЕНИЕ: Заменяем FTP на S3 (любой вариант ftp://)
-                    if image_url and image_url.startswith('ftp://'):
-                        # Извлекаем путь после ftp://hostname/
-                        if 'ftp.promogoods.website' in image_url:
-                            path = image_url.split('ftp.promogoods.website')[-1]
-                            image_url = f"https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods{path}"
-                        else:
-                            # Универсальная замена для любого FTP хоста
-                            image_url = image_url.replace('ftp://', 'https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods/')
-                        print(f"   🔄 Заменен FTP → S3: {image_url}")
-                    
                     if image_url:
+                        if image_url.lower().startswith('ftp://'):
+                            # Извлекаем путь после ftp://hostname/
+                            if 'ftp.promogoods.website' in image_url:
+                                path = image_url.split('ftp.promogoods.website')[-1]
+                                image_url = f"https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods{path}"
+                            else:
+                                # Универсальная замена для любого FTP хоста
+                                image_url = image_url.replace('ftp://', 'https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods/')
+                            print(f"      🔄 FTP → S3:")
+                            print(f"         Было: {original_url}")
+                            print(f"         Стало: {image_url}")
+                        
                         products_grouped[product_id]['images'].append(image_url)
             
             return products_grouped
@@ -334,13 +338,14 @@ class KPGoogleSheetsGenerator:
                 characteristics.append(product_info['description'][:150])
             characteristics_text = '\n'.join(characteristics) if characteristics else '-'
             
-            # ОБРАЗЕЦ - в РУБЛЯХ (не в долларах)
+            # ОБРАЗЕЦ - цена НАПРЯМУЮ из БД (УЖЕ в рублях!)
             sample_info = []
             if product_info['sample_price']:
-                # Конвертируем в рубли (примерный курс 95)
-                sample_price_rub = product_info['sample_price'] * 95
-                # ИСПРАВЛЕНИЕ: Правильное форматирование с запятой вместо точки
-                sample_price_str = f"{sample_price_rub:.2f}".replace('.', ',')  # 904.40 → 904,40
+                # ИСПРАВЛЕНИЕ: НЕ умножаем на 95! Цена уже в рублях в БД
+                sample_price_rub = product_info['sample_price']
+                # Форматирование с запятой вместо точки
+                sample_price_str = f"{sample_price_rub:.2f}".replace('.', ',')  # 1950.00 → 1950,00
+                print(f"      📋 Образец: {product_info['name']} → {sample_price_str} руб")
                 sample_info.append(sample_price_str)
             if product_info['sample_delivery_time']:
                 sample_info.append(f"Срок: {product_info['sample_delivery_time']} дн.")
