@@ -98,9 +98,37 @@ class KPGoogleSheetsGenerator:
             self.drive_service = build('drive', 'v3', credentials=credentials)
             
             print("✅ [Google Sheets] API инициализирован успешно")
-            print("   📝 Проверь что включены APIs:")
-            print("   1. Google Sheets API: https://console.cloud.google.com/apis/library/sheets.googleapis.com")
-            print("   2. Google Drive API: https://console.cloud.google.com/apis/library/drive.googleapis.com")
+            
+            # ТЕСТ: Пробуем простой запрос для проверки доступа
+            try:
+                print("🧪 [Google Sheets] Тестирую доступ к APIs...")
+                # Простой тест - получение информации о несуществующей таблице
+                # Если API не включен - получим 403
+                # Если включен - получим 404 (что нормально для теста)
+                test_id = "test_invalid_id_12345"
+                try:
+                    self.sheets_service.spreadsheets().get(spreadsheetId=test_id).execute()
+                except HttpError as e:
+                    if e.resp.status == 404:
+                        print("✅ [Google Sheets] Доступ к Google Sheets API работает!")
+                    elif e.resp.status == 403:
+                        print("❌ [Google Sheets] НЕТ ДОСТУПА К APIs!")
+                        print("\n⚠️  КРИТИЧЕСКИ ВАЖНО:")
+                        print("   Google Sheets API или Google Drive API НЕ ВКЛЮЧЕНЫ!")
+                        print("\n📝 ДЕЙСТВИЯ:")
+                        print("   1. Открой: https://console.cloud.google.com")
+                        print(f"   2. Выбери проект: {creds_dict.get('project_id')}")
+                        print("   3. Перейди: APIs & Services → Library")
+                        print("   4. Включи (ENABLE):")
+                        print("      - Google Sheets API")
+                        print("      - Google Drive API")
+                        print("   5. Подожди 2-3 минуты")
+                        print("   6. Перезапусти приложение")
+                        print("\n📸 Проверь Dashboard: https://console.cloud.google.com/apis/dashboard")
+                    else:
+                        print(f"⚠️  [Google Sheets] Неожиданный ответ: {e.resp.status}")
+            except Exception as test_error:
+                print(f"⚠️  [Google Sheets] Не удалось протестировать доступ: {test_error}")
             
         except json.JSONDecodeError as e:
             print(f"❌ [Google Sheets] Ошибка парсинга JSON credentials: {e}")

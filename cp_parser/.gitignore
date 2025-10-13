@@ -1,1 +1,103 @@
+# Environment
 .env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# CSV files (verification, exports, etc)
+verification_csv_all/
+verification_full_csv/
+*.csv
+!requirements.txt
+
+# Python scripts (debugging, testing)
+verify_*.py
+export_*.py
+apply_*.py
+update_*.py
+normalize_*.py
+auto_fill_*.py
+test_*.py
+setup_*.py
+generate_*.py
+install_*.py
+check_*.py
+fix_*.py
+
+# Markdown documentation (temporary)
+*_PLAN.md
+*_SUMMARY.md
+*_STATUS.md
+*_GUIDE.md
+*_INSTRUCTIONS.md
+*_FIX_*.md
+*_COMPLETE*.md
+*_BUGFIX*.md
+*_DISCREPANCIES*.md
+SESSION_*.md
+ПРОВЕРКА*.md
+ОТЧЕТ*.md
+ИСПРАВИТЬ*.md
+СПИСОК*.md
+ПОТЕНЦИАЛЬНО*.md
+ПРОБЛЕМА*.md
+ТОП*.md
+ПРОВЕРЕННЫЕ*.md
+АВТОПРОВЕРКА*.md
+
+# Log files
+*.log
+*.txt
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Images (if needed, remove this line)
+# *.jpg
+# *.png
+# *.gif
