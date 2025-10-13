@@ -28,6 +28,25 @@ except ImportError:
     print("⚠️  [Google Sheets] google-auth и google-api-python-client не установлены")
 
 
+def safe_float(value):
+    """
+    Безопасное преобразование в float
+    Обрабатывает случаи: None, пустые строки, '9.7 / 9.4' (берет первое значение)
+    """
+    if value is None or value == '':
+        return None
+    
+    try:
+        # Если строка содержит '/' - берем первое значение
+        if isinstance(value, str) and '/' in value:
+            value = value.split('/')[0].strip()
+        
+        return float(value)
+    except (ValueError, TypeError) as e:
+        print(f"⚠️  [PRICE PARSE] Не удалось преобразовать '{value}' в float: {e}")
+        return None
+
+
 class KPGoogleSheetsGenerator:
     """Генератор Google Sheets файлов для коммерческого предложения"""
     
@@ -217,7 +236,7 @@ class KPGoogleSheetsGenerator:
                     products_grouped[product_id]['info'] = {
                         'name': row[2],
                         'description': row[3],
-                        'sample_price': float(row[4]) if row[4] else None,
+                        'sample_price': safe_float(row[4]),
                         'sample_delivery_time': row[5],
                         'custom_field': row[6]  # Дизайн/кастомизация
                     }
@@ -228,8 +247,8 @@ class KPGoogleSheetsGenerator:
                 products_grouped[product_id]['offers'].append({
                     'quantity': row[8],
                     'route': row[9],
-                    'price_usd': float(row[10]) if row[10] else None,
-                    'price_rub': float(row[11]) if row[11] else None,
+                    'price_usd': safe_float(row[10]),
+                    'price_rub': safe_float(row[11]),
                     'delivery_days': row[12]
                 })
             

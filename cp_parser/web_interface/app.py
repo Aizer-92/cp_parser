@@ -477,11 +477,13 @@ def products_list():
         # ОТКЛЮЧЕНО: Векторный поиск (тормозит) - используем только ILIKE
         # vector_product_ids = vector_search_pgvector(search.strip(), limit=200)
         
+        search_mode = None  # Для определения сортировки
         if search.strip():
             # Используем только текстовый поиск (быстро и надежно)
-            print(f"🔍 [SEARCH] Используем текстовый поиск (ILIKE)")
+            print(f"🔍 [SEARCH] Используем текстовый поиск (ILIKE) с приоритетом по названию")
             where_conditions.append("(p.name ILIKE :search OR p.description ILIKE :search)")
             params["search"] = f"%{search.strip()}%"
+            search_mode = 'active'  # Флаг для применения релевантной сортировки
         
         # Фильтр по региону ОАЭ
         if region_uae:
@@ -518,7 +520,18 @@ def products_list():
         order_by = "p.id DESC"  # По умолчанию
         select_fields = base_select
         
-        if sort_by == "date_asc":
+        # ПРИОРИТЕТ: При поиске сортируем по релевантности (название > описание)
+        if search_mode == 'active':
+            # Добавляем поле relevance_rank для сортировки
+            select_fields = base_select + """, 
+                CASE 
+                    WHEN p.name ILIKE :search THEN 1
+                    WHEN p.description ILIKE :search THEN 2
+                    ELSE 3
+                END as relevance_rank"""
+            order_by = "relevance_rank ASC, p.id DESC"
+            print(f"   → Сортировка: сначала по названию, потом по описанию")
+        elif sort_by == "date_asc":
             order_by = "pr.offer_created_at ASC NULLS LAST, p.id ASC"
         elif sort_by == "date_desc":
             order_by = "pr.offer_created_at DESC NULLS LAST, p.id DESC"
