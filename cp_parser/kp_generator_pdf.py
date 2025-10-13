@@ -465,8 +465,8 @@ class KPPDFGenerator:
             
             story.append(Spacer(1, 10*mm))
             
-            # Page break после каждых 2 товаров (чтобы не было перегруза страницы)
-            if (idx + 1) % 2 == 0 and idx + 1 < len(products):
+            # Page break после КАЖДОГО товара (1 товар = 1 страница)
+            if idx + 1 < len(products):
                 story.append(PageBreak())
         
         # Сохранение

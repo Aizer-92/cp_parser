@@ -740,6 +740,36 @@ textarea.form-input {
     font-family: inherit;
 }
 
+/* Form Sections */
+.form-section {
+    margin-bottom: 24px;
+    padding: 20px;
+    background: var(--color-gray-50);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-gray-200);
+}
+
+.form-section:last-child {
+    margin-bottom: 0;
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0 0 16px 0;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--color-gray-200);
+}
+
+/* Sample and Markup sections within Calculation */
+.sample-section,
+.markup-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-gray-200);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .tabs-nav {
