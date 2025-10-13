@@ -213,39 +213,42 @@
                 {% endif %}
             </div>
             
-            <!-- Цены (2 строки, без цвета) -->
+            <!-- Цены (сжато, без жирного) -->
             {% if product.price_offers %}
-            <div class="mt-2 space-y-1">
+            <div class="mt-2 space-y-0">
                 {% if product.price_offers|length == 1 %}
                     <!-- Один вариант -->
                     {% set offer = product.price_offers[0] %}
-                    <p class="text-sm text-gray-600">
+                    <p class="text-sm text-gray-600 leading-tight">
                         <span class="font-medium">{{ "{:,}".format(offer.quantity) }} шт</span>
                         <span class="mx-1 text-gray-400">•</span>
-                        {% if offer.price_usd %}<span class="font-semibold">${{ "%.2f"|format(offer.price_usd) }}</span>{% endif %}
-                        {% if offer.price_rub %}<span class="font-semibold"> ₽{{ "%.2f"|format(offer.price_rub) }}</span>{% endif %}
-                        {% if offer.delivery_time_days %}<span class="text-xs text-gray-400 ml-1">{{ offer.delivery_time_days }}дн</span>{% endif %}
+                        {% if offer.price_usd %}<span>${{ "%.2f"|format(offer.price_usd) }}</span>{% endif %}
+                        {% if offer.price_usd and offer.price_rub %}<span class="mx-1 text-gray-400">/</span>{% endif %}
+                        {% if offer.price_rub %}<span>₽{{ "%.2f"|format(offer.price_rub) }}</span>{% endif %}
+                        {% if offer.delivery_time_days %}<span class="text-xs text-gray-400 ml-2">{{ offer.delivery_time_days }}дн</span>{% endif %}
                     </p>
                 {% else %}
                     <!-- Первый вариант (строка 1) -->
                     {% set first = product.price_offers|first %}
-                    <p class="text-sm text-gray-600">
+                    <p class="text-sm text-gray-600 leading-tight">
                         <span class="font-medium">{{ "{:,}".format(first.quantity) }} шт</span>
                         <span class="mx-1 text-gray-400">•</span>
-                        {% if first.price_usd %}<span class="font-semibold">${{ "%.2f"|format(first.price_usd) }}</span>{% endif %}
-                        {% if first.price_rub %}<span class="font-semibold"> ₽{{ "%.2f"|format(first.price_rub) }}</span>{% endif %}
-                        {% if first.delivery_time_days %}<span class="text-xs text-gray-400 ml-1">{{ first.delivery_time_days }}дн</span>{% endif %}
+                        {% if first.price_usd %}<span>${{ "%.2f"|format(first.price_usd) }}</span>{% endif %}
+                        {% if first.price_usd and first.price_rub %}<span class="mx-1 text-gray-400">/</span>{% endif %}
+                        {% if first.price_rub %}<span>₽{{ "%.2f"|format(first.price_rub) }}</span>{% endif %}
+                        {% if first.delivery_time_days %}<span class="text-xs text-gray-400 ml-2">{{ first.delivery_time_days }}дн</span>{% endif %}
                     </p>
                     <!-- Три точки -->
-                    <p class="text-sm text-gray-400">...</p>
+                    <p class="text-xs text-gray-400 leading-tight">...</p>
                     <!-- Последний вариант (строка 2) -->
                     {% set last = product.price_offers|last %}
-                    <p class="text-sm text-gray-600">
+                    <p class="text-sm text-gray-600 leading-tight">
                         <span class="font-medium">{{ "{:,}".format(last.quantity) }} шт</span>
                         <span class="mx-1 text-gray-400">•</span>
-                        {% if last.price_usd %}<span class="font-semibold">${{ "%.2f"|format(last.price_usd) }}</span>{% endif %}
-                        {% if last.price_rub %}<span class="font-semibold"> ₽{{ "%.2f"|format(last.price_rub) }}</span>{% endif %}
-                        {% if last.delivery_time_days %}<span class="text-xs text-gray-400 ml-1">{{ last.delivery_time_days }}дн</span>{% endif %}
+                        {% if last.price_usd %}<span>${{ "%.2f"|format(last.price_usd) }}</span>{% endif %}
+                        {% if last.price_usd and last.price_rub %}<span class="mx-1 text-gray-400">/</span>{% endif %}
+                        {% if last.price_rub %}<span>₽{{ "%.2f"|format(last.price_rub) }}</span>{% endif %}
+                        {% if last.delivery_time_days %}<span class="text-xs text-gray-400 ml-2">{{ last.delivery_time_days }}дн</span>{% endif %}
                     </p>
                 {% endif %}
             </div>
