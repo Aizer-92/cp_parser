@@ -249,6 +249,10 @@ class KPGoogleSheetsGenerator:
                     if not image_url and img_row[1]:
                         image_url = f"https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods/images/{img_row[1]}"
                     
+                    # ИСПРАВЛЕНИЕ: Заменяем FTP на S3 если URL содержит ftp://
+                    if image_url and 'ftp://' in image_url:
+                        image_url = image_url.replace('ftp://ftp.promogoods.website', 'https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods')
+                    
                     if image_url:
                         products_grouped[product_id]['images'].append(image_url)
             
@@ -392,12 +396,15 @@ class KPGoogleSheetsGenerator:
             # Запоминаем merge для фото, названия, дизайна, характеристик, образца и доп. фото
             if len(offers) > 1:
                 end_row = current_row - 1
+                offers_count = len(offers)  # Количество тиражей для этого товара
+                
                 # Merge для основного фото (колонка A = 0)
                 merge_requests.append({
                     'startRowIndex': start_row,
                     'endRowIndex': end_row + 1,
                     'startColumnIndex': 0,
-                    'endColumnIndex': 1
+                    'endColumnIndex': 1,
+                    'offers_count': offers_count  # Добавляем количество тиражей
                 })
                 # Merge для названия (колонка B = 1)
                 merge_requests.append({
@@ -773,15 +780,15 @@ class KPGoogleSheetsGenerator:
         return result
     
     def apply_merge_cells(self, spreadsheet_id, merge_requests):
-        """Применяет объединение ячеек + фиксирует высоту для merged строк"""
+        """Применяет объединение ячеек + пропорциональная высота для строк тиражей"""
         if not self.sheets_service or not merge_requests:
             return
         
         try:
             requests = []
             
-            # Группируем merge_requests по строкам, чтобы определить merged диапазоны
-            merged_rows = set()
+            # Словарь для хранения высоты каждой строки: {row_idx: height_px}
+            row_heights = {}
             
             for merge_range in merge_requests:
                 # Добавляем merge request
@@ -798,14 +805,19 @@ class KPGoogleSheetsGenerator:
                     }
                 })
                 
-                # Запоминаем merged строки (для колонки A - фото)
+                # Вычисляем высоту строк для фото (колонка A)
                 if merge_range['startColumnIndex'] == 0 and merge_range['endColumnIndex'] == 1:
-                    # Это merge для фото - фиксируем высоту строк
+                    offers_count = merge_range.get('offers_count', 1)
+                    
+                    # ИСПРАВЛЕНИЕ: Высота каждой строки = 250px / количество тиражей
+                    row_height = int(250 / offers_count)
+                    
+                    # Устанавливаем высоту для каждой строки в merged диапазоне
                     for row_idx in range(merge_range['startRowIndex'], merge_range['endRowIndex']):
-                        merged_rows.add(row_idx)
+                        row_heights[row_idx] = row_height
             
-            # Устанавливаем фиксированную высоту 250px для каждой merged строки
-            for row_idx in merged_rows:
+            # Применяем высоту для каждой строки
+            for row_idx, height_px in row_heights.items():
                 requests.append({
                     'updateDimensionProperties': {
                         'range': {
@@ -815,7 +827,7 @@ class KPGoogleSheetsGenerator:
                             'endIndex': row_idx + 1
                         },
                         'properties': {
-                            'pixelSize': 250  # Фиксированная высота 250px
+                            'pixelSize': height_px  # Пропорциональная высота
                         },
                         'fields': 'pixelSize'
                     }
@@ -828,7 +840,7 @@ class KPGoogleSheetsGenerator:
                 body=body
             ).execute()
             
-            print(f"✅ [Google Sheets] Применено {len(merge_requests)} объединений ячеек + фиксация высоты для {len(merged_rows)} строк")
+            print(f"✅ [Google Sheets] Применено {len(merge_requests)} объединений ячеек + пропорциональная высота для {len(row_heights)} строк")
             
         except Exception as e:
             print(f"⚠️  [Google Sheets] Ошибка объединения ячеек: {e}")

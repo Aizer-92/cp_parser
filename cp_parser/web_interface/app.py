@@ -434,8 +434,8 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    """Главная страница - редирект на товары с сортировкой по дате добавления в КП"""
-    return redirect(url_for('products_list', sort_by='kp_date', order='desc'))
+    """Главная страница - редирект на товары с сортировкой по дате КП"""
+    return redirect(url_for('products_list', sort_by='date_desc'))
 
 @app.route('/products')
 @login_required
