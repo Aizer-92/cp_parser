@@ -19,6 +19,7 @@ from sqlalchemy import text
 # Google Sheets API
 try:
     from google.oauth2 import service_account
+    from google.oauth2.credentials import Credentials
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
     GOOGLE_AVAILABLE = True
@@ -42,14 +43,49 @@ class KPGoogleSheetsGenerator:
     def _init_google_api(self):
         """Инициализирует Google Sheets и Drive API"""
         try:
-            # Получаем credentials из переменной окружения
+            # ПРИОРИТЕТ 1: OAuth Token (работает от имени пользователя)
+            oauth_token = os.getenv('GOOGLE_OAUTH_TOKEN')
+            
+            if oauth_token:
+                print("🔍 [Google Sheets] Найден GOOGLE_OAUTH_TOKEN - использую OAuth!")
+                try:
+                    token_dict = json.loads(oauth_token)
+                    
+                    # Создаем OAuth credentials
+                    credentials = Credentials(
+                        token=token_dict.get('token'),
+                        refresh_token=token_dict.get('refresh_token'),
+                        token_uri=token_dict.get('token_uri'),
+                        client_id=token_dict.get('client_id'),
+                        client_secret=token_dict.get('client_secret'),
+                        scopes=token_dict.get('scopes')
+                    )
+                    
+                    print("✅ [Google Sheets] OAuth credentials загружены")
+                    print(f"   Client ID: {token_dict.get('client_id')[:50]}...")
+                    print(f"   Scopes: {len(token_dict.get('scopes', []))} scopes")
+                    
+                    # Создаем сервисы
+                    self.sheets_service = build('sheets', 'v4', credentials=credentials)
+                    self.drive_service = build('drive', 'v3', credentials=credentials)
+                    
+                    print("✅ [Google Sheets] API инициализирован через OAuth!")
+                    print("   Файлы будут создаваться от имени пользователя!")
+                    return
+                    
+                except Exception as e:
+                    print(f"❌ [Google Sheets] Ошибка OAuth: {e}")
+                    print("   Пробую Service Account...")
+            
+            # ПРИОРИТЕТ 2: Service Account (fallback)
             creds_json = os.getenv('GOOGLE_CREDENTIALS_JSON')
             
             if not creds_json:
-                print("⚠️  [Google Sheets] GOOGLE_CREDENTIALS_JSON не найден в .env")
+                print("⚠️  [Google Sheets] Ни GOOGLE_OAUTH_TOKEN, ни GOOGLE_CREDENTIALS_JSON не найдены")
+                print("   Создание Google Sheets недоступно")
                 return
             
-            print("🔍 [Google Sheets] GOOGLE_CREDENTIALS_JSON найден")
+            print("🔍 [Google Sheets] Использую Service Account")
             print(f"   Длина: {len(creds_json)} символов")
             
             # Парсим JSON credentials
@@ -76,10 +112,9 @@ class KPGoogleSheetsGenerator:
                 print("🔧 [Google Sheets] Исправляю формат private_key (\\n -> настоящие переводы)")
                 creds_dict['private_key'] = private_key.replace('\\n', '\n')
             
-            print(f"✅ [Google Sheets] Credentials валидны")
+            print(f"✅ [Google Sheets] Service Account credentials валидны")
             print(f"   Project ID: {creds_dict.get('project_id')}")
             print(f"   Client Email: {creds_dict.get('client_email')}")
-            print(f"   Private Key: {'BEGIN PRIVATE KEY' in creds_dict.get('private_key', '')}")
             
             # Создаем credentials с РАСШИРЕННЫМИ правами
             credentials = service_account.Credentials.from_service_account_info(
@@ -97,7 +132,8 @@ class KPGoogleSheetsGenerator:
             self.sheets_service = build('sheets', 'v4', credentials=credentials)
             self.drive_service = build('drive', 'v3', credentials=credentials)
             
-            print("✅ [Google Sheets] API инициализирован успешно")
+            print("⚠️  [Google Sheets] Service Account имеет ограничение 0GB квоты!")
+            print("   Рекомендуется использовать OAuth (GOOGLE_OAUTH_TOKEN)")
             
             # ТЕСТ: Пробуем простой запрос для проверки доступа
             try:

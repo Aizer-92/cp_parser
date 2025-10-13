@@ -3,6 +3,11 @@
 .env.local
 .env.*.local
 
+# OAuth credentials and tokens (НЕ КОММИТИТЬ!)
+oauth_credentials.json
+token.json
+client_secret_*.json
+
 # Python
 __pycache__/
 *.py[cod]
