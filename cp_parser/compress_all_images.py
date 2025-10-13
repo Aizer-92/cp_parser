@@ -55,7 +55,7 @@ def get_files_to_compress():
 
 
 def compress_and_replace_file(ftp, filename, original_size_mb, stats):
-    """Скачать, сжать и ЗАМЕНИТЬ оригинальный файл"""
+    """Скачать, сжать и создать WebP версию (оригинал сохраняется)"""
     try:
         # 1. Скачиваем оригинал
         original_data = io.BytesIO()
@@ -101,15 +101,10 @@ def compress_and_replace_file(ftp, filename, original_size_mb, stats):
         compressed_data.seek(0)
         compressed_size_kb = len(compressed_data.getvalue()) / 1024
         
-        # 6. Создаем временное имя и загружаем
-        temp_filename = filename.replace('.png', '_temp.webp')
-        compressed_data.seek(0)
-        ftp.storbinary(f'STOR {temp_filename}', compressed_data)
-        
-        # 7. Удаляем оригинал и переименовываем сжатый
-        ftp.delete(filename)
+        # 6. Создаем WebP версию (оригинал остается)
         new_filename = filename.replace('.png', '.webp')
-        ftp.rename(temp_filename, new_filename)
+        compressed_data.seek(0)
+        ftp.storbinary(f'STOR {new_filename}', compressed_data)
         
         # Статистика
         compression_ratio = (1 - compressed_size_kb / original_size_kb) * 100
