@@ -49,8 +49,23 @@ class KPGoogleSheetsGenerator:
                 print("⚠️  [Google Sheets] GOOGLE_CREDENTIALS_JSON не найден в .env")
                 return
             
+            print("🔍 [Google Sheets] GOOGLE_CREDENTIALS_JSON найден")
+            print(f"   Длина: {len(creds_json)} символов")
+            
             # Парсим JSON credentials
             creds_dict = json.loads(creds_json)
+            
+            # Проверяем ключи
+            required_keys = ['type', 'project_id', 'private_key', 'client_email']
+            missing_keys = [k for k in required_keys if k not in creds_dict]
+            
+            if missing_keys:
+                print(f"❌ [Google Sheets] Отсутствуют ключи в credentials: {missing_keys}")
+                return
+            
+            print(f"✅ [Google Sheets] Credentials валидны")
+            print(f"   Project ID: {creds_dict.get('project_id')}")
+            print(f"   Client Email: {creds_dict.get('client_email')}")
             
             # Создаем credentials
             credentials = service_account.Credentials.from_service_account_info(
@@ -61,12 +76,20 @@ class KPGoogleSheetsGenerator:
                 ]
             )
             
+            print("🔧 [Google Sheets] Создаю API сервисы...")
+            
             # Создаем сервисы
             self.sheets_service = build('sheets', 'v4', credentials=credentials)
             self.drive_service = build('drive', 'v3', credentials=credentials)
             
-            print("✅ [Google Sheets] API инициализирован")
+            print("✅ [Google Sheets] API инициализирован успешно")
+            print("   📝 Проверь что включены APIs:")
+            print("   1. Google Sheets API: https://console.cloud.google.com/apis/library/sheets.googleapis.com")
+            print("   2. Google Drive API: https://console.cloud.google.com/apis/library/drive.googleapis.com")
             
+        except json.JSONDecodeError as e:
+            print(f"❌ [Google Sheets] Ошибка парсинга JSON credentials: {e}")
+            print("   Проверь что GOOGLE_CREDENTIALS_JSON - валидный JSON")
         except Exception as e:
             print(f"❌ [Google Sheets] Ошибка инициализации API: {e}")
             import traceback
