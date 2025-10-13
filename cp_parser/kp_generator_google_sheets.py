@@ -253,14 +253,23 @@ class KPGoogleSheetsGenerator:
             db_session.close()
     
     def prepare_sheet_data(self, products_grouped):
-        """Подготавливает данные для Google Sheets с изображениями"""
+        """Подготавливает данные для Google Sheets - ТАБЛИЧНЫЙ формат"""
         
         rows = []
+        merge_requests = []  # Для объединения ячеек
+        current_row = 0
         
         # Заголовок документа
         rows.append(['КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ'])
+        current_row += 1
         rows.append([f'от {datetime.now().strftime("%d.%m.%Y")}'])
+        current_row += 1
         rows.append([''])  # Пустая строка
+        current_row += 1
+        
+        # ЗАГОЛОВОК ТАБЛИЦЫ
+        rows.append(['Фото', 'Название', 'Дизайн', 'Характеристики', 'Тираж', 'USD/шт', 'RUB/шт', 'Маршрут', 'Срок', 'Доп. фото'])
+        current_row += 1
         
         # Генерируем товары
         for product_id, product_data in products_grouped.items():
@@ -270,61 +279,105 @@ class KPGoogleSheetsGenerator:
             
             print(f"   Обрабатываю: {product_info['name']} ({len(offers)} вариантов, {len(images)} изображений)")
             
-            # Строка 1: Основное изображение (размер 3 = максимальный)
-            if images:
-                # Формула IMAGE с размером 3 (большой размер)
-                main_image_formula = f'=IMAGE("{images[0]}"; 3)'
-                rows.append([main_image_formula])
-            else:
-                rows.append([''])
+            # Подготовка данных
+            main_image = f'=IMAGE("{images[0]}"; 2)' if images else ''
+            design_image = f'=IMAGE("{images[1]}"; 1)' if len(images) > 1 else ''
             
-            # Строка 2: Название товара (жирный)
-            rows.append([product_info['name']])
-            
-            # Строка 3: Дополнительные изображения (если есть)
-            if len(images) > 1:
-                additional_images_row = []
-                for img_url in images[1:5]:  # До 4 дополнительных
-                    # Размер 2 = средние изображения (увеличено с 1)
-                    additional_images_row.append(f'=IMAGE("{img_url}"; 2)')
-                rows.append(additional_images_row)
-            
-            # Строка 4: Описание (если есть)
+            # Характеристики в одной ячейке
+            characteristics = []
             if product_info['description']:
-                desc_text = product_info['description'][:300]
-                rows.append([desc_text])
+                characteristics.append(product_info['description'][:150])
+            # Добавляем образец если есть
+            if product_info['sample_price']:
+                characteristics.append(f"Образец: ${product_info['sample_price']:.2f}")
+            if product_info['sample_delivery_time']:
+                characteristics.append(f"Срок образца: {product_info['sample_delivery_time']} дн.")
+            characteristics_text = '\n'.join(characteristics) if characteristics else '-'
             
-            # Строка 5: Информация об образце (если есть)
-            if product_info['sample_price'] or product_info['sample_delivery_time']:
-                sample_parts = []
-                if product_info['sample_price']:
-                    sample_parts.append(f"Образец: ${product_info['sample_price']:.2f}")
-                if product_info['sample_delivery_time']:
-                    sample_parts.append(f"Срок: {product_info['sample_delivery_time']} дн.")
-                rows.append([' | '.join(sample_parts)])
+            # Дополнительные фото (3-4-5 изображения)
+            additional_photos = []
+            if len(images) > 2:
+                for img_url in images[2:6]:  # До 4 дополнительных
+                    additional_photos.append(f'=IMAGE("{img_url}"; 1)')
+            additional_photos_text = ' '.join(additional_photos) if additional_photos else ''
             
-            # Пустая строка
-            rows.append([''])
+            # Запоминаем начальную строку для merge
+            start_row = current_row
             
-            # Заголовок таблицы с ценами (КАЖДЫЙ в своей ячейке!)
-            rows.append(['Тираж', 'USD за шт', 'RUB за шт', 'Маршрут', 'Срок доставки'])
-            
-            # Ценовые предложения
-            for offer in offers:
-                row_data = [
-                    f"{offer['quantity']:,.0f}".replace(',', ' '),
-                    f"${offer['price_usd']:.2f}" if offer['price_usd'] else '-',
-                    f"₽{offer['price_rub']:.2f}" if offer['price_rub'] else '-',
-                    offer['route'] or '-',
-                    f"{offer['delivery_days']} дн." if offer['delivery_days'] else '-'
-                ]
+            # Добавляем строки для каждого маршрута
+            for idx, offer in enumerate(offers):
+                if idx == 0:
+                    # Первая строка - со всеми данными
+                    row_data = [
+                        main_image,  # Фото (будет объединено вертикально)
+                        product_info['name'],  # Название
+                        design_image,  # Дизайн
+                        characteristics_text,  # Характеристики
+                        f"{offer['quantity']:,.0f}".replace(',', ' '),  # Тираж
+                        f"${offer['price_usd']:.2f}" if offer['price_usd'] else '-',  # USD
+                        f"₽{offer['price_rub']:.2f}" if offer['price_rub'] else '-',  # RUB
+                        offer['route'] or '-',  # Маршрут
+                        f"{offer['delivery_days']} дн." if offer['delivery_days'] else '-',  # Срок
+                        additional_photos_text  # Доп. фото (будет объединено)
+                    ]
+                else:
+                    # Остальные строки - только цены и маршруты
+                    row_data = [
+                        '',  # Фото (пустая, будет merge)
+                        '',  # Название (пустая)
+                        '',  # Дизайн (пустая)
+                        '',  # Характеристики (пустая)
+                        f"{offer['quantity']:,.0f}".replace(',', ' '),  # Тираж
+                        f"${offer['price_usd']:.2f}" if offer['price_usd'] else '-',  # USD
+                        f"₽{offer['price_rub']:.2f}" if offer['price_rub'] else '-',  # RUB
+                        offer['route'] or '-',  # Маршрут
+                        f"{offer['delivery_days']} дн." if offer['delivery_days'] else '-',  # Срок
+                        ''  # Доп. фото (пустая, будет merge)
+                    ]
+                
                 rows.append(row_data)
+                current_row += 1
             
-            # 2 пустые строки между товарами
-            rows.append([''])
-            rows.append([''])
+            # Запоминаем merge для фото и доп. фото (колонки 0 и 9)
+            if len(offers) > 1:
+                end_row = current_row - 1
+                # Merge для основного фото (колонка A = 0)
+                merge_requests.append({
+                    'startRowIndex': start_row,
+                    'endRowIndex': end_row + 1,
+                    'startColumnIndex': 0,
+                    'endColumnIndex': 1
+                })
+                # Merge для названия (колонка B = 1)
+                merge_requests.append({
+                    'startRowIndex': start_row,
+                    'endRowIndex': end_row + 1,
+                    'startColumnIndex': 1,
+                    'endColumnIndex': 2
+                })
+                # Merge для дизайна (колонка C = 2)
+                merge_requests.append({
+                    'startRowIndex': start_row,
+                    'endRowIndex': end_row + 1,
+                    'startColumnIndex': 2,
+                    'endColumnIndex': 3
+                })
+                # Merge для характеристик (колонка D = 3)
+                merge_requests.append({
+                    'startRowIndex': start_row,
+                    'endRowIndex': end_row + 1,
+                    'startColumnIndex': 3,
+                    'endColumnIndex': 4
+                })
+                # Merge для доп. фото (колонка J = 9)
+                merge_requests.append({
+                    'startRowIndex': start_row,
+                    'endRowIndex': end_row + 1,
+                    'startColumnIndex': 9,
+                    'endColumnIndex': 10
+                })
         
-        return rows
+        return rows, merge_requests
     
     def generate_mcp_instructions(self, session_id):
         """Генерирует инструкции для MCP создания Google Sheets"""
@@ -546,6 +599,39 @@ class KPGoogleSheetsGenerator:
         
         return result
     
+    def apply_merge_cells(self, spreadsheet_id, merge_requests):
+        """Применяет объединение ячеек"""
+        if not self.sheets_service or not merge_requests:
+            return
+        
+        try:
+            requests = []
+            for merge_range in merge_requests:
+                requests.append({
+                    'mergeCells': {
+                        'range': {
+                            'sheetId': 0,
+                            'startRowIndex': merge_range['startRowIndex'],
+                            'endRowIndex': merge_range['endRowIndex'],
+                            'startColumnIndex': merge_range['startColumnIndex'],
+                            'endColumnIndex': merge_range['endColumnIndex']
+                        },
+                        'mergeType': 'MERGE_ALL'  # Объединить все ячейки
+                    }
+                })
+            
+            body = {'requests': requests}
+            
+            self.sheets_service.spreadsheets().batchUpdate(
+                spreadsheetId=spreadsheet_id,
+                body=body
+            ).execute()
+            
+            print(f"✅ [Google Sheets] Применено {len(merge_requests)} объединений ячеек")
+            
+        except Exception as e:
+            print(f"⚠️  [Google Sheets] Ошибка объединения ячеек: {e}")
+    
     def format_sheet(self, spreadsheet_id):
         """Применяет форматирование к Google Spreadsheet"""
         if not self.sheets_service:
@@ -599,7 +685,35 @@ class KPGoogleSheetsGenerator:
                 }
             })
             
-            # 3. Автоподбор ширины колонок (до 10 колонок для таблицы)
+            # 3. Заголовок таблицы (строка 4, жирный, серый фон)
+            requests.append({
+                'repeatCell': {
+                    'range': {
+                        'sheetId': 0,
+                        'startRowIndex': 3,
+                        'endRowIndex': 4,
+                        'startColumnIndex': 0,
+                        'endColumnIndex': 10
+                    },
+                    'cell': {
+                        'userEnteredFormat': {
+                            'textFormat': {
+                                'bold': True,
+                                'fontSize': 11
+                            },
+                            'horizontalAlignment': 'CENTER',
+                            'backgroundColor': {
+                                'red': 0.9,
+                                'green': 0.9,
+                                'blue': 0.9
+                            }
+                        }
+                    },
+                    'fields': 'userEnteredFormat(textFormat,horizontalAlignment,backgroundColor)'
+                }
+            })
+            
+            # 4. Автоподбор ширины колонок (до 10 колонок для таблицы)
             requests.append({
                 'autoResizeDimensions': {
                     'dimensions': {
@@ -611,20 +725,15 @@ class KPGoogleSheetsGenerator:
                 }
             })
             
-            # 4. Установка фиксированной высоты для строк с изображениями (200 пикселей)
-            # Это даст изображениям больше места по вертикали
+            # 5. Автоподбор высоты строк для таблицы
             requests.append({
-                'updateDimensionProperties': {
-                    'range': {
+                'autoResizeDimensions': {
+                    'dimensions': {
                         'sheetId': 0,
                         'dimension': 'ROWS',
-                        'startIndex': 3,  # Начиная с 4-й строки (первые товары)
+                        'startIndex': 0,
                         'endIndex': 1000
-                    },
-                    'properties': {
-                        'pixelSize': 150  # 150 пикселей высота для строк с изображениями
-                    },
-                    'fields': 'pixelSize'
+                    }
                 }
             })
             
@@ -658,7 +767,7 @@ class KPGoogleSheetsGenerator:
         if not products:
             raise ValueError("КП пустое. Добавьте товары перед генерацией.")
         
-        sheet_data = self.prepare_sheet_data(products)
+        sheet_data, merge_requests = self.prepare_sheet_data(products)
         
         # Создаем Google Spreadsheet
         title = f'КП_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
@@ -669,6 +778,10 @@ class KPGoogleSheetsGenerator:
         
         # Заполняем данными
         self.update_cells(spreadsheet_id, f'{first_sheet_name}!A1', sheet_data)
+        
+        # Применяем объединение ячеек
+        if merge_requests:
+            self.apply_merge_cells(spreadsheet_id, merge_requests)
         
         # Применяем форматирование
         self.format_sheet(spreadsheet_id)
