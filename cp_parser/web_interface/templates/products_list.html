@@ -203,7 +203,7 @@
                 {% endif %}
             </div>
             <div class="mt-4 flex items-start gap-2">
-                <h3 class="text-sm text-gray-700 line-clamp-2 flex-1">{{ product.name or 'Без названия' }}</h3>
+                <h3 class="text-base font-semibold text-gray-900 line-clamp-2 flex-1">{{ product.name or 'Без названия' }}</h3>
                 
                 <!-- Лейбл региона (только ОАЭ) -->
                 {% if product.region == 'ОАЭ' %}
@@ -213,34 +213,38 @@
                 {% endif %}
             </div>
             
-            <!-- Цены (без плашек, единообразно) -->
+            <!-- Цены (2 строки, без цвета) -->
             {% if product.price_offers %}
-            <div class="mt-2">
+            <div class="mt-2 space-y-1">
                 {% if product.price_offers|length == 1 %}
                     <!-- Один вариант -->
                     {% set offer = product.price_offers[0] %}
                     <p class="text-sm text-gray-600">
                         <span class="font-medium">{{ "{:,}".format(offer.quantity) }} шт</span>
                         <span class="mx-1 text-gray-400">•</span>
-                        {% if offer.price_usd %}<span class="font-semibold text-green-600">${{ "%.2f"|format(offer.price_usd) }}</span>{% endif %}
-                        {% if offer.price_rub %}<span class="font-semibold text-green-600"> ₽{{ "%.2f"|format(offer.price_rub) }}</span>{% endif %}
+                        {% if offer.price_usd %}<span class="font-semibold">${{ "%.2f"|format(offer.price_usd) }}</span>{% endif %}
+                        {% if offer.price_rub %}<span class="font-semibold"> ₽{{ "%.2f"|format(offer.price_rub) }}</span>{% endif %}
                         {% if offer.delivery_time_days %}<span class="text-xs text-gray-400 ml-1">{{ offer.delivery_time_days }}дн</span>{% endif %}
                     </p>
                 {% else %}
-                    <!-- Первый и последний варианты -->
+                    <!-- Первый вариант (строка 1) -->
                     {% set first = product.price_offers|first %}
-                    {% set last = product.price_offers|last %}
                     <p class="text-sm text-gray-600">
                         <span class="font-medium">{{ "{:,}".format(first.quantity) }} шт</span>
                         <span class="mx-1 text-gray-400">•</span>
-                        {% if first.price_usd %}<span class="font-semibold text-green-600">${{ "%.2f"|format(first.price_usd) }}</span>{% endif %}
-                        {% if first.price_rub %}<span class="font-semibold text-green-600"> ₽{{ "%.2f"|format(first.price_rub) }}</span>{% endif %}
+                        {% if first.price_usd %}<span class="font-semibold">${{ "%.2f"|format(first.price_usd) }}</span>{% endif %}
+                        {% if first.price_rub %}<span class="font-semibold"> ₽{{ "%.2f"|format(first.price_rub) }}</span>{% endif %}
                         {% if first.delivery_time_days %}<span class="text-xs text-gray-400 ml-1">{{ first.delivery_time_days }}дн</span>{% endif %}
-                        <span class="mx-2 text-gray-400">...</span>
+                    </p>
+                    <!-- Три точки -->
+                    <p class="text-sm text-gray-400">...</p>
+                    <!-- Последний вариант (строка 2) -->
+                    {% set last = product.price_offers|last %}
+                    <p class="text-sm text-gray-600">
                         <span class="font-medium">{{ "{:,}".format(last.quantity) }} шт</span>
                         <span class="mx-1 text-gray-400">•</span>
-                        {% if last.price_usd %}<span class="font-semibold text-green-600">${{ "%.2f"|format(last.price_usd) }}</span>{% endif %}
-                        {% if last.price_rub %}<span class="font-semibold text-green-600"> ₽{{ "%.2f"|format(last.price_rub) }}</span>{% endif %}
+                        {% if last.price_usd %}<span class="font-semibold">${{ "%.2f"|format(last.price_usd) }}</span>{% endif %}
+                        {% if last.price_rub %}<span class="font-semibold"> ₽{{ "%.2f"|format(last.price_rub) }}</span>{% endif %}
                         {% if last.delivery_time_days %}<span class="text-xs text-gray-400 ml-1">{{ last.delivery_time_days }}дн</span>{% endif %}
                     </p>
                 {% endif %}
@@ -249,10 +253,10 @@
             <p class="mt-2 text-sm text-gray-500">Цена не указана</p>
             {% endif %}
             
-            <!-- Дата добавления в КП (крупнее и заметнее) -->
-            {% if product.kp_added_at %}
-            <p class="mt-2 text-sm font-medium text-gray-500">
-                📅 Добавлено в КП: {{ product.kp_added_at.strftime('%d.%m.%Y %H:%M') if product.kp_added_at else '-' }}
+            <!-- Дата создания КП (мелким серым шрифтом) -->
+            {% if product.offer_created_at %}
+            <p class="mt-2 text-xs text-gray-400">
+                Дата создания КП: {{ product.offer_created_at.strftime('%d.%m.%Y') if product.offer_created_at else '-' }}
             </p>
             {% endif %}
         </a>

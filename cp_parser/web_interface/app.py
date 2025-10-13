@@ -599,7 +599,7 @@ def products_list():
             product.sample_delivery_time = int(row[6]) if row[6] is not None else None
             product.row_number = int(row[7]) if row[7] is not None else None
             product.region = row[8]  # Регион проекта
-            # row[9] = offer_created_at (TIMESTAMP, используется для сортировки, не нужно присваивать)
+            product.offer_created_at = row[9]  # Дата создания КП (TIMESTAMP)
             product.kp_added_at = row[10]  # Дата добавления в КП
             # row[11] = min_price (только для сортировки по цене, если применимо)
             # row[12] = relevance_rank (только для поиска)
