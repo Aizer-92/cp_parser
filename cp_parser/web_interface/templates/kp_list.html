@@ -12,6 +12,18 @@
                 <p class="mt-2 text-sm text-gray-600">
                     Выбрано товаров: <span id="kp-total-count" class="font-semibold text-gray-900">0</span>
                 </p>
+                <!-- Ссылка на последний созданный Google Sheets -->
+                <div id="last-google-sheets-link" class="mt-2 hidden">
+                    <a id="google-sheets-url" href="#" target="_blank" class="inline-flex items-center gap-2 text-sm font-medium text-green-600 hover:text-green-700">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Открыть последнее КП в Google Sheets</span>
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                    </a>
+                </div>
             </div>
             
             <!-- Действия -->
@@ -85,6 +97,13 @@
 // Загрузка КП при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
     loadKP();
+    
+    // Проверяем есть ли сохраненная ссылка на Google Sheets
+    const lastUrl = localStorage.getItem('lastGoogleSheetsUrl');
+    const lastTitle = localStorage.getItem('lastGoogleSheetsTitle');
+    if (lastUrl) {
+        showGoogleSheetsLink(lastUrl, lastTitle);
+    }
 });
 
 async function loadKP() {
@@ -265,6 +284,14 @@ async function generateKP(format = 'excel') {
             const data = await response.json();
             if (data.success && data.spreadsheet_url) {
                 showNotification('Google Sheets создан! Открываю в новой вкладке...', 'success');
+                
+                // Сохраняем ссылку в localStorage
+                localStorage.setItem('lastGoogleSheetsUrl', data.spreadsheet_url);
+                localStorage.setItem('lastGoogleSheetsTitle', data.title || 'КП');
+                
+                // Показываем ссылку в UI
+                showGoogleSheetsLink(data.spreadsheet_url, data.title);
+                
                 // Открываем в новой вкладке
                 window.open(data.spreadsheet_url, '_blank');
             } else {
@@ -330,6 +357,18 @@ function showNotification(message, type = 'info') {
     
     container.appendChild(notification);
     setTimeout(() => notification.remove(), 5000);
+}
+
+function showGoogleSheetsLink(url, title) {
+    const linkContainer = document.getElementById('last-google-sheets-link');
+    const linkElement = document.getElementById('google-sheets-url');
+    
+    if (linkContainer && linkElement) {
+        linkElement.href = url;
+        const titleText = title || 'последнее КП';
+        linkElement.querySelector('span').textContent = `Открыть ${titleText} в Google Sheets`;
+        linkContainer.classList.remove('hidden');
+    }
 }
 </script>
 

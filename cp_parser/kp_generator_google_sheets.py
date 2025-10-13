@@ -253,7 +253,7 @@ class KPGoogleSheetsGenerator:
             db_session.close()
     
     def prepare_sheet_data(self, products_grouped):
-        """Подготавливает данные для Google Sheets"""
+        """Подготавливает данные для Google Sheets с изображениями"""
         
         rows = []
         
@@ -270,13 +270,28 @@ class KPGoogleSheetsGenerator:
             
             print(f"   Обрабатываю: {product_info['name']} ({len(offers)} вариантов, {len(images)} изображений)")
             
-            # Название товара
-            rows.append([product_info['name'], '', '', '', '', ''])
+            # Строка 1: Основное изображение | Название товара
+            main_image_formula = ''
+            if images:
+                # Формула IMAGE для Google Sheets (автоматически показывает картинку)
+                main_image_formula = f'=IMAGE("{images[0]}")'
+            
+            rows.append([main_image_formula, product_info['name'], '', '', '', '', ''])
+            
+            # Строка 2: Дополнительные изображения (до 4 штук)
+            if len(images) > 1:
+                additional_images = []
+                for img_url in images[1:5]:  # До 4 дополнительных
+                    additional_images.append(f'=IMAGE("{img_url}")')
+                
+                # Размещаем дополнительные изображения горизонтально
+                img_row = [''] + additional_images + [''] * (6 - len(additional_images))
+                rows.append(img_row[:7])  # Ограничиваем 7 столбцами
             
             # Описание (если есть)
             if product_info['description']:
-                desc_text = product_info['description'][:200]
-                rows.append([desc_text, '', '', '', '', ''])
+                desc_text = product_info['description'][:300]
+                rows.append(['', desc_text, '', '', '', '', ''])
             
             # Информация об образце (если есть)
             if product_info['sample_price'] or product_info['sample_delivery_time']:
@@ -284,33 +299,31 @@ class KPGoogleSheetsGenerator:
                 if product_info['sample_price']:
                     sample_parts.append(f"Образец: ${product_info['sample_price']:.2f}")
                 if product_info['sample_delivery_time']:
-                    sample_parts.append(f"Срок: {product_info['sample_delivery_time']} дн.")
-                rows.append([' | '.join(sample_parts), '', '', '', '', ''])
+                    sample_parts.append(f"Срок доставки образца: {product_info['sample_delivery_time']} дн.")
+                rows.append(['', ' | '.join(sample_parts), '', '', '', '', ''])
+            
+            # Пустая строка перед таблицей цен
+            rows.append(['', '', '', '', '', '', ''])
             
             # Заголовок таблицы с ценами
-            rows.append(['Тираж', 'USD', 'RUB', 'Доставка', 'Срок', 'Изображения'])
+            rows.append(['', 'Тираж', 'USD за шт', 'RUB за шт', 'Маршрут', 'Срок доставки', ''])
             
-            # Ценовые предложения с изображениями
-            for idx, offer in enumerate(offers):
+            # Ценовые предложения
+            for offer in offers:
                 row_data = [
-                    f"{offer['quantity']:,.0f} шт",
+                    '',  # Пустая колонка слева
+                    f"{offer['quantity']:,.0f}".replace(',', ' '),
                     f"${offer['price_usd']:.2f}" if offer['price_usd'] else '-',
                     f"₽{offer['price_rub']:.2f}" if offer['price_rub'] else '-',
                     offer['route'] or '-',
-                    f"{offer['delivery_days']} дн." if offer['delivery_days'] else '-'
+                    f"{offer['delivery_days']} дн." if offer['delivery_days'] else '-',
+                    ''
                 ]
-                
-                # Добавляем URL изображения в первую строку предложений
-                if idx == 0 and images:
-                    # Все изображения в последний столбец
-                    row_data.append(', '.join(images[:5]))  # До 5 изображений
-                else:
-                    row_data.append('')
-                
                 rows.append(row_data)
             
-            # Пустая строка между товарами
-            rows.append(['', '', '', '', '', ''])
+            # 2 пустые строки между товарами
+            rows.append(['', '', '', '', '', '', ''])
+            rows.append(['', '', '', '', '', '', ''])
         
         return rows
     
@@ -352,12 +365,18 @@ class KPGoogleSheetsGenerator:
             return 'Sheet1'
     
     def create_spreadsheet(self, title):
-        """Создает новый Google Spreadsheet (в расшаренной папке для экономии квоты)"""
+        """Создает новый Google Spreadsheet в папке КП"""
         if not self.sheets_service:
             raise Exception("Google Sheets API не инициализирован")
         
-        # ПРИОРИТЕТ 1: Создать в расшаренной папке (чтобы не тратить квоту Service Account)
-        shared_folder_id = os.environ.get('GOOGLE_DRIVE_SHARED_FOLDER_ID')
+        # ID папки КП (приоритет)
+        kp_folder_id = os.environ.get('GOOGLE_DRIVE_KP_FOLDER_ID', '1JceijhZMn8myEpIA80dQ34tYTqF5NFsE')
+        
+        # Fallback на старую переменную
+        if not kp_folder_id:
+            kp_folder_id = os.environ.get('GOOGLE_DRIVE_SHARED_FOLDER_ID')
+        
+        shared_folder_id = kp_folder_id
         
         if shared_folder_id:
             print(f"📁 [Google Sheets] Создаю в расшаренной папке: {shared_folder_id}")
