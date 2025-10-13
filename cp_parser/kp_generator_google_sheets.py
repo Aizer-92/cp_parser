@@ -263,16 +263,54 @@ class KPGoogleSheetsGenerator:
         merge_requests = []  # Для объединения ячеек
         current_row = 0
         
-        # Заголовок документа
-        rows.append(['КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ'])
-        current_row += 1
-        rows.append([f'от {datetime.now().strftime("%d.%m.%Y")}'])
-        current_row += 1
-        rows.append([''])  # Пустая строка
+        # ШАПКА С ЛОГОТИПОМ И ИНФОРМАЦИЕЙ (как в шаблоне)
+        # Строка 1: Логотип + Контактная информация
+        logo_url = "https://lh7-rt.googleusercontent.com/sheets/APBGjhYiO7BPJJoOXfRbx_1B_farTp2rxhUHH-r0mEuJNPAcx0UoahWBykdtq9w6fcu4FOdMAac4vgonRp8n68nm4f_UH0brfag1U8pdXlfcqp8_DRWLBidyqTAkLhBO03gEnhdCIvsfHCm8U73xLV8=w222-h70"
+        rows.append([
+            f'=IMAGE("{logo_url}"; 1)',  # Логотип
+            'Менеджер:\nEmail:\nТелефон:',  # Контактная информация
+            '', 
+            'Цена указана с НДС и учитывает стоимость доставки до Москвы или ТК\nСрок тиража "под ключ" включает в себя: производство, доставку по Китаю, обработку груза, доставку из Китая до Москвы, таможню',
+            '',
+            'Образец не включен в стоимость тиража',
+            '', '', '', '', '', '', ''
+        ])
         current_row += 1
         
-        # ЗАГОЛОВОК ТАБЛИЦЫ (11 колонок: 10 основных + 3 доп. фото)
-        rows.append(['Фото', 'Название', 'Дизайн', 'Характеристики', 'Образец', 'Тираж', 'USD/шт', 'RUB/шт', 'Маршрут', 'Срок', 'Доп.1', 'Доп.2', 'Доп.3'])
+        # Merge для логотипа и информации
+        merge_requests.append({
+            'startRowIndex': 0,
+            'endRowIndex': 1,
+            'startColumnIndex': 1,  # B
+            'endColumnIndex': 3     # до C
+        })
+        merge_requests.append({
+            'startRowIndex': 0,
+            'endRowIndex': 1,
+            'startColumnIndex': 3,  # D
+            'endColumnIndex': 5     # до E
+        })
+        merge_requests.append({
+            'startRowIndex': 0,
+            'endRowIndex': 1,
+            'startColumnIndex': 5,  # F
+            'endColumnIndex': 10    # до J
+        })
+        
+        # ЗАГОЛОВОК ТАБЛИЦЫ (строка 2-3)
+        # Строка 2: Основные заголовки
+        rows.append(['Фото', 'Наименование', 'Характеристики', 'Кастом', 'Тираж, шт', 'Доставка ЖД', 'Доставка АВИА', 'Образец', 'Доп. фото', '', ''])
+        current_row += 1
+        
+        # Строка 3: Подзаголовки для цен
+        rows.append([
+            '', '', '', '',  # Пустые для первых колонок
+            '',  # Тираж
+            'Цена за шт., $\nЦена за шт., руб\nИтого, руб\nСрок тиража, к.д.',  # ЖД
+            'Цена за шт., $\nЦена за шт., руб\nИтого, руб\nСрок тиража, к.д.',  # АВИА
+            'Цена за шт., руб\nСрок фото и видео, к.д.\nСрок с доставкой, к.д.',  # Образец
+            '', '', ''  # Доп. фото
+        ])
         current_row += 1
         
         # Генерируем товары
@@ -683,7 +721,7 @@ class KPGoogleSheetsGenerator:
         try:
             requests = []
             
-            # 1. Заголовок документа (жирный, большой шрифт)
+            # 1. Шапка с логотипом (строка 1, перенос текста)
             requests.append({
                 'repeatCell': {
                     'range': {
@@ -695,18 +733,15 @@ class KPGoogleSheetsGenerator:
                     },
                     'cell': {
                         'userEnteredFormat': {
-                            'textFormat': {
-                                'fontSize': 16,
-                                'bold': True
-                            },
-                            'horizontalAlignment': 'CENTER'
+                            'wrapStrategy': 'WRAP',
+                            'verticalAlignment': 'MIDDLE'
                         }
                     },
-                    'fields': 'userEnteredFormat(textFormat,horizontalAlignment)'
+                    'fields': 'userEnteredFormat(wrapStrategy,verticalAlignment)'
                 }
             })
             
-            # 2. Дата (курсив, центр)
+            # 2. Заголовки таблицы (строка 2, жирный, серый фон)
             requests.append({
                 'repeatCell': {
                     'range': {
@@ -719,32 +754,11 @@ class KPGoogleSheetsGenerator:
                     'cell': {
                         'userEnteredFormat': {
                             'textFormat': {
-                                'italic': True
-                            },
-                            'horizontalAlignment': 'CENTER'
-                        }
-                    },
-                    'fields': 'userEnteredFormat(textFormat,horizontalAlignment)'
-                }
-            })
-            
-            # 3. Заголовок таблицы (строка 4, жирный, серый фон)
-            requests.append({
-                'repeatCell': {
-                    'range': {
-                        'sheetId': 0,
-                        'startRowIndex': 3,
-                        'endRowIndex': 4,
-                        'startColumnIndex': 0,
-                        'endColumnIndex': 13
-                    },
-                    'cell': {
-                        'userEnteredFormat': {
-                            'textFormat': {
                                 'bold': True,
                                 'fontSize': 11
                             },
                             'horizontalAlignment': 'CENTER',
+                            'verticalAlignment': 'MIDDLE',
                             'backgroundColor': {
                                 'red': 0.9,
                                 'green': 0.9,
@@ -752,7 +766,31 @@ class KPGoogleSheetsGenerator:
                             }
                         }
                     },
-                    'fields': 'userEnteredFormat(textFormat,horizontalAlignment,backgroundColor)'
+                    'fields': 'userEnteredFormat(textFormat,horizontalAlignment,verticalAlignment,backgroundColor)'
+                }
+            })
+            
+            # 3. Подзаголовки (строка 3, перенос текста)
+            requests.append({
+                'repeatCell': {
+                    'range': {
+                        'sheetId': 0,
+                        'startRowIndex': 2,
+                        'endRowIndex': 3,
+                        'startColumnIndex': 0,
+                        'endColumnIndex': 13
+                    },
+                    'cell': {
+                        'userEnteredFormat': {
+                            'wrapStrategy': 'WRAP',
+                            'horizontalAlignment': 'CENTER',
+                            'verticalAlignment': 'MIDDLE',
+                            'textFormat': {
+                                'fontSize': 9
+                            }
+                        }
+                    },
+                    'fields': 'userEnteredFormat(wrapStrategy,horizontalAlignment,verticalAlignment,textFormat)'
                 }
             })
             
@@ -801,13 +839,29 @@ class KPGoogleSheetsGenerator:
                 }
             })
             
-            # 6. ВЫСОТА строк с товарами - 200 пикселей (больше места для фото)
+            # 6. ВЫСОТА строки с шапкой - 70 пикселей
             requests.append({
                 'updateDimensionProperties': {
                     'range': {
                         'sheetId': 0,
                         'dimension': 'ROWS',
-                        'startIndex': 4,  # Начиная с 5-й строки (первые товары)
+                        'startIndex': 0,  # Первая строка (шапка)
+                        'endIndex': 1
+                    },
+                    'properties': {
+                        'pixelSize': 70
+                    },
+                    'fields': 'pixelSize'
+                }
+            })
+            
+            # 7. ВЫСОТА строк с товарами - 200 пикселей (больше места для фото)
+            requests.append({
+                'updateDimensionProperties': {
+                    'range': {
+                        'sheetId': 0,
+                        'dimension': 'ROWS',
+                        'startIndex': 3,  # Начиная с 4-й строки (первые товары)
                         'endIndex': 1000
                     },
                     'properties': {
@@ -817,15 +871,15 @@ class KPGoogleSheetsGenerator:
                 }
             })
             
-            # 7. ФОРМАТИРОВАНИЕ ТЕКСТОВЫХ КОЛОНОК: вертикаль по центру, горизонталь по левому краю + перенос текста
-            # Колонки B (Название), C (Дизайн), D (Характеристики), E (Образец), I (Маршрут)
-            text_columns = [1, 2, 3, 4, 8]  # B, C, D, E, I
+            # 8. ФОРМАТИРОВАНИЕ ТЕКСТОВЫХ КОЛОНОК: вертикаль по центру, горизонталь по левому краю + перенос текста
+            # Колонки B (Название), C (Характеристики), D (Кастом)
+            text_columns = [1, 2, 3]  # B, C, D
             for col_index in text_columns:
                 requests.append({
                     'repeatCell': {
                         'range': {
                             'sheetId': 0,
-                            'startRowIndex': 4,  # Начиная с 5-й строки (товары)
+                            'startRowIndex': 3,  # Начиная с 4-й строки (товары)
                             'endRowIndex': 1000,
                             'startColumnIndex': col_index,
                             'endColumnIndex': col_index + 1
