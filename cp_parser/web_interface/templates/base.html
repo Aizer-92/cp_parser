@@ -68,5 +68,33 @@
     </footer>
 
     {% block scripts %}{% endblock %}
+    
+    <script>
+        // Обновление счетчика КП в шапке при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            updateKPCountInHeader();
+        });
+        
+        function updateKPCountInHeader() {
+            fetch('/api/kp')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const kpCount = data.kp_count || 0;
+                        const linkText = document.getElementById('kp-link-text');
+                        if (linkText) {
+                            if (kpCount > 0) {
+                                linkText.textContent = `КП (${kpCount})`;
+                            } else {
+                                linkText.textContent = 'КП';
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки счетчика КП:', error);
+                });
+        }
+    </script>
 </body>
 </html>

@@ -530,6 +530,11 @@ def products_list():
             order_by = "pr.offer_created_at ASC NULLS LAST, p.id ASC"
         elif sort_by == "date_desc":
             order_by = "pr.offer_created_at DESC NULLS LAST, p.id DESC"
+        elif sort_by == "kp_date":
+            # Сортировка по дате добавления в КП (сначала новые)
+            select_fields = base_select + """, (SELECT MAX(ki.added_at) FROM kp_items ki WHERE ki.product_id = p.id AND ki.session_id = :session_id) as kp_added_at"""
+            order_by = "kp_added_at DESC NULLS LAST, p.id DESC"
+            params["session_id"] = get_session_id()
         elif sort_by == "price_asc":
             # Добавляем подзапрос для цены в SELECT для сортировки
             select_fields = base_select + """, (SELECT MIN(CAST(po.price_rub AS NUMERIC)) FROM price_offers po WHERE po.product_id = p.id) as min_price"""
