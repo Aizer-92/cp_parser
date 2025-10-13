@@ -1,0 +1,14 @@
+# Бинарные файлы шрифтов - НЕ применять line-ending conversion
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+
+# Изображения
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+
