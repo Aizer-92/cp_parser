@@ -296,11 +296,47 @@ class KPGoogleSheetsGenerator:
         }
     
     def create_spreadsheet(self, title):
-        """Создает новый Google Spreadsheet (с workaround через копирование template)"""
+        """Создает новый Google Spreadsheet (в расшаренной папке для экономии квоты)"""
         if not self.sheets_service:
             raise Exception("Google Sheets API не инициализирован")
         
-        # WORKAROUND: Пробуем скопировать существующий template вместо создания нового
+        # ПРИОРИТЕТ 1: Создать в расшаренной папке (чтобы не тратить квоту Service Account)
+        shared_folder_id = os.environ.get('GOOGLE_DRIVE_SHARED_FOLDER_ID')
+        
+        if shared_folder_id:
+            print(f"📁 [Google Sheets] Создаю в расшаренной папке: {shared_folder_id}")
+            try:
+                file_metadata = {
+                    'name': title,
+                    'mimeType': 'application/vnd.google-apps.spreadsheet',
+                    'parents': [shared_folder_id]  # Создаем СРАЗУ в папке!
+                }
+                
+                result = self.drive_service.files().create(
+                    body=file_metadata,
+                    fields='id, webViewLink'
+                ).execute()
+                
+                spreadsheet_id = result['id']
+                spreadsheet_url = result['webViewLink']
+                
+                print(f"✅ [Google Sheets] Создан в папке!")
+                print(f"   ID: {spreadsheet_id}")
+                print(f"   URL: {spreadsheet_url}")
+                
+                # Делаем публичным с правами на редактирование
+                self._make_public_editable(spreadsheet_id)
+                
+                return spreadsheet_id, spreadsheet_url
+                
+            except HttpError as folder_error:
+                print(f"⚠️  [Google Sheets] Не удалось создать в папке: HTTP {folder_error.resp.status}")
+                if 'storageQuotaExceeded' in str(folder_error.error_details):
+                    print(f"❌ У Service Account закончилось место на Drive!")
+                    print(f"   Используй GOOGLE_DRIVE_SHARED_FOLDER_ID с твоей расшаренной папкой!")
+                print(f"   Пробую другие варианты...")
+        
+        # ПРИОРИТЕТ 2: Копировать существующий template
         template_id = os.environ.get('GOOGLE_SHEETS_TEMPLATE_ID')
         
         if template_id:
@@ -310,6 +346,10 @@ class KPGoogleSheetsGenerator:
                     'name': title,
                     'mimeType': 'application/vnd.google-apps.spreadsheet'
                 }
+                
+                # Если есть папка - копируем сразу в нее
+                if shared_folder_id:
+                    file_metadata['parents'] = [shared_folder_id]
                 
                 result = self.drive_service.files().copy(
                     fileId=template_id,
@@ -333,7 +373,7 @@ class KPGoogleSheetsGenerator:
                 print(f"⚠️  [Google Sheets] Не удалось скопировать template: HTTP {copy_error.resp.status}")
                 print(f"   Пробую создать новый файл...")
         
-        # Если нет template или копирование не удалось - пробуем создать новый
+        # ПРИОРИТЕТ 3 (fallback): Создать новый в корне
         try:
             spreadsheet = {
                 'properties': {
