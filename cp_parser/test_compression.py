@@ -78,7 +78,26 @@ def download_and_compress_file(ftp, filename, original_size_mb):
         
         print(f"   Формат: {original_format}, Размер: {original_dimensions[0]}x{original_dimensions[1]}")
         
-        # 3. Конвертируем в RGB если необходимо
+        # 3. Ресайз до 1920px по большей стороне
+        max_size = 1920
+        if max(original_dimensions) > max_size:
+            # Вычисляем новые размеры с сохранением пропорций
+            if original_dimensions[0] > original_dimensions[1]:
+                # Ширина больше
+                new_width = max_size
+                new_height = int(original_dimensions[1] * (max_size / original_dimensions[0]))
+            else:
+                # Высота больше
+                new_height = max_size
+                new_width = int(original_dimensions[0] * (max_size / original_dimensions[1]))
+            
+            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            resized_dimensions = (new_width, new_height)
+            print(f"   Ресайз: {original_dimensions[0]}x{original_dimensions[1]} → {new_width}x{new_height}")
+        else:
+            resized_dimensions = original_dimensions
+        
+        # 4. Конвертируем в RGB если необходимо
         if img.mode in ('RGBA', 'LA', 'P'):
             background = Image.new('RGB', img.size, (255, 255, 255))
             if img.mode == 'P':
@@ -88,7 +107,7 @@ def download_and_compress_file(ftp, filename, original_size_mb):
         elif img.mode != 'RGB':
             img = img.convert('RGB')
         
-        # 4. Сжимаем в WebP
+        # 5. Сжимаем в WebP
         compressed_data = io.BytesIO()
         img.save(compressed_data, format='WEBP', quality=85, method=6)
         compressed_data.seek(0)
@@ -114,6 +133,7 @@ def download_and_compress_file(ftp, filename, original_size_mb):
             'compressed_size_kb': compressed_size_kb,
             'compression_ratio': compression_ratio,
             'original_dimensions': f"{original_dimensions[0]}x{original_dimensions[1]}",
+            'resized_dimensions': f"{resized_dimensions[0]}x{resized_dimensions[1]}",
             'original_url': f"https://ftp.ru1.storage.beget.cloud{FTP_DIR}/{filename}",
             'compressed_url': f"https://ftp.ru1.storage.beget.cloud{FTP_DIR}/{compressed_filename}"
         }
@@ -186,7 +206,7 @@ def main():
         writer = csv.DictWriter(f, fieldnames=[
             'filename', 'compressed_filename', 
             'original_size_kb', 'compressed_size_kb', 
-            'compression_ratio', 'original_dimensions',
+            'compression_ratio', 'original_dimensions', 'resized_dimensions',
             'original_url', 'compressed_url'
         ])
         writer.writeheader()
@@ -217,7 +237,7 @@ def main():
         print(f"{i}. {result['filename'][:60]}")
         print(f"   Оригинал:  {result['original_url']}")
         print(f"   Сжатый:    {result['compressed_url']}")
-        print(f"   Размеры:   {result['original_dimensions']}")
+        print(f"   Размеры:   {result['original_dimensions']} → {result['resized_dimensions']}")
         print(f"   Экономия:  {result['compression_ratio']:.1f}%")
         print()
     

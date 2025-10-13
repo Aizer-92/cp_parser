@@ -1419,6 +1419,34 @@ def api_kp_generate_pdf():
         traceback.print_exc()
         return jsonify({'success': False, 'error': f'Ошибка генерации PDF: {str(e)}'}), 500
 
+@app.route('/api/kp/generate/google-sheets', methods=['POST'])
+@login_required
+def api_kp_generate_google_sheets():
+    """Генерирует Google Sheets коммерческого предложения"""
+    
+    try:
+        session_id = get_session_id()
+        
+        # Импортируем генератор
+        from kp_generator_google_sheets import KPGoogleSheetsGenerator
+        
+        generator = KPGoogleSheetsGenerator()
+        result = generator.generate(session_id)
+        
+        return jsonify({
+            'success': True,
+            'spreadsheet_url': result['spreadsheet_url'],
+            'spreadsheet_id': result['spreadsheet_id'],
+            'title': result['title']
+        })
+        
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Ошибка генерации Google Sheets: {str(e)}'}), 500
+
 print("✅ [APP] API КП зарегистрирован (/api/kp/*)")
 
 # ===== API ДЛЯ ПОИСКА ПО ИЗОБРАЖЕНИЮ =====

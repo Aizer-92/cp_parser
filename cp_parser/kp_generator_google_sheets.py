@@ -5,6 +5,7 @@
 
 import os
 import sys
+import json
 from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
@@ -15,13 +16,61 @@ sys.path.append(str(Path(__file__).parent.parent))
 from database.postgresql_manager import PostgreSQLManager
 from sqlalchemy import text
 
+# Google Sheets API
+try:
+    from google.oauth2 import service_account
+    from googleapiclient.discovery import build
+    from googleapiclient.errors import HttpError
+    GOOGLE_AVAILABLE = True
+except ImportError:
+    GOOGLE_AVAILABLE = False
+    print("⚠️  [Google Sheets] google-auth и google-api-python-client не установлены")
+
 
 class KPGoogleSheetsGenerator:
     """Генератор Google Sheets файлов для коммерческого предложения"""
     
     def __init__(self):
         self.db_manager = PostgreSQLManager()
-        # Google Sheets API будет использоваться через MCP
+        self.sheets_service = None
+        self.drive_service = None
+        
+        # Инициализация Google API
+        if GOOGLE_AVAILABLE:
+            self._init_google_api()
+    
+    def _init_google_api(self):
+        """Инициализирует Google Sheets и Drive API"""
+        try:
+            # Получаем credentials из переменной окружения
+            creds_json = os.getenv('GOOGLE_CREDENTIALS_JSON')
+            
+            if not creds_json:
+                print("⚠️  [Google Sheets] GOOGLE_CREDENTIALS_JSON не найден в .env")
+                return
+            
+            # Парсим JSON credentials
+            creds_dict = json.loads(creds_json)
+            
+            # Создаем credentials
+            credentials = service_account.Credentials.from_service_account_info(
+                creds_dict,
+                scopes=[
+                    'https://www.googleapis.com/auth/spreadsheets',
+                    'https://www.googleapis.com/auth/drive.file'
+                ]
+            )
+            
+            # Создаем сервисы
+            self.sheets_service = build('sheets', 'v4', credentials=credentials)
+            self.drive_service = build('drive', 'v3', credentials=credentials)
+            
+            print("✅ [Google Sheets] API инициализирован")
+            
+        except Exception as e:
+            print(f"❌ [Google Sheets] Ошибка инициализации API: {e}")
+            import traceback
+            traceback.print_exc()
     
     def get_kp_items(self, session_id):
         """Получает товары из КП и группирует по product_id"""
@@ -180,18 +229,189 @@ class KPGoogleSheetsGenerator:
             'products': products  # Для вставки изображений
         }
     
+    def create_spreadsheet(self, title):
+        """Создает новый Google Spreadsheet"""
+        if not self.sheets_service:
+            raise Exception("Google Sheets API не инициализирован")
+        
+        spreadsheet = {
+            'properties': {
+                'title': title
+            }
+        }
+        
+        spreadsheet = self.sheets_service.spreadsheets().create(
+            body=spreadsheet,
+            fields='spreadsheetId,spreadsheetUrl'
+        ).execute()
+        
+        spreadsheet_id = spreadsheet.get('spreadsheetId')
+        spreadsheet_url = spreadsheet.get('spreadsheetUrl')
+        
+        print(f"✅ [Google Sheets] Создана таблица: {spreadsheet_id}")
+        
+        # Делаем публичной с правами на редактирование
+        self._make_public_editable(spreadsheet_id)
+        
+        return spreadsheet_id, spreadsheet_url
+    
+    def _make_public_editable(self, spreadsheet_id):
+        """Делает Google Spreadsheet публичным с правами на редактирование"""
+        if not self.drive_service:
+            return
+        
+        try:
+            # Устанавливаем права: anyone with link can edit
+            permission = {
+                'type': 'anyone',
+                'role': 'writer'  # writer = редактор
+            }
+            
+            self.drive_service.permissions().create(
+                fileId=spreadsheet_id,
+                body=permission,
+                fields='id'
+            ).execute()
+            
+            print(f"✅ [Google Sheets] Установлены публичные права на редактирование")
+            
+        except Exception as e:
+            print(f"⚠️  [Google Sheets] Ошибка установки прав: {e}")
+    
+    def update_cells(self, spreadsheet_id, range_name, values):
+        """Обновляет ячейки в Google Spreadsheet"""
+        if not self.sheets_service:
+            raise Exception("Google Sheets API не инициализирован")
+        
+        body = {
+            'values': values
+        }
+        
+        result = self.sheets_service.spreadsheets().values().update(
+            spreadsheetId=spreadsheet_id,
+            range=range_name,
+            valueInputOption='USER_ENTERED',
+            body=body
+        ).execute()
+        
+        print(f"✅ [Google Sheets] Обновлено ячеек: {result.get('updatedCells')}")
+        
+        return result
+    
+    def format_sheet(self, spreadsheet_id):
+        """Применяет форматирование к Google Spreadsheet"""
+        if not self.sheets_service:
+            return
+        
+        try:
+            requests = []
+            
+            # 1. Заголовок документа (жирный, большой шрифт)
+            requests.append({
+                'repeatCell': {
+                    'range': {
+                        'sheetId': 0,
+                        'startRowIndex': 0,
+                        'endRowIndex': 1,
+                        'startColumnIndex': 0,
+                        'endColumnIndex': 6
+                    },
+                    'cell': {
+                        'userEnteredFormat': {
+                            'textFormat': {
+                                'fontSize': 16,
+                                'bold': True
+                            },
+                            'horizontalAlignment': 'CENTER'
+                        }
+                    },
+                    'fields': 'userEnteredFormat(textFormat,horizontalAlignment)'
+                }
+            })
+            
+            # 2. Дата (курсив, центр)
+            requests.append({
+                'repeatCell': {
+                    'range': {
+                        'sheetId': 0,
+                        'startRowIndex': 1,
+                        'endRowIndex': 2,
+                        'startColumnIndex': 0,
+                        'endColumnIndex': 6
+                    },
+                    'cell': {
+                        'userEnteredFormat': {
+                            'textFormat': {
+                                'italic': True
+                            },
+                            'horizontalAlignment': 'CENTER'
+                        }
+                    },
+                    'fields': 'userEnteredFormat(textFormat,horizontalAlignment)'
+                }
+            })
+            
+            # 3. Автоподбор ширины колонок
+            requests.append({
+                'autoResizeDimensions': {
+                    'dimensions': {
+                        'sheetId': 0,
+                        'dimension': 'COLUMNS',
+                        'startIndex': 0,
+                        'endIndex': 6
+                    }
+                }
+            })
+            
+            body = {
+                'requests': requests
+            }
+            
+            self.sheets_service.spreadsheets().batchUpdate(
+                spreadsheetId=spreadsheet_id,
+                body=body
+            ).execute()
+            
+            print(f"✅ [Google Sheets] Применено форматирование")
+            
+        except Exception as e:
+            print(f"⚠️  [Google Sheets] Ошибка форматирования: {e}")
+    
     def generate(self, session_id):
         """
         Генерирует Google Sheets КП
         
-        ВАЖНО: Этот метод возвращает данные для создания через MCP.
-        Фактическое создание Google Sheets должно происходить через:
-        1. mcp_google-sheets_create_spreadsheet(title)
-        2. mcp_google-sheets_update_cells(spreadsheet_id, sheet, range, data)
-        3. Вставка изображений (требует специальную обработку)
+        Создает Google Spreadsheet с публичным доступом на редактирование
         """
         
-        return self.generate_mcp_instructions(session_id)
+        if not self.sheets_service:
+            raise Exception("Google Sheets API не доступен. Проверьте GOOGLE_CREDENTIALS_JSON в .env")
+        
+        # Получаем данные
+        products = self.get_kp_items(session_id)
+        
+        if not products:
+            raise ValueError("КП пустое. Добавьте товары перед генерацией.")
+        
+        sheet_data = self.prepare_sheet_data(products)
+        
+        # Создаем Google Spreadsheet
+        title = f'КП_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
+        spreadsheet_id, spreadsheet_url = self.create_spreadsheet(title)
+        
+        # Заполняем данными
+        self.update_cells(spreadsheet_id, 'Sheet1!A1', sheet_data)
+        
+        # Применяем форматирование
+        self.format_sheet(spreadsheet_id)
+        
+        print(f"✅ [Google Sheets] КП создано: {spreadsheet_url}")
+        
+        return {
+            'spreadsheet_id': spreadsheet_id,
+            'spreadsheet_url': spreadsheet_url,
+            'title': title
+        }
 
 
 if __name__ == "__main__":
