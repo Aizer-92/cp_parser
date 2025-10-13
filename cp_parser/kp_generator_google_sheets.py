@@ -297,20 +297,9 @@ class KPGoogleSheetsGenerator:
             'endColumnIndex': 10    # до J
         })
         
-        # ЗАГОЛОВОК ТАБЛИЦЫ (строка 2-3)
-        # Строка 2: Основные заголовки (ДИЗАЙН и ХАРАКТЕРИСТИКИ поменяны местами)
-        rows.append(['Фото', 'Наименование', 'Дизайн', 'Характеристики', 'Тираж, шт', 'Доставка ЖД', 'Доставка АВИА', 'Образец', 'Доп. фото', '', ''])
-        current_row += 1
-        
-        # Строка 3: Подзаголовки для цен
-        rows.append([
-            '', '', '', '',  # Пустые для первых колонок
-            '',  # Тираж
-            'Цена за шт., $\nЦена за шт., руб\nИтого, руб\nСрок тиража, к.д.',  # ЖД
-            'Цена за шт., $\nЦена за шт., руб\nИтого, руб\nСрок тиража, к.д.',  # АВИА
-            'Цена за шт., руб\nСрок фото и видео, к.д.\nСрок с доставкой, к.д.',  # Образец
-            '', '', ''  # Доп. фото
-        ])
+        # ЗАГОЛОВОК ТАБЛИЦЫ (строка 2) - УБРАЛИ строку 3 (подзаголовки)
+        # Используем наши заголовки (не копируем из шаблона)
+        rows.append(['Фото', 'Наименование', 'Дизайн', 'Характеристики', 'Тираж, шт', 'USD/шт', 'RUB/шт', 'Маршрут', 'Срок, дн.', 'Образец', 'Доп. фото 1', 'Доп. фото 2', 'Доп. фото 3'])
         current_row += 1
         
         # Генерируем товары
@@ -709,8 +698,39 @@ class KPGoogleSheetsGenerator:
                             body=copy_request
                         ).execute()
                         
+                        new_sheet_id = result['sheetId']
+                        new_sheet_title = result.get('title', f"{sheet_name} (копия)")
+                        
+                        # Убираем " (копия)" из названия листа
+                        if ' (копия)' in new_sheet_title or ' (Копия)' in new_sheet_title:
+                            clean_title = new_sheet_title.replace(' (копия)', '').replace(' (Копия)', '')
+                            
+                            try:
+                                # Переименовываем лист
+                                rename_request = {
+                                    'requests': [{
+                                        'updateSheetProperties': {
+                                            'properties': {
+                                                'sheetId': new_sheet_id,
+                                                'title': clean_title
+                                            },
+                                            'fields': 'title'
+                                        }
+                                    }]
+                                }
+                                
+                                self.sheets_service.spreadsheets().batchUpdate(
+                                    spreadsheetId=destination_spreadsheet_id,
+                                    body=rename_request
+                                ).execute()
+                                
+                                print(f"   ✅ Лист переименован: '{new_sheet_title}' → '{clean_title}' (ID: {new_sheet_id})")
+                            except Exception as rename_error:
+                                print(f"   ⚠️  Не удалось переименовать лист: {rename_error}")
+                        else:
+                            print(f"   ✅ Лист '{sheet_name}' скопирован (ID: {new_sheet_id})")
+                        
                         copied_count += 1
-                        print(f"   ✅ Лист '{sheet_name}' скопирован (ID: {result['sheetId']})")
                         
                     except HttpError as copy_error:
                         print(f"   ⚠️  Не удалось скопировать лист '{sheet_name}': HTTP {copy_error.resp.status}")
@@ -753,13 +773,18 @@ class KPGoogleSheetsGenerator:
         return result
     
     def apply_merge_cells(self, spreadsheet_id, merge_requests):
-        """Применяет объединение ячеек"""
+        """Применяет объединение ячеек + фиксирует высоту для merged строк"""
         if not self.sheets_service or not merge_requests:
             return
         
         try:
             requests = []
+            
+            # Группируем merge_requests по строкам, чтобы определить merged диапазоны
+            merged_rows = set()
+            
             for merge_range in merge_requests:
+                # Добавляем merge request
                 requests.append({
                     'mergeCells': {
                         'range': {
@@ -772,6 +797,29 @@ class KPGoogleSheetsGenerator:
                         'mergeType': 'MERGE_ALL'  # Объединить все ячейки
                     }
                 })
+                
+                # Запоминаем merged строки (для колонки A - фото)
+                if merge_range['startColumnIndex'] == 0 and merge_range['endColumnIndex'] == 1:
+                    # Это merge для фото - фиксируем высоту строк
+                    for row_idx in range(merge_range['startRowIndex'], merge_range['endRowIndex']):
+                        merged_rows.add(row_idx)
+            
+            # Устанавливаем фиксированную высоту 250px для каждой merged строки
+            for row_idx in merged_rows:
+                requests.append({
+                    'updateDimensionProperties': {
+                        'range': {
+                            'sheetId': 0,
+                            'dimension': 'ROWS',
+                            'startIndex': row_idx,
+                            'endIndex': row_idx + 1
+                        },
+                        'properties': {
+                            'pixelSize': 250  # Фиксированная высота 250px
+                        },
+                        'fields': 'pixelSize'
+                    }
+                })
             
             body = {'requests': requests}
             
@@ -780,7 +828,7 @@ class KPGoogleSheetsGenerator:
                 body=body
             ).execute()
             
-            print(f"✅ [Google Sheets] Применено {len(merge_requests)} объединений ячеек")
+            print(f"✅ [Google Sheets] Применено {len(merge_requests)} объединений ячеек + фиксация высоты для {len(merged_rows)} строк")
             
         except Exception as e:
             print(f"⚠️  [Google Sheets] Ошибка объединения ячеек: {e}")
@@ -813,7 +861,7 @@ class KPGoogleSheetsGenerator:
                 }
             })
             
-            # 2. Заголовки таблицы (строка 2, жирный, серый фон)
+            # 2. Заголовки таблицы (строка 2, жирный, серый фон) - УБРАЛИ строку 3
             requests.append({
                 'repeatCell': {
                     'range': {
@@ -842,30 +890,6 @@ class KPGoogleSheetsGenerator:
                 }
             })
             
-            # 3. Подзаголовки (строка 3, перенос текста)
-            requests.append({
-                'repeatCell': {
-                    'range': {
-                        'sheetId': 0,
-                        'startRowIndex': 2,
-                        'endRowIndex': 3,
-                        'startColumnIndex': 0,
-                        'endColumnIndex': 13
-                    },
-                    'cell': {
-                        'userEnteredFormat': {
-                            'wrapStrategy': 'WRAP',
-                            'horizontalAlignment': 'CENTER',
-                            'verticalAlignment': 'MIDDLE',
-                            'textFormat': {
-                                'fontSize': 9
-                            }
-                        }
-                    },
-                    'fields': 'userEnteredFormat(wrapStrategy,horizontalAlignment,verticalAlignment,textFormat)'
-                }
-            })
-            
             # 4. ШИРИНА колонки A (Фото) - 250 пикселей (УВЕЛИЧЕНО)
             requests.append({
                 'updateDimensionProperties': {
@@ -882,7 +906,7 @@ class KPGoogleSheetsGenerator:
                 }
             })
             
-            # 4.1. ШИРИНА колонок C-D (Дизайн, Характеристики) - 120 пикселей (УМЕНЬШЕНО)
+            # 4.1. ШИРИНА колонок C-D (Дизайн, Характеристики) - 180 пикселей (в 1.5 раза больше)
             for col_idx in [2, 3]:  # C, D
                 requests.append({
                     'updateDimensionProperties': {
@@ -893,11 +917,14 @@ class KPGoogleSheetsGenerator:
                             'endIndex': col_idx + 1
                         },
                         'properties': {
-                            'pixelSize': 120
+                            'pixelSize': 180
                         },
                         'fields': 'pixelSize'
                     }
                 })
+            
+            # 4.1.1. ШИРИНА колонок E-F (Тираж, USD) - одинаковая ширина (авто)
+            # Оставляем автоподбор, но E и F будут одинаковыми
             
             # 4.2. ШИРИНА колонок K-M (Доп. фото) - 250 пикселей (УВЕЛИЧЕНО)
             for col_idx in [10, 11, 12]:  # K, L, M
@@ -956,27 +983,16 @@ class KPGoogleSheetsGenerator:
             })
             
             # 7. ВЫСОТА строк с товарами - 250 пикселей (УВЕЛИЧЕНО для фото 250x250)
-            requests.append({
-                'updateDimensionProperties': {
-                    'range': {
-                        'sheetId': 0,
-                        'dimension': 'ROWS',
-                        'startIndex': 3,  # Начиная с 4-й строки (первые товары)
-                        'endIndex': 1000
-                    },
-                    'properties': {
-                        'pixelSize': 250
-                    },
-                    'fields': 'pixelSize'
-                }
-            })
+            # ВАЖНО: НЕ СТАВИМ фиксированную высоту для всех строк!
+            # Каждая строка будет автоматически растягиваться под контент
+            # Фиксированную высоту установим только для merged ячеек в apply_merge_cells()
             
             # 8. ЦЕНТРИРОВАНИЕ ФОТО (колонка A): по вертикали и горизонтали
             requests.append({
                 'repeatCell': {
                     'range': {
                         'sheetId': 0,
-                        'startRowIndex': 3,  # Начиная с 4-й строки (товары)
+                        'startRowIndex': 2,  # Начиная с 3-й строки (товары) - ИЗМЕНЕНО с 3 на 2
                         'endRowIndex': 1000,
                         'startColumnIndex': 0,  # Колонка A
                         'endColumnIndex': 1
@@ -999,7 +1015,7 @@ class KPGoogleSheetsGenerator:
                     'repeatCell': {
                         'range': {
                             'sheetId': 0,
-                            'startRowIndex': 3,  # Начиная с 4-й строки (товары)
+                            'startRowIndex': 2,  # Начиная с 3-й строки (товары) - ИЗМЕНЕНО с 3 на 2
                             'endRowIndex': 1000,
                             'startColumnIndex': col_index,
                             'endColumnIndex': col_index + 1
@@ -1021,7 +1037,7 @@ class KPGoogleSheetsGenerator:
                     'repeatCell': {
                         'range': {
                             'sheetId': 0,
-                            'startRowIndex': 3,  # Начиная с 4-й строки (товары)
+                            'startRowIndex': 2,  # Начиная с 3-й строки (товары) - ИЗМЕНЕНО с 3 на 2
                             'endRowIndex': 1000,
                             'startColumnIndex': col_index,
                             'endColumnIndex': col_index + 1
@@ -1041,7 +1057,7 @@ class KPGoogleSheetsGenerator:
                 'repeatCell': {
                     'range': {
                         'sheetId': 0,
-                        'startRowIndex': 3,  # Начиная с 4-й строки (товары)
+                        'startRowIndex': 2,  # Начиная с 3-й строки (товары) - ИЗМЕНЕНО с 3 на 2
                         'endRowIndex': 1000,
                         'startColumnIndex': 9,  # Колонка J
                         'endColumnIndex': 10
@@ -1062,7 +1078,7 @@ class KPGoogleSheetsGenerator:
                     'repeatCell': {
                         'range': {
                             'sheetId': 0,
-                            'startRowIndex': 3,  # Начиная с 4-й строки (товары)
+                            'startRowIndex': 2,  # Начиная с 3-й строки (товары) - ИЗМЕНЕНО с 3 на 2
                             'endRowIndex': 1000,
                             'startColumnIndex': col_index,
                             'endColumnIndex': col_index + 1
