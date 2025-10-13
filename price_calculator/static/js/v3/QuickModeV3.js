@@ -4,7 +4,7 @@ window.QuickModeV3 = {
     <div class="quick-mode">
         <!-- Форма ввода -->
         <div class="card">
-            <h2 class="card-title">Данные товара</h2>
+            <h2 class="card-title">Быстрый расчёт</h2>
             
             <form @submit.prevent="calculate" class="form">
                 <!-- Название товара -->
@@ -33,8 +33,6 @@ window.QuickModeV3 = {
                         list="categories-list"
                         placeholder="Определится автоматически"
                         class="form-input"
-                        readonly
-                        style="background: #f9fafb; cursor: not-allowed;"
                     />
                     <datalist id="categories-list">
                         <option v-for="cat in availableCategories" :key="cat" :value="cat">
@@ -321,52 +319,30 @@ window.QuickModeV3 = {
             </form>
         </div>
         
-        <!-- Результаты -->
-        <div v-if="result" class="results">
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="card-title">Результаты</h2>
-                    <button @click="reset" class="btn-text">Новый расчёт</button>
-                </div>
-                
-                <!-- Маршруты -->
-                <div class="routes-list">
-                    <div
-                        v-for="(route, key) in result.routes"
-                        :key="key"
-                        class="route-card"
-                        :class="{ 'route-best': isBestRoute(key) }"
-                    >
-                        <div class="route-header">
-                            <h3 class="route-name">{{ formatRouteName(key) }}</h3>
-                            <span v-if="isBestRoute(key)" class="badge-best">ЛУЧШИЙ</span>
-                        </div>
-                        
-                        <div class="route-prices">
-                            <div class="price-row">
-                                <span class="price-label">Себестоимость:</span>
-                                <span class="price-value">{{ formatPrice(route.cost_per_unit_rub) }} ₽</span>
-                            </div>
-                            <div class="price-row">
-                                <span class="price-label">Продажа:</span>
-                                <span class="price-value primary">{{ formatPrice(route.sale_per_unit_rub) }} ₽</span>
-                            </div>
-                            <div class="price-row">
-                                <span class="price-label">Прибыль:</span>
-                                <span class="price-value success">{{ formatPrice(route.profit_rub) }} ₽</span>
-                            </div>
-                        </div>
-                        
-                        <div class="route-total">
-                            Всего: {{ formatPrice(route.cost_price_rub) }} ₽ → {{ formatPrice(route.sale_price_rub) }} ₽
-                        </div>
-                        
-                        <div class="route-actions">
-                            <button @click="showRouteDetails(key)" class="btn-text">Детали</button>
-                            <button @click="editRoute(key)" class="btn-text">Кастомная ставка</button>
-                        </div>
-                    </div>
-                </div>
+        <!-- Результаты - компактный вид -->
+        <div v-if="result" class="results-compact">
+            <div class="card-header">
+                <h2 class="card-title">Результаты</h2>
+                <button @click="reset" class="btn-text">Новый расчёт</button>
+            </div>
+            
+            <!-- Компактный список маршрутов -->
+            <div v-for="(route, key) in result.routes" :key="key" class="result-row">
+                <span class="route-name">{{ formatRouteName(key) }}:</span>
+                <span class="route-prices">
+                    {{ formatPrice(route.cost_per_unit_rub) }}₽
+                    <span class="route-arrow">→</span>
+                    {{ formatPrice(route.sale_per_unit_rub) }}₽
+                </span>
+                <span class="route-profit" :class="{ negative: route.profit_rub < 0 }">
+                    (прибыль {{ formatPrice(route.profit_rub) }}₽)
+                </span>
+            </div>
+            
+            <!-- Кнопки действий -->
+            <div class="form-actions" style="margin-top: 16px;">
+                <button @click="saveCalculation" class="btn-secondary">Сохранить расчёт</button>
+                <button @click="saveAsPosition" class="btn-secondary">Сохранить в Позиции</button>
             </div>
         </div>
         
@@ -581,6 +557,11 @@ window.QuickModeV3 = {
         selectFactory() {
             // TODO: Открыть модалку выбора фабрики
             alert('Функция выбора фабрики будет реализована в следующем этапе');
+        },
+        
+        saveCalculation() {
+            // TODO: Сохранить расчёт в БД
+            alert('Функция сохранения расчёта будет реализована');
         },
         
         saveAsPosition() {

@@ -66,15 +66,25 @@ class KPPDFGenerator:
         if _FONT_PATHS and _FONT_PATHS[0]:
             try:
                 from reportlab.pdfbase.ttfonts import TTFont
-                pdfmetrics.registerFont(TTFont('DejaVuSans', _FONT_PATHS[0]))
-                pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', _FONT_PATHS[1]))
+                
+                # КРИТИЧЕСКИ ВАЖНО: Создаем TTFont с subfontIndex для встраивания
+                font_regular = TTFont('DejaVuSans', _FONT_PATHS[0])
+                font_bold = TTFont('DejaVuSans-Bold', _FONT_PATHS[1])
+                
+                # Регистрируем шрифты
+                pdfmetrics.registerFont(font_regular)
+                pdfmetrics.registerFont(font_bold)
                 
                 self.font_name = 'DejaVuSans'
                 self.font_name_bold = 'DejaVuSans-Bold'
                 font_loaded = True
-                print(f"✅ [PDF] Зарегистрирован встроенный шрифт DejaVu Sans")
+                print(f"✅ [PDF] Зарегистрирован встроенный шрифт DejaVu Sans с встраиванием")
+                print(f"   Regular: {_FONT_PATHS[0]}")
+                print(f"   Bold: {_FONT_PATHS[1]}")
             except Exception as e:
                 print(f"⚠️  [PDF] Ошибка регистрации встроенного шрифта: {e}")
+                import traceback
+                traceback.print_exc()
         
         # 2. РЕЗЕРВНЫЙ: Проверяем системные шрифты
         if not font_loaded:
@@ -335,46 +345,55 @@ class KPPDFGenerator:
             print(f"   Обрабатываю: {product_info['name']} ({len(offers)} вариантов, {len(images)} изображений)")
             
             # Загружаем изображения
-            # Основное изображение (большое)
+            # Основное изображение (большое, слева)
             main_image = None
             if images and len(images) > 0:
-                main_image = self.download_image(images[0], max_width=90)
+                main_image = self.download_image(images[0], max_width=80)
             
-            # Дополнительные изображения (маленькие, горизонтально)
+            # Дополнительные изображения (маленькие, СЕТКА СПРАВА 2x2)
             additional_images = []
-            for img_url in images[1:4]:  # До 3 дополнительных
-                img = self.download_image(img_url, max_width=40)
+            for img_url in images[1:5]:  # До 4 дополнительных
+                img = self.download_image(img_url, max_width=35)
                 if img:
                     additional_images.append(img)
             
-            # Создаем блок с изображениями
+            # Создаем блок с изображениями: ОСНОВНОЕ СЛЕВА + СЕТКА СПРАВА
             if main_image:
-                images_block = []
-                # Основное изображение
-                images_block.append(main_image)
-                images_block.append(Spacer(1, 3*mm))
-                
-                # Дополнительные изображения снизу
+                # Создаем сетку дополнительных изображений (2x2)
+                add_img_grid = None
                 if additional_images:
-                    # Горизонтальная таблица с доп. изображениями
-                    add_img_table = Table([additional_images], colWidths=[40*mm]*len(additional_images))
-                    add_img_table.setStyle(TableStyle([
+                    # Разбиваем на строки по 2 изображения
+                    grid_data = []
+                    for i in range(0, len(additional_images), 2):
+                        row = additional_images[i:i+2]
+                        # Дополняем строку пустыми ячейками если нужно
+                        while len(row) < 2:
+                            row.append('')
+                        grid_data.append(row)
+                    
+                    add_img_grid = Table(grid_data, colWidths=[36*mm, 36*mm])
+                    add_img_grid.setStyle(TableStyle([
                         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-                        ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('LEFTPADDING', (0, 0), (-1, -1), 2),
+                        ('RIGHTPADDING', (0, 0), (-1, -1), 2),
+                        ('TOPPADDING', (0, 0), (-1, -1), 2),
+                        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
                     ]))
-                    images_block.append(add_img_table)
                 
-                # Собираем в вертикальную таблицу
-                images_cell = Table([[elem] for elem in images_block], colWidths=[90*mm])
+                # Собираем горизонтальную таблицу: основное слева, сетка справа
+                if add_img_grid:
+                    images_cell = Table([[main_image, add_img_grid]], colWidths=[85*mm, 75*mm])
+                else:
+                    images_cell = Table([[main_image, '']], colWidths=[85*mm, 75*mm])
+                    
                 images_cell.setStyle(TableStyle([
                     ('VALIGN', (0, 0), (-1, -1), 'TOP'),
                     ('LEFTPADDING', (0, 0), (-1, -1), 0),
                     ('RIGHTPADDING', (0, 0), (-1, -1), 0),
                 ]))
             else:
-                images_cell = Paragraph('Нет изображения', self.description_style)
+                images_cell = None
             
             # ВЕРТИКАЛЬНАЯ СТРУКТУРА: изображения → название/описание → таблица
             product_elements = []
