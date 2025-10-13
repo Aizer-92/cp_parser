@@ -24,86 +24,33 @@ from reportlab.lib.utils import ImageReader
 import requests
 from io import BytesIO
 from PIL import Image as PILImage
-import urllib.request
 
 from database.postgresql_manager import PostgreSQLManager
 from sqlalchemy import text
 
 
-def download_dejavu_font():
-    """Скачивает DejaVu Sans шрифт если его нет в системе"""
+def get_bundled_font():
+    """Возвращает путь к встроенному в репозиторий шрифту DejaVu Sans"""
     font_dir = Path(__file__).parent / 'fonts'
-    font_dir.mkdir(exist_ok=True)
-    
     font_file = font_dir / 'DejaVuSans.ttf'
     font_bold_file = font_dir / 'DejaVuSans-Bold.ttf'
     
-    if not font_file.exists():
-        try:
-            print("📥 [PDF] Скачиваю шрифт DejaVu Sans...")
-            
-            # Пробуем несколько URL для скачивания
-            urls = [
-                'https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans.ttf',
-                'https://raw.githubusercontent.com/dejavu-fonts/dejavu-fonts/master/ttf/DejaVuSans.ttf',
-            ]
-            
-            downloaded = False
-            for url in urls:
-                try:
-                    import ssl
-                    # Создаем контекст SSL для обхода проблем с сертификатами
-                    context = ssl._create_unverified_context()
-                    response = urllib.request.urlopen(url, context=context, timeout=30)
-                    with open(font_file, 'wb') as f:
-                        f.write(response.read())
-                    downloaded = True
-                    print(f"✅ [PDF] Шрифт скачан: {font_file}")
-                    break
-                except Exception as e:
-                    print(f"   ⚠️  Ошибка с URL {url}: {e}")
-                    continue
-            
-            if not downloaded:
-                print(f"❌ [PDF] Не удалось скачать шрифт ни с одного источника")
-                return None, None
-                
-        except Exception as e:
-            print(f"⚠️  [PDF] Критическая ошибка при скачивании шрифта: {e}")
-            return None, None
+    if font_file.exists():
+        print(f"✅ [PDF] Найден встроенный шрифт DejaVu Sans")
+        return str(font_file), str(font_bold_file) if font_bold_file.exists() else str(font_file)
     else:
-        print(f"✅ [PDF] Найден локальный шрифт: {font_file}")
-    
-    if not font_bold_file.exists():
-        try:
-            urls_bold = [
-                'https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans-Bold.ttf',
-                'https://raw.githubusercontent.com/dejavu-fonts/dejavu-fonts/master/ttf/DejaVuSans-Bold.ttf',
-            ]
-            
-            for url in urls_bold:
-                try:
-                    import ssl
-                    context = ssl._create_unverified_context()
-                    response = urllib.request.urlopen(url, context=context, timeout=30)
-                    with open(font_bold_file, 'wb') as f:
-                        f.write(response.read())
-                    break
-                except:
-                    continue
-        except:
-            pass
-    
-    return str(font_file), str(font_bold_file) if font_bold_file.exists() else str(font_file)
+        print(f"❌ [PDF] Шрифт не найден: {font_file}")
+        print(f"   Проверьте что папка fonts/ есть в репозитории")
+        return None, None
 
 
-# АВТОМАТИЧЕСКОЕ СКАЧИВАНИЕ ШРИФТА ПРИ ИМПОРТЕ МОДУЛЯ
-print("🔄 [PDF] Проверка наличия шрифта для кириллицы...")
-_FONT_DOWNLOADED = download_dejavu_font()
-if _FONT_DOWNLOADED and _FONT_DOWNLOADED[0]:
-    print(f"✅ [PDF] Шрифт готов к использованию: {_FONT_DOWNLOADED[0]}")
+# АВТОМАТИЧЕСКАЯ ПРОВЕРКА ВСТРОЕННОГО ШРИФТА ПРИ ИМПОРТЕ
+print("🔄 [PDF] Проверка встроенного шрифта для кириллицы...")
+_FONT_PATHS = get_bundled_font()
+if _FONT_PATHS and _FONT_PATHS[0]:
+    print(f"✅ [PDF] Шрифт готов: {_FONT_PATHS[0]}")
 else:
-    print("⚠️  [PDF] Шрифт не загружен, будут проблемы с кириллицей")
+    print("⚠️  [PDF] Встроенный шрифт не найден - кириллица не будет работать")
 
 
 class KPPDFGenerator:
@@ -115,19 +62,19 @@ class KPPDFGenerator:
         # Регистрация шрифта для русского языка
         font_loaded = False
         
-        # 1. ПРИОРИТЕТ: Используем предварительно скачанный шрифт
-        if _FONT_DOWNLOADED and _FONT_DOWNLOADED[0]:
+        # 1. ПРИОРИТЕТ: Используем встроенный в репозиторий шрифт
+        if _FONT_PATHS and _FONT_PATHS[0]:
             try:
                 from reportlab.pdfbase.ttfonts import TTFont
-                pdfmetrics.registerFont(TTFont('DejaVuSans', _FONT_DOWNLOADED[0]))
-                pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', _FONT_DOWNLOADED[1]))
+                pdfmetrics.registerFont(TTFont('DejaVuSans', _FONT_PATHS[0]))
+                pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', _FONT_PATHS[1]))
                 
                 self.font_name = 'DejaVuSans'
                 self.font_name_bold = 'DejaVuSans-Bold'
                 font_loaded = True
-                print(f"✅ [PDF] Зарегистрирован шрифт: {_FONT_DOWNLOADED[0]}")
+                print(f"✅ [PDF] Зарегистрирован встроенный шрифт DejaVu Sans")
             except Exception as e:
-                print(f"⚠️  [PDF] Ошибка регистрации предварительно скачанного шрифта: {e}")
+                print(f"⚠️  [PDF] Ошибка регистрации встроенного шрифта: {e}")
         
         # 2. РЕЗЕРВНЫЙ: Проверяем системные шрифты
         if not font_loaded:

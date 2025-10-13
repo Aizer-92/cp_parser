@@ -125,6 +125,21 @@ window.QuickModeV3 = {
                 
                 <!-- Вес (быстрый режим, по умолчанию) -->
                 <div v-if="!detailedMode" class="weight-section">
+                    <div class="form-group">
+                        <label for="weight">Вес 1 единицы (кг) *</label>
+                        <input
+                            id="weight"
+                            v-model.number="form.weight_kg"
+                            type="number"
+                            step="0.01"
+                            required
+                            class="form-input"
+                        />
+                    </div>
+                </div>
+                
+                <!-- Паккинг (детальный режим) -->
+                <div v-else class="packing-section">
                     <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 12px;">Упаковка *</h3>
                     
                     <div class="form-row">
@@ -205,10 +220,84 @@ window.QuickModeV3 = {
                             <span class="calc-value">{{ calculatedDensity }} кг/м³</span>
                         </div>
                     </div>
+                    
+                    <!-- Дополнительные поля детального режима -->
+                    <h3 style="font-size: 15px; font-weight: 600; margin: 16px 0 12px;">Дополнительная информация</h3>
+                    
+                    <!-- Фотографии -->
+                    <div class="form-group">
+                        <label>Фотографии товара</label>
+                        <div class="photo-dropzone" @click="$refs.photoInput.click()" @drop.prevent="handlePhotoDrop" @dragover.prevent>
+                            <input
+                                ref="photoInput"
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                style="display: none;"
+                                @change="handlePhotoSelect"
+                            />
+                            <div v-if="photos.length === 0" class="dropzone-placeholder">
+                                <span>Перетащите фото сюда или нажмите для выбора</span>
+                            </div>
+                            <div v-else class="photos-preview">
+                                <div v-for="(photo, index) in photos" :key="index" class="photo-item">
+                                    <img :src="photo.preview" :alt="photo.name" />
+                                    <span v-if="index === 0" class="main-badge">основная</span>
+                                    <button type="button" @click.stop="removePhoto(index)" class="remove-photo">×</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Кастомизация -->
+                    <div class="form-group">
+                        <label for="customization">Кастомизация товара</label>
+                        <textarea
+                            id="customization"
+                            v-model="form.customization"
+                            rows="3"
+                            placeholder="Опишите требования к кастомизации (печать, гравировка и т.д.)"
+                            class="form-input"
+                        ></textarea>
+                    </div>
+                    
+                    <!-- Сроки и цены -->
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="production-time">Срок производства (дни)</label>
+                            <input
+                                id="production-time"
+                                v-model.number="form.production_time_days"
+                                type="number"
+                                min="0"
+                                class="form-input"
+                            />
+                        </div>
+                        
+                        <div class="form-group flex-1">
+                            <label for="sample-time">Срок образца (дни)</label>
+                            <input
+                                id="sample-time"
+                                v-model.number="form.sample_time_days"
+                                type="number"
+                                min="0"
+                                class="form-input"
+                            />
+                        </div>
+                        
+                        <div class="form-group flex-1">
+                            <label for="sample-price">Цена образца (¥)</label>
+                            <input
+                                id="sample-price"
+                                v-model.number="form.sample_price_yuan"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                class="form-input"
+                            />
+                        </div>
+                    </div>
                 </div>
-                
-                <!-- Паккинг (детальный режим) -->
-                <div v-else class="packing-section">
                 
                 <!-- Кнопки -->
                 <div class="form-actions">
@@ -318,8 +407,17 @@ window.QuickModeV3 = {
                 packing_box_width: 0,
                 packing_box_height: 0,
                 
+                // Дополнительные поля для детального режима
+                customization: '',           // Кастомизация
+                production_time_days: 0,     // Срок производства (дни)
+                sample_time_days: 0,         // Срок образца (дни)
+                sample_price_yuan: 0,        // Цена образца (¥)
+                
                 is_precise_calculation: false
             },
+            
+            // Фотографии загружаются отдельно
+            photos: [],
             
             availableCategories: [],
             filteredCategories: [],
@@ -531,6 +629,35 @@ window.QuickModeV3 = {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 2
             });
+        },
+        
+        // Методы работы с фотографиями
+        handlePhotoSelect(event) {
+            const files = Array.from(event.target.files);
+            this.addPhotos(files);
+        },
+        
+        handlePhotoDrop(event) {
+            const files = Array.from(event.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            this.addPhotos(files);
+        },
+        
+        addPhotos(files) {
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.photos.push({
+                        file: file,
+                        name: file.name,
+                        preview: e.target.result
+                    });
+                };
+                reader.readAsDataURL(file);
+            });
+        },
+        
+        removePhoto(index) {
+            this.photos.splice(index, 1);
         }
     }
 };
