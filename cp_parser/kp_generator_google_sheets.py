@@ -53,7 +53,14 @@ class KPGoogleSheetsGenerator:
             print(f"   Длина: {len(creds_json)} символов")
             
             # Парсим JSON credentials
-            creds_dict = json.loads(creds_json)
+            try:
+                creds_dict = json.loads(creds_json)
+            except json.JSONDecodeError as e:
+                # Возможно проблема с экранированием - попробуем исправить
+                print(f"⚠️  [Google Sheets] Ошибка парсинга JSON, пробую исправить экранирование...")
+                # Заменяем двойное экранирование на одинарное
+                creds_json = creds_json.replace('\\\\n', '\\n')
+                creds_dict = json.loads(creds_json)
             
             # Проверяем ключи
             required_keys = ['type', 'project_id', 'private_key', 'client_email']
@@ -63,15 +70,23 @@ class KPGoogleSheetsGenerator:
                 print(f"❌ [Google Sheets] Отсутствуют ключи в credentials: {missing_keys}")
                 return
             
+            # Проверяем private_key
+            private_key = creds_dict.get('private_key', '')
+            if '\\n' in private_key:
+                print("🔧 [Google Sheets] Исправляю формат private_key (\\n -> настоящие переводы)")
+                creds_dict['private_key'] = private_key.replace('\\n', '\n')
+            
             print(f"✅ [Google Sheets] Credentials валидны")
             print(f"   Project ID: {creds_dict.get('project_id')}")
             print(f"   Client Email: {creds_dict.get('client_email')}")
+            print(f"   Private Key: {'BEGIN PRIVATE KEY' in creds_dict.get('private_key', '')}")
             
-            # Создаем credentials
+            # Создаем credentials с РАСШИРЕННЫМИ правами
             credentials = service_account.Credentials.from_service_account_info(
                 creds_dict,
                 scopes=[
                     'https://www.googleapis.com/auth/spreadsheets',
+                    'https://www.googleapis.com/auth/drive',  # Полный Drive доступ
                     'https://www.googleapis.com/auth/drive.file'
                 ]
             )
@@ -257,26 +272,43 @@ class KPGoogleSheetsGenerator:
         if not self.sheets_service:
             raise Exception("Google Sheets API не инициализирован")
         
-        spreadsheet = {
-            'properties': {
-                'title': title
+        try:
+            spreadsheet = {
+                'properties': {
+                    'title': title
+                }
             }
-        }
-        
-        spreadsheet = self.sheets_service.spreadsheets().create(
-            body=spreadsheet,
-            fields='spreadsheetId,spreadsheetUrl'
-        ).execute()
-        
-        spreadsheet_id = spreadsheet.get('spreadsheetId')
-        spreadsheet_url = spreadsheet.get('spreadsheetUrl')
-        
-        print(f"✅ [Google Sheets] Создана таблица: {spreadsheet_id}")
-        
-        # Делаем публичной с правами на редактирование
-        self._make_public_editable(spreadsheet_id)
-        
-        return spreadsheet_id, spreadsheet_url
+            
+            print(f"📝 [Google Sheets] Создаю таблицу: {title}")
+            
+            spreadsheet = self.sheets_service.spreadsheets().create(
+                body=spreadsheet,
+                fields='spreadsheetId,spreadsheetUrl'
+            ).execute()
+            
+            spreadsheet_id = spreadsheet.get('spreadsheetId')
+            spreadsheet_url = spreadsheet.get('spreadsheetUrl')
+            
+            print(f"✅ [Google Sheets] Создана таблица: {spreadsheet_id}")
+            print(f"   URL: {spreadsheet_url}")
+            
+            # Делаем публичной с правами на редактирование
+            self._make_public_editable(spreadsheet_id)
+            
+            return spreadsheet_id, spreadsheet_url
+            
+        except HttpError as e:
+            error_details = e.error_details if hasattr(e, 'error_details') else []
+            print(f"❌ [Google Sheets] HTTP Error {e.resp.status}: {e._get_reason()}")
+            print(f"   URI: {e.uri}")
+            print(f"   Details: {error_details}")
+            print("\n🔍 ДИАГНОСТИКА:")
+            print("1. Проверь что Google Sheets API включен:")
+            print("   https://console.cloud.google.com/apis/library/sheets.googleapis.com")
+            print("2. Проверь что Service Account имеет права:")
+            print("   https://console.cloud.google.com/iam-admin/serviceaccounts")
+            print("3. Попробуй создать новый Service Account и обнови credentials")
+            raise
     
     def _make_public_editable(self, spreadsheet_id):
         """Делает Google Spreadsheet публичным с правами на редактирование"""
