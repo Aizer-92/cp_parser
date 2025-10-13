@@ -251,16 +251,25 @@ class KPGoogleSheetsGenerator:
                     if not image_url and img_row[1]:
                         image_url = f"https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods/images/{img_row[1]}"
                     
-                    # ИСПРАВЛЕНИЕ: Заменяем FTP на S3 (любой вариант ftp://)
+                    # ИСПРАВЛЕНИЕ: Заменяем FTP на S3
                     if image_url:
-                        if image_url.lower().startswith('ftp://'):
-                            # Извлекаем путь после ftp://hostname/
+                        replaced = False
+                        
+                        # 1. Проверка домена: ftp.ru1.storage.beget.cloud → s3.ru1.storage.beget.cloud
+                        if 'ftp.ru1.storage.beget.cloud' in image_url:
+                            image_url = image_url.replace('ftp.ru1.storage.beget.cloud', 's3.ru1.storage.beget.cloud')
+                            replaced = True
+                        
+                        # 2. Проверка протокола: ftp://
+                        elif image_url.lower().startswith('ftp://'):
                             if 'ftp.promogoods.website' in image_url:
                                 path = image_url.split('ftp.promogoods.website')[-1]
                                 image_url = f"https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods{path}"
                             else:
-                                # Универсальная замена для любого FTP хоста
                                 image_url = image_url.replace('ftp://', 'https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods/')
+                            replaced = True
+                        
+                        if replaced:
                             print(f"      🔄 FTP → S3:")
                             print(f"         Было: {original_url}")
                             print(f"         Стало: {image_url}")
