@@ -30,20 +30,20 @@ class KPExcelGenerator:
     def __init__(self):
         self.db_manager = PostgreSQLManager()
         
-        # Стили для Excel
-        self.title_font = Font(name='Arial', size=16, bold=True)
-        self.header_font = Font(name='Arial', size=11, bold=True, color='FFFFFF')
-        self.product_font = Font(name='Arial', size=12, bold=True)
-        self.normal_font = Font(name='Arial', size=10)
+        # Стили для Excel (минималистичный серый UI)
+        self.title_font = Font(name='Arial', size=16, bold=True, color='1F2937')  # Темно-серый
+        self.header_font = Font(name='Arial', size=11, bold=True, color='374151')  # Темно-серый
+        self.product_font = Font(name='Arial', size=12, bold=True, color='374151')  # Темно-серый
+        self.normal_font = Font(name='Arial', size=10, color='4B5563')  # Средне-серый
         
-        self.header_fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
-        self.product_fill = PatternFill(start_color='E7E6E6', end_color='E7E6E6', fill_type='solid')
+        self.header_fill = PatternFill(start_color='F3F4F6', end_color='F3F4F6', fill_type='solid')  # Светло-серый
+        self.product_fill = PatternFill(start_color='F9FAFB', end_color='F9FAFB', fill_type='solid')  # Очень светло-серый
         
         self.thin_border = Border(
-            left=Side(style='thin'),
-            right=Side(style='thin'),
-            top=Side(style='thin'),
-            bottom=Side(style='thin')
+            left=Side(style='thin', color='E5E7EB'),   # Светло-серая граница
+            right=Side(style='thin', color='E5E7EB'),
+            top=Side(style='thin', color='E5E7EB'),
+            bottom=Side(style='thin', color='E5E7EB')
         )
         
         self.center_alignment = Alignment(horizontal='center', vertical='center')
@@ -266,14 +266,14 @@ class KPExcelGenerator:
                     sample_parts.append(f"Срок: {product_info['sample_delivery_time']} дн.")
                 
                 sample_cell.value = ' | '.join(sample_parts)
-                sample_cell.font = Font(name='Arial', size=9, bold=True, color='0066CC')
+                sample_cell.font = Font(name='Arial', size=9, bold=True, color='6B7280')  # Серый
                 sample_cell.alignment = self.left_alignment
-                sample_cell.fill = PatternFill(start_color='E7F3FF', end_color='E7F3FF', fill_type='solid')
+                sample_cell.fill = PatternFill(start_color='F3F4F6', end_color='F3F4F6', fill_type='solid')  # Светло-серый
                 
                 for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']:
                     ws[f'{col}{current_row}'].border = self.thin_border
                     if col != 'B':
-                        ws[f'{col}{current_row}'].fill = PatternFill(start_color='E7F3FF', end_color='E7F3FF', fill_type='solid')
+                        ws[f'{col}{current_row}'].fill = PatternFill(start_color='F3F4F6', end_color='F3F4F6', fill_type='solid')
                 
                 current_row += 1
             

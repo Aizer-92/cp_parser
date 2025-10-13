@@ -4,12 +4,12 @@ window.QuickModeV3 = {
     <div class="quick-mode">
         <!-- Форма ввода -->
         <div class="card">
-            <h2 class="card-title">Быстрый расчёт</h2>
+            <h2 class="card-title">Данные товара</h2>
             
             <form @submit.prevent="calculate" class="form">
-                <!-- Товар -->
+                <!-- Название товара -->
                 <div class="form-group">
-                    <label for="product-name">Товар</label>
+                    <label for="product-name">Название товара *</label>
                     <input
                         id="product-name"
                         v-model="form.product_name"
@@ -20,27 +20,53 @@ window.QuickModeV3 = {
                     />
                 </div>
                 
-                <!-- Категория -->
+                <!-- Категория (автоопределяется) -->
                 <div class="form-group">
-                    <label for="category">Категория</label>
+                    <label for="category">
+                        Категория 
+                        <span style="color: #6b7280; font-size: 13px;">(автоопределяется)</span>
+                    </label>
                     <input
                         id="category"
                         v-model="form.category"
                         type="text"
                         list="categories-list"
-                        placeholder="Автоопределяется"
+                        placeholder="Определится автоматически"
                         class="form-input"
-                        @input="onCategoryInput"
+                        readonly
+                        style="background: #f9fafb; cursor: not-allowed;"
                     />
                     <datalist id="categories-list">
-                        <option v-for="cat in filteredCategories" :key="cat" :value="cat">
+                        <option v-for="cat in availableCategories" :key="cat" :value="cat">
                     </datalist>
                 </div>
                 
-                <!-- Параметры в одну строку -->
+                <!-- WeChat/URL -->
+                <div class="form-group">
+                    <label for="factory">WeChat / Ссылка на товар</label>
+                    <div class="input-with-button">
+                        <input
+                            id="factory"
+                            v-model="form.product_url"
+                            type="text"
+                            placeholder="https://... или WeChat ID"
+                            class="form-input"
+                        />
+                        <button
+                            type="button"
+                            @click="selectFactory"
+                            class="btn-secondary btn-sm"
+                            title="Выбрать из списка"
+                        >
+                            Из списка
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Цена, количество, наценка -->
                 <div class="form-row">
                     <div class="form-group flex-1">
-                        <label for="price">Цена (¥)</label>
+                        <label for="price">Цена за ед. (¥) *</label>
                         <input
                             id="price"
                             v-model.number="form.price_yuan"
@@ -52,7 +78,7 @@ window.QuickModeV3 = {
                     </div>
                     
                     <div class="form-group flex-1">
-                        <label for="quantity">Кол-во</label>
+                        <label for="quantity">Количество (шт) *</label>
                         <input
                             id="quantity"
                             v-model.number="form.quantity"
@@ -63,7 +89,128 @@ window.QuickModeV3 = {
                     </div>
                     
                     <div class="form-group flex-1">
-                        <label for="weight">Вес (кг)</label>
+                        <label for="markup">Наценка *</label>
+                        <input
+                            id="markup"
+                            v-model.number="form.markup"
+                            type="number"
+                            step="0.1"
+                            required
+                            class="form-input"
+                        />
+                    </div>
+                </div>
+                
+                <!-- Переключатель режимов упаковки -->
+                <div class="mode-toggle">
+                    <label class="toggle-label">
+                        <input
+                            type="radio"
+                            :value="true"
+                            v-model="packingMode"
+                            class="toggle-radio"
+                        />
+                        <span>Полный расчёт (упаковка)</span>
+                    </label>
+                    <label class="toggle-label">
+                        <input
+                            type="radio"
+                            :value="false"
+                            v-model="packingMode"
+                            class="toggle-radio"
+                        />
+                        <span>Быстрый расчёт (по весу)</span>
+                    </label>
+                </div>
+                
+                <!-- Паккинг (основной режим) -->
+                <div v-if="packingMode" class="packing-section">
+                    <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 12px;">Упаковка *</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="units-per-box">Штук в коробке</label>
+                            <input
+                                id="units-per-box"
+                                v-model.number="form.packing_units_per_box"
+                                type="number"
+                                required
+                                class="form-input"
+                            />
+                        </div>
+                        
+                        <div class="form-group flex-1">
+                            <label for="box-weight">Вес коробки (кг)</label>
+                            <input
+                                id="box-weight"
+                                v-model.number="form.packing_box_weight"
+                                type="number"
+                                step="0.01"
+                                required
+                                class="form-input"
+                            />
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="box-length">Длина (м)</label>
+                            <input
+                                id="box-length"
+                                v-model.number="form.packing_box_length"
+                                type="number"
+                                step="0.01"
+                                required
+                                class="form-input"
+                            />
+                        </div>
+                        
+                        <div class="form-group flex-1">
+                            <label for="box-width">Ширина (м)</label>
+                            <input
+                                id="box-width"
+                                v-model.number="form.packing_box_width"
+                                type="number"
+                                step="0.01"
+                                required
+                                class="form-input"
+                            />
+                        </div>
+                        
+                        <div class="form-group flex-1">
+                            <label for="box-height">Высота (м)</label>
+                            <input
+                                id="box-height"
+                                v-model.number="form.packing_box_height"
+                                type="number"
+                                step="0.01"
+                                required
+                                class="form-input"
+                            />
+                        </div>
+                    </div>
+                    
+                    <!-- Расчётные значения -->
+                    <div v-if="calculatedWeightPerUnit" class="calculated-values">
+                        <div class="calc-item">
+                            <span class="calc-label">Вес 1 шт:</span>
+                            <span class="calc-value">{{ calculatedWeightPerUnit }} кг</span>
+                        </div>
+                        <div class="calc-item">
+                            <span class="calc-label">Объём коробки:</span>
+                            <span class="calc-value">{{ calculatedBoxVolume }} м³</span>
+                        </div>
+                        <div v-if="calculatedDensity" class="calc-item">
+                            <span class="calc-label">Плотность:</span>
+                            <span class="calc-value">{{ calculatedDensity }} кг/м³</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Вес (дополнительный режим) -->
+                <div v-else class="weight-section">
+                    <div class="form-group">
+                        <label for="weight">Вес 1 единицы (кг) *</label>
                         <input
                             id="weight"
                             v-model.number="form.weight_kg"
@@ -75,47 +222,11 @@ window.QuickModeV3 = {
                     </div>
                 </div>
                 
-                <!-- Наценка и фабрика -->
-                <div class="form-row">
-                    <div class="form-group flex-1">
-                        <label for="markup">Наценка</label>
-                        <input
-                            id="markup"
-                            v-model.number="form.markup"
-                            type="number"
-                            step="0.1"
-                            required
-                            class="form-input"
-                        />
-                    </div>
-                    
-                    <div class="form-group flex-2">
-                        <label for="factory">Фабрика/WeChat (опционально)</label>
-                        <div class="input-with-button">
-                            <input
-                                id="factory"
-                                v-model="form.product_url"
-                                type="text"
-                                placeholder="https://wechat.com/..."
-                                class="form-input"
-                            />
-                            <button
-                                type="button"
-                                @click="selectFactory"
-                                class="btn-secondary btn-sm"
-                                title="Выбрать из списка"
-                            >
-                                Из списка
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
                 <!-- Кнопки -->
                 <div class="form-actions">
                     <button
                         type="submit"
-                        :disabled="isCalculating"
+                        :disabled="isCalculating || !isFormValid"
                         class="btn-primary"
                     >
                         {{ isCalculating ? 'Расчёт...' : 'Рассчитать' }}
@@ -199,14 +310,26 @@ window.QuickModeV3 = {
     
     data() {
         return {
+            packingMode: true, // true = паккинг (по умолчанию), false = по весу
+            
             form: {
                 product_name: '',
                 category: '',
                 price_yuan: 0,
                 quantity: 1000,
-                weight_kg: 0,
                 markup: 1.7,
                 product_url: '',
+                
+                // Режим по весу
+                weight_kg: 0,
+                
+                // Режим паккинга (основной)
+                packing_units_per_box: 0,
+                packing_box_weight: 0,
+                packing_box_length: 0,
+                packing_box_width: 0,
+                packing_box_height: 0,
+                
                 is_precise_calculation: false
             },
             
@@ -219,6 +342,69 @@ window.QuickModeV3 = {
         };
     },
     
+    computed: {
+        calculatedWeightPerUnit() {
+            if (!this.packingMode) return null;
+            
+            if (!this.form.packing_units_per_box || !this.form.packing_box_weight) {
+                return null;
+            }
+            
+            return (this.form.packing_box_weight / this.form.packing_units_per_box).toFixed(4);
+        },
+        
+        calculatedBoxVolume() {
+            if (!this.packingMode) return null;
+            
+            const l = this.form.packing_box_length;
+            const w = this.form.packing_box_width;
+            const h = this.form.packing_box_height;
+            
+            if (!l || !w || !h) return null;
+            
+            return (l * w * h).toFixed(4);
+        },
+        
+        calculatedDensity() {
+            if (!this.packingMode) return null;
+            
+            const volume = this.calculatedBoxVolume;
+            const weight = this.form.packing_box_weight;
+            
+            if (!volume || !weight) return null;
+            
+            return (weight / parseFloat(volume)).toFixed(1);
+        },
+        
+        isFormValid() {
+            if (!this.form.product_name || !this.form.price_yuan || !this.form.quantity) {
+                return false;
+            }
+            
+            if (this.packingMode) {
+                return this.form.packing_units_per_box > 0 &&
+                       this.form.packing_box_weight > 0 &&
+                       this.form.packing_box_length > 0 &&
+                       this.form.packing_box_width > 0 &&
+                       this.form.packing_box_height > 0;
+            } else {
+                return this.form.weight_kg > 0;
+            }
+        }
+    },
+    
+    watch: {
+        // Автоопределение категории при изменении названия товара
+        'form.product_name'(newName) {
+            if (newName && newName.length > 2) {
+                clearTimeout(this._categoryDetectTimer);
+                this._categoryDetectTimer = setTimeout(() => {
+                    this.detectCategory(newName);
+                }, 500);
+            }
+        }
+    },
+    
     async mounted() {
         await this.loadCategories();
     },
@@ -229,16 +415,29 @@ window.QuickModeV3 = {
                 const v3 = window.useCalculationV3();
                 const categories = await v3.getCategories();
                 this.availableCategories = categories.map(c => c.category || c.name || c);
+                console.log('Загружено категорий:', this.availableCategories.length);
             } catch (error) {
                 console.error('Ошибка загрузки категорий:', error);
             }
         },
         
-        onCategoryInput() {
-            const query = this.form.category.toLowerCase();
-            this.filteredCategories = this.availableCategories
-                .filter(cat => cat.toLowerCase().includes(query))
-                .slice(0, 10);
+        detectCategory(productName) {
+            if (!productName || !this.availableCategories.length) return;
+            
+            const nameLower = productName.toLowerCase();
+            
+            // Ищем категорию по вхождению названия
+            const detected = this.availableCategories.find(cat => 
+                nameLower.includes(cat.toLowerCase())
+            );
+            
+            if (detected && detected !== this.form.category) {
+                this.form.category = detected;
+                console.log('Автоопределена категория:', detected);
+            } else if (!detected && !this.form.category) {
+                this.form.category = 'Новая категория';
+                console.log('Категория не определена, установлена "Новая категория"');
+            }
         },
         
         async calculate() {
@@ -248,19 +447,40 @@ window.QuickModeV3 = {
             try {
                 const v3 = window.useCalculationV3();
                 
-                // Подготавливаем данные
+                // Подготавливаем данные для API
                 const requestData = {
-                    ...this.form,
-                    forced_category: this.form.category || undefined
+                    product_name: this.form.product_name,
+                    product_url: this.form.product_url || '',
+                    price_yuan: this.form.price_yuan,
+                    quantity: this.form.quantity,
+                    markup: this.form.markup,
+                    forced_category: this.form.category || undefined,
+                    is_precise_calculation: this.packingMode
                 };
+                
+                // Добавляем данные упаковки или веса
+                if (this.packingMode) {
+                    requestData.packing_units_per_box = this.form.packing_units_per_box;
+                    requestData.packing_box_weight = this.form.packing_box_weight;
+                    requestData.packing_box_length = this.form.packing_box_length;
+                    requestData.packing_box_width = this.form.packing_box_width;
+                    requestData.packing_box_height = this.form.packing_box_height;
+                } else {
+                    requestData.weight_kg = this.form.weight_kg;
+                }
+                
+                console.log('Отправка данных на расчёт:', requestData);
                 
                 // Выполняем расчёт
                 const result = await v3.calculate(requestData);
                 this.result = result;
                 
+                console.log('Результат расчёта:', result);
+                
             } catch (error) {
                 console.error('Ошибка расчёта:', error);
-                alert(`Ошибка: ${error.message || 'Не удалось выполнить расчёт'}`);
+                const errorMsg = error.response?.data?.detail || error.message || 'Не удалось выполнить расчёт';
+                alert(`Ошибка: ${errorMsg}`);
             } finally {
                 this.isCalculating = false;
             }

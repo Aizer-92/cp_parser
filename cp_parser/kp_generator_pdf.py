@@ -35,19 +35,32 @@ class KPPDFGenerator:
     def __init__(self):
         self.db_manager = PostgreSQLManager()
         
-        # Регистрация шрифтов (если есть)
-        # Для русского языка лучше использовать DejaVu или Arial
-        # Если шрифты не установлены, будет использоваться Helvetica (латиница)
+        # Регистрация шрифта DejaVu для русского языка
+        try:
+            # Попытка использовать DejaVu Sans (поддерживает кириллицу)
+            # В большинстве Linux систем и на многих серверах этот шрифт есть
+            from reportlab.pdfbase.ttfonts import TTFont
+            pdfmetrics.registerFont(TTFont('DejaVu', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'))
+            pdfmetrics.registerFont(TTFont('DejaVu-Bold', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'))
+            self.font_name = 'DejaVu'
+            self.font_name_bold = 'DejaVu-Bold'
+            print("✅ [PDF] Используется шрифт DejaVu (кириллица поддерживается)")
+        except:
+            # Fallback на Helvetica (только латиница, но не будет ошибки)
+            self.font_name = 'Helvetica'
+            self.font_name_bold = 'Helvetica-Bold'
+            print("⚠️  [PDF] DejaVu не найден, используется Helvetica (кириллица может не отображаться)")
         
-        # Стили
+        # Стили в минималистичном UI стиле (серый, без ярких цветов)
         self.styles = getSampleStyleSheet()
         
         # Заголовок документа
         self.title_style = ParagraphStyle(
             'CustomTitle',
             parent=self.styles['Title'],
+            fontName=self.font_name_bold,
             fontSize=18,
-            textColor=colors.HexColor('#1a1a1a'),
+            textColor=colors.HexColor('#1f2937'),  # Темно-серый
             alignment=TA_CENTER,
             spaceAfter=10
         )
@@ -56,8 +69,9 @@ class KPPDFGenerator:
         self.date_style = ParagraphStyle(
             'DateStyle',
             parent=self.styles['Normal'],
+            fontName=self.font_name,
             fontSize=10,
-            textColor=colors.grey,
+            textColor=colors.HexColor('#6b7280'),  # Серый
             alignment=TA_CENTER,
             spaceAfter=20
         )
@@ -66,8 +80,9 @@ class KPPDFGenerator:
         self.product_style = ParagraphStyle(
             'ProductName',
             parent=self.styles['Heading2'],
+            fontName=self.font_name_bold,
             fontSize=14,
-            textColor=colors.HexColor('#2c3e50'),
+            textColor=colors.HexColor('#374151'),  # Темно-серый
             spaceAfter=6
         )
         
@@ -75,17 +90,19 @@ class KPPDFGenerator:
         self.description_style = ParagraphStyle(
             'Description',
             parent=self.styles['Normal'],
+            fontName=self.font_name,
             fontSize=9,
-            textColor=colors.grey,
+            textColor=colors.HexColor('#6b7280'),  # Серый
             spaceAfter=6
         )
         
-        # Информация об образце
+        # Информация об образце (минималистичный стиль)
         self.sample_style = ParagraphStyle(
             'SampleInfo',
             parent=self.styles['Normal'],
+            fontName=self.font_name,
             fontSize=9,
-            textColor=colors.HexColor('#0066CC'),
+            textColor=colors.HexColor('#4b5563'),  # Средне-серый
             spaceAfter=6
         )
     
@@ -249,28 +266,45 @@ class KPPDFGenerator:
             
             print(f"   Обрабатываю: {product_info['name']} ({len(offers)} вариантов, {len(images)} изображений)")
             
-            # Создаем таблицу для товара (изображения + информация)
-            product_table_data = []
-            
             # Загружаем изображения
-            image_elements = []
-            for img_url in images[:3]:  # До 3 изображений
-                img = self.download_image(img_url, max_width=50)
-                if img:
-                    image_elements.append(img)
+            # Основное изображение (большое)
+            main_image = None
+            if images and len(images) > 0:
+                main_image = self.download_image(images[0], max_width=90)
             
-            # Если изображений несколько, создаем вложенную таблицу
-            if image_elements:
-                if len(image_elements) == 1:
-                    images_cell = image_elements[0]
-                else:
-                    # Горизонтальная таблица изображений
-                    img_table = Table([[img] for img in image_elements])
-                    img_table.setStyle(TableStyle([
+            # Дополнительные изображения (маленькие, горизонтально)
+            additional_images = []
+            for img_url in images[1:4]:  # До 3 дополнительных
+                img = self.download_image(img_url, max_width=40)
+                if img:
+                    additional_images.append(img)
+            
+            # Создаем блок с изображениями
+            if main_image:
+                images_block = []
+                # Основное изображение
+                images_block.append(main_image)
+                images_block.append(Spacer(1, 3*mm))
+                
+                # Дополнительные изображения снизу
+                if additional_images:
+                    # Горизонтальная таблица с доп. изображениями
+                    add_img_table = Table([additional_images], colWidths=[40*mm]*len(additional_images))
+                    add_img_table.setStyle(TableStyle([
                         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                        ('RIGHTPADDING', (0, 0), (-1, -1), 5),
                     ]))
-                    images_cell = img_table
+                    images_block.append(add_img_table)
+                
+                # Собираем в вертикальную таблицу
+                images_cell = Table([[elem] for elem in images_block], colWidths=[90*mm])
+                images_cell.setStyle(TableStyle([
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                ]))
             else:
                 images_cell = Paragraph('Нет изображения', self.description_style)
             
@@ -312,20 +346,23 @@ class KPPDFGenerator:
             
             price_table = Table(price_table_data, colWidths=[30*mm, 25*mm, 30*mm, 25*mm, 20*mm])
             price_table.setStyle(TableStyle([
-                # Заголовок
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4472C4')),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                # Заголовок (минималистичный серый стиль)
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f3f4f6')),  # Светло-серый фон
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#374151')),   # Темно-серый текст
                 ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTNAME', (0, 0), (-1, 0), self.font_name_bold),
                 ('FONTSIZE', (0, 0), (-1, 0), 10),
                 ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                ('TOPPADDING', (0, 0), (-1, 0), 8),
                 
                 # Данные
                 ('ALIGN', (0, 1), (-1, -1), 'CENTER'),
-                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('FONTNAME', (0, 1), (-1, -1), self.font_name),
                 ('FONTSIZE', (0, 1), (-1, -1), 9),
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f5f5f5')]),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e5e7eb')),  # Светло-серая граница
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9fafb')]),  # Чередование белый/светло-серый
+                ('TOPPADDING', (0, 1), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
             ]))
             
             info_elements.append(price_table)
@@ -337,7 +374,7 @@ class KPPDFGenerator:
             ]))
             
             # Финальная таблица: изображения + информация
-            product_table = Table([[images_cell, info_cell]], colWidths=[50*mm, 110*mm])
+            product_table = Table([[images_cell, info_cell]], colWidths=[95*mm, 75*mm])
             product_table.setStyle(TableStyle([
                 ('VALIGN', (0, 0), (-1, -1), 'TOP'),
                 ('LEFTPADDING', (0, 0), (-1, -1), 5),
