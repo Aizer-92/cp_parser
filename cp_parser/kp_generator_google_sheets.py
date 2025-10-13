@@ -316,6 +316,10 @@ class KPGoogleSheetsGenerator:
             for idx, offer in enumerate(offers):
                 if idx == 0:
                     # Первая строка - со всеми данными
+                    # Цены с запятыми: 6.64 -> "6,64"
+                    price_usd_str = str(offer['price_usd']).replace('.', ',') if offer['price_usd'] else ''
+                    price_rub_str = str(offer['price_rub']).replace('.', ',') if offer['price_rub'] else ''
+                    
                     row_data = [
                         main_image,  # Фото (будет объединено вертикально)
                         product_info['name'],  # Название
@@ -323,8 +327,8 @@ class KPGoogleSheetsGenerator:
                         characteristics_text,  # Характеристики
                         sample_text,  # Образец (будет объединено)
                         f"{offer['quantity']:,.0f}".replace(',', ' '),  # Тираж
-                        offer['price_usd'] if offer['price_usd'] else '',  # USD (БЕЗ $)
-                        offer['price_rub'] if offer['price_rub'] else '',  # RUB (БЕЗ ₽)
+                        price_usd_str,  # USD с запятыми (БЕЗ $)
+                        price_rub_str,  # RUB с запятыми (БЕЗ ₽)
                         offer['route'] or '-',  # Маршрут
                         f"{offer['delivery_days']} дн." if offer['delivery_days'] else '-',  # Срок
                         additional_photo_1,  # Доп. фото 1 (будет объединено)
@@ -333,6 +337,10 @@ class KPGoogleSheetsGenerator:
                     ]
                 else:
                     # Остальные строки - только цены и маршруты
+                    # Цены с запятыми: 6.64 -> "6,64"
+                    price_usd_str = str(offer['price_usd']).replace('.', ',') if offer['price_usd'] else ''
+                    price_rub_str = str(offer['price_rub']).replace('.', ',') if offer['price_rub'] else ''
+                    
                     row_data = [
                         '',  # Фото (пустая, будет merge)
                         '',  # Название (пустая)
@@ -340,8 +348,8 @@ class KPGoogleSheetsGenerator:
                         '',  # Характеристики (пустая)
                         '',  # Образец (пустая, будет merge)
                         f"{offer['quantity']:,.0f}".replace(',', ' '),  # Тираж
-                        offer['price_usd'] if offer['price_usd'] else '',  # USD (БЕЗ $)
-                        offer['price_rub'] if offer['price_rub'] else '',  # RUB (БЕЗ ₽)
+                        price_usd_str,  # USD с запятыми (БЕЗ $)
+                        price_rub_str,  # RUB с запятыми (БЕЗ ₽)
                         offer['route'] or '-',  # Маршрут
                         f"{offer['delivery_days']} дн." if offer['delivery_days'] else '-',  # Срок
                         '',  # Доп. фото 1 (пустая, будет merge)
@@ -748,7 +756,7 @@ class KPGoogleSheetsGenerator:
                 }
             })
             
-            # 4. ШИРИНА колонки A (Фото) - узкая, 120 пикселей
+            # 4. ШИРИНА колонки A (Фото) - 200 пикселей
             requests.append({
                 'updateDimensionProperties': {
                     'range': {
@@ -758,11 +766,28 @@ class KPGoogleSheetsGenerator:
                         'endIndex': 1
                     },
                     'properties': {
-                        'pixelSize': 120
+                        'pixelSize': 200
                     },
                     'fields': 'pixelSize'
                 }
             })
+            
+            # 4.1. ШИРИНА колонок K-M (Доп. фото) - 200 пикселей каждая
+            for col_idx in [10, 11, 12]:  # K, L, M
+                requests.append({
+                    'updateDimensionProperties': {
+                        'range': {
+                            'sheetId': 0,
+                            'dimension': 'COLUMNS',
+                            'startIndex': col_idx,
+                            'endIndex': col_idx + 1
+                        },
+                        'properties': {
+                            'pixelSize': 200
+                        },
+                        'fields': 'pixelSize'
+                    }
+                })
             
             # 5. Автоподбор ширины остальных колонок (B-M, индексы 1-13)
             requests.append({

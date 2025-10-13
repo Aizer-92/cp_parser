@@ -824,15 +824,32 @@ textarea.form-input {
     gap: 16px;
 }
 
+.route-prices {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.route-label {
+    font-size: 13px;
+    color: #6b7280;
+}
+
 .route-price {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     color: #1f2937;
+}
+
+.route-divider {
+    color: #d1d5db;
+    margin: 0 4px;
 }
 
 .route-arrow {
     font-size: 12px;
     color: #6b7280;
+    margin-left: 8px;
 }
 
 .route-expanded {
@@ -872,6 +889,134 @@ textarea.form-input {
 
 .text-success {
     color: #10b981 !important;
+}
+
+/* ============================================
+   МОДАЛЬНАЯ ФОРМА ПОЗИЦИИ
+   ============================================ */
+.position-form-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.position-form-modal {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    line-height: 1;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+}
+
+.btn-close:hover {
+    color: #1f2937;
+}
+
+.position-form-modal .form {
+    padding: 20px;
+}
+
+/* Пошаговая форма */
+.step-indicator {
+    font-size: 13px;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+.step-content {
+    min-height: 300px;
+}
+
+.step-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 20px 0;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.photo-list {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.photo-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+}
+
+.photo-url {
+    flex: 1;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.btn-remove {
+    background: #ef4444;
+    color: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0;
+}
+
+.btn-remove:hover {
+    background: #dc2626;
+}
+
+.custom-route-section {
+    margin-bottom: 24px;
+    padding: 16px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
 }
 
 /* ============================================

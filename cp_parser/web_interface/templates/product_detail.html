@@ -357,13 +357,12 @@ async function toggleKP(productId, priceOfferId, buttonElement) {
 
 // Обновление счетчика КП в header
 function updateKPCount(count) {
-    const badge = document.getElementById('kp-count-badge');
-    if (badge) {
+    const linkText = document.getElementById('kp-link-text');
+    if (linkText) {
         if (count > 0) {
-            badge.textContent = count;
-            badge.classList.remove('hidden');
+            linkText.textContent = `КП (${count})`;
         } else {
-            badge.classList.add('hidden');
+            linkText.textContent = 'КП';
         }
     }
 }

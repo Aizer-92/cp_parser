@@ -205,8 +205,17 @@ window.QuickModeV3 = {
             </form>
         </div>
         
+        <!-- Второй этап: кастомные параметры логистики -->
+        <CustomLogisticsFormV3
+            v-if="needsCustomParams"
+            :category="category"
+            :routes="placeholderRoutes"
+            @apply="applyCustomLogistics"
+            @cancel="cancelCustomParams"
+        />
+        
         <!-- Результаты - детальный вид -->
-        <div v-if="result" class="card" style="margin-top: 24px;">
+        <div v-if="result && !needsCustomParams" class="card" style="margin-top: 24px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 class="card-title">Результаты расчёта</h2>
                 <button @click="reset" class="btn-text">Новый расчёт</button>
@@ -234,10 +243,19 @@ window.QuickModeV3 = {
             
             <!-- Краткие результаты по маршрутам (раскрываются по клику) -->
             <div v-for="(route, key) in result.routes" :key="key" class="route-details">
-                <div class="route-header" @click="toggleRoute(key)">
+                <div class="route-header" @click="toggleRoute(key)" style="cursor: pointer;">
                     <h3 class="route-title">{{ formatRouteName(key) }}</h3>
                     <div class="route-quick-info">
-                        <span class="route-price">{{ formatPrice(route.cost_per_unit_rub || 0) }}₽</span>
+                        <div class="route-prices">
+                            <span class="route-label">Себестоимость:</span>
+                            <span class="route-price">{{ formatPrice(route.cost_per_unit_rub || 0) }}₽</span>
+                            <span class="route-divider">|</span>
+                            <span class="route-label">Продажа:</span>
+                            <span class="route-price">{{ formatPrice(route.sale_per_unit_rub || 0) }}₽</span>
+                            <span class="route-divider">|</span>
+                            <span class="route-label">Прибыль:</span>
+                            <span class="route-price">{{ formatPrice((route.sale_per_unit_rub || 0) - (route.cost_per_unit_rub || 0)) }}₽</span>
+                        </div>
                         <span class="route-arrow">{{ expandedRoutes[key] ? '▼' : '▶' }}</span>
                     </div>
                 </div>
@@ -384,7 +402,12 @@ window.QuickModeV3 = {
             isCalculating: false,
             result: null,
             expandedRoutes: {}, // Отслеживание развернутых маршрутов
-            availableCategories: []
+            availableCategories: [],
+            
+            // Второй этап (кастомные параметры)
+            needsCustomParams: false,
+            placeholderRoutes: {},
+            lastRequestData: null // Сохраняем данные первого запроса
         };
     },
     
@@ -422,6 +445,7 @@ window.QuickModeV3 = {
         async calculate() {
             this.isCalculating = true;
             this.result = null;
+            this.needsCustomParams = false;
             
             try {
                 const v3 = window.useCalculationV3();
@@ -448,13 +472,24 @@ window.QuickModeV3 = {
                     requestData.weight_kg = this.weightKg;
                 }
                 
+                // Сохраняем данные для второго этапа
+                this.lastRequestData = requestData;
+                
                 console.log('📤 Отправка данных на расчет:', requestData);
                 
                 // Выполняем расчёт
                 const result = await v3.calculate(requestData);
-                this.result = result;
                 
-                console.log('✅ Результат расчёта:', result);
+                // Проверяем нужны ли кастомные параметры
+                if (result.needs_custom_params) {
+                    console.log('⚠️ Требуются кастомные параметры');
+                    this.needsCustomParams = true;
+                    this.placeholderRoutes = result.routes || {};
+                    this.category = result.category;
+                } else {
+                    this.result = result;
+                    console.log('✅ Результат расчёта:', result);
+                }
                 
             } catch (error) {
                 console.error('❌ Ошибка расчёта:', error);
@@ -463,6 +498,43 @@ window.QuickModeV3 = {
             } finally {
                 this.isCalculating = false;
             }
+        },
+        
+        async applyCustomLogistics(customLogistics) {
+            this.isCalculating = true;
+            
+            try {
+                const v3 = window.useCalculationV3();
+                
+                // Добавляем кастомные параметры к исходному запросу
+                const requestData = {
+                    ...this.lastRequestData,
+                    custom_logistics: customLogistics
+                };
+                
+                console.log('📤 Повторный расчет с кастомными параметрами:', requestData);
+                
+                // Выполняем расчёт с кастомными параметрами
+                const result = await v3.calculate(requestData);
+                
+                // Скрываем форму кастомных параметров и показываем результат
+                this.needsCustomParams = false;
+                this.result = result;
+                
+                console.log('✅ Результат с кастомными параметрами:', result);
+                
+            } catch (error) {
+                console.error('❌ Ошибка расчёта с кастомными параметрами:', error);
+                const errorMsg = error.response?.data?.detail || error.message || 'Не удалось выполнить расчёт';
+                alert(`Ошибка: ${errorMsg}`);
+            } finally {
+                this.isCalculating = false;
+            }
+        },
+        
+        cancelCustomParams() {
+            this.needsCustomParams = false;
+            this.placeholderRoutes = {};
         },
         
         reset() {
@@ -477,7 +549,8 @@ window.QuickModeV3 = {
         },
         
         toggleRoute(key) {
-            this.$set(this.expandedRoutes, key, !this.expandedRoutes[key]);
+            // Vue 3 не требует $set, просто изменяем напрямую
+            this.expandedRoutes[key] = !this.expandedRoutes[key];
         },
         
         formatRouteName(key) {

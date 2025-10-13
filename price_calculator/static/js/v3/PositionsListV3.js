@@ -2,6 +2,14 @@
 window.PositionsListV3 = {
     template: `
     <div class="positions-list">
+        <!-- Форма создания/редактирования -->
+        <PositionFormV3
+            v-if="showForm"
+            :position="editingPosition"
+            @close="closeForm"
+            @saved="onPositionSaved"
+        />
+        
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                 <h2 class="card-title">Позиции товаров</h2>
@@ -86,14 +94,14 @@ window.PositionsListV3 = {
                             class="btn-icon"
                             title="Редактировать"
                         >
-                            ✎
+                            ✏
                         </button>
                         <button
-                            @click.stop="deletePosition(position.id)"
+                            @click.stop="confirmDelete(position.id)"
                             class="btn-icon btn-danger"
                             title="Удалить"
                         >
-                            ×
+                            🗑
                         </button>
                     </div>
                 </div>
@@ -132,7 +140,9 @@ window.PositionsListV3 = {
             categoryFilter: '',
             currentPage: 1,
             itemsPerPage: 12,
-            totalPositions: 0
+            totalPositions: 0,
+            showForm: false,
+            editingPosition: null
         };
     },
     
@@ -208,23 +218,42 @@ window.PositionsListV3 = {
         },
         
         createPosition() {
-            this.$emit('create-position');
+            this.editingPosition = null;
+            this.showForm = true;
         },
         
         openPosition(id) {
-            this.$emit('open-position', id);
+            // TODO: Открыть детали позиции
+            console.log('Открыть позицию:', id);
+            alert(`Просмотр позиции #${id} будет реализован в следующем этапе`);
         },
         
         editPosition(id) {
-            this.$emit('edit-position', id);
+            const position = this.positions.find(p => p.id === id);
+            if (position) {
+                this.editingPosition = position;
+                this.showForm = true;
+            }
+        },
+        
+        closeForm() {
+            this.showForm = false;
+            this.editingPosition = null;
+        },
+        
+        async onPositionSaved() {
+            await this.loadPositions();
+        },
+        
+        confirmDelete(id) {
+            if (!confirm('Удалить эту позицию?')) return;
+            this.deletePosition(id);
         },
         
         async deletePosition(id) {
-            if (!confirm('Удалить эту позицию?')) return;
-            
             try {
                 const positionsAPI = window.usePositionsV3();
-                await positionsAPI.delete(id);
+                await positionsAPI.deletePosition(id);
                 
                 console.log('✅ Позиция удалена:', id);
                 await this.loadPositions();

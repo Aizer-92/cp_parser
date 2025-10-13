@@ -1,372 +1,274 @@
-// PositionFormV3.js - Форма создания/редактирования позиции
+// PositionFormV3.js - Пошаговая форма создания позиции (как в V2)
 window.PositionFormV3 = {
-    props: {
-        positionId: {
-            type: Number,
-            default: null
-        }
-    },
-    
     template: `
-    <div class="position-form">
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">
-                    {{ positionId ? 'Редактирование позиции' : 'Новая позиция' }}
-                </h2>
-                <button @click="cancel" class="btn-text">Отмена</button>
+    <div class="position-form-overlay" @click.self="close">
+        <div class="position-form-modal" style="max-width: 800px;">
+            <div class="modal-header">
+                <div>
+                    <h2>{{ isEdit ? 'Редактировать позицию' : 'Создать позицию' }}</h2>
+                    <div class="step-indicator">
+                        Шаг {{ currentStep }} из 3
+                    </div>
+                </div>
+                <button @click="close" class="btn-close">×</button>
             </div>
             
-            <form @submit.prevent="save" class="form">
-                <!-- Основная информация -->
-                <div class="form-section">
-                    <h3>Основная информация</h3>
+            <form @submit.prevent="handleSubmit" class="form">
+                <!-- ШАГ 1: Основная информация -->
+                <div v-show="currentStep === 1" class="step-content">
+                    <h3 class="step-title">Основная информация о товаре</h3>
                     
                     <div class="form-group">
-                        <label for="name">Название *</label>
+                        <label for="name">Название товара *</label>
                         <input
                             id="name"
                             v-model="form.name"
                             type="text"
+                            placeholder="Например: Футболка хлопковая"
                             required
                             class="form-input"
-                            placeholder="Например: Футболка хлопковая с принтом"
                         />
                     </div>
                     
                     <div class="form-group">
-                        <label for="category">Категория</label>
+                        <label for="category">Категория *</label>
                         <input
                             id="category"
                             v-model="form.category"
                             type="text"
-                            list="categories-list"
+                            placeholder="футболка, кружка, рюкзак..."
+                            required
                             class="form-input"
-                            placeholder="Например: футболка"
                         />
-                        <datalist id="categories-list">
-                            <option v-for="cat in availableCategories" :key="cat" :value="cat">
-                        </datalist>
                     </div>
                     
                     <div class="form-group">
-                        <label for="description">Описание</label>
+                        <label for="description">Описание товара</label>
                         <textarea
                             id="description"
                             v-model="form.description"
                             rows="3"
+                            placeholder="Краткое описание товара..."
                             class="form-input"
-                            placeholder="Описание товара: материал, размеры, вес..."
-                        ></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="customization">Кастомизация</label>
-                        <textarea
-                            id="customization"
-                            v-model="form.customization"
-                            rows="3"
-                            class="form-input"
-                            placeholder="Кастомизация: печать, гравировка, упаковка..."
                         ></textarea>
                     </div>
                 </div>
                 
-                <!-- Фотографии -->
-                <div class="form-section">
-                    <h3>Фотографии</h3>
+                <!-- ШАГ 2: Фабрика и стоимость -->
+                <div v-show="currentStep === 2" class="step-content">
+                    <h3 class="step-title">Данные от фабрики</h3>
                     
-                    <div
-                        class="photo-dropzone"
-                        :class="{ 'dropzone-active': isDragging }"
-                        @drop.prevent="onDrop"
-                        @dragover.prevent="isDragging = true"
-                        @dragleave.prevent="isDragging = false"
-                        @click="$refs.fileInput.click()"
-                    >
-                        <p>Перетащите фото сюда или нажмите для выбора</p>
+                    <div class="form-group">
+                        <label for="factory">Фабрика (WeChat / URL)</label>
                         <input
-                            ref="fileInput"
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            style="display: none"
-                            @change="onFileSelect"
+                            id="factory"
+                            v-model="form.factory_url"
+                            type="text"
+                            placeholder="https://... или WeChat ID"
+                            class="form-input"
                         />
                     </div>
                     
-                    <!-- Превью фотографий -->
-                    <div v-if="photos.length > 0" class="photos-preview">
-                        <div
-                            v-for="(photo, index) in photos"
-                            :key="index"
-                            class="photo-item"
-                        >
-                            <img :src="photo.preview" :alt="'Фото ' + (index + 1)" />
-                            <div class="photo-overlay">
-                                <button
-                                    v-if="index === mainPhotoIndex"
-                                    type="button"
-                                    class="photo-badge"
-                                >
-                                    Основная
-                                </button>
-                                <button
-                                    v-else
-                                    type="button"
-                                    @click="setMainPhoto(index)"
-                                    class="photo-badge secondary"
-                                >
-                                    Сделать основной
-                                </button>
-                                <button
-                                    type="button"
-                                    @click="removePhoto(index)"
-                                    class="photo-remove"
-                                >
-                                    ×
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <p v-if="uploadProgress > 0 && uploadProgress < 100" class="upload-progress">
-                        Загрузка: {{ uploadProgress }}%
-                    </p>
-                </div>
-                
-                <!-- Дополнительно -->
-                <div class="form-section">
-                    <h3>Дополнительно</h3>
-                    
                     <div class="form-row">
                         <div class="form-group flex-1">
-                            <label for="material">Материал</label>
+                            <label for="price">Цена (¥)</label>
                             <input
-                                id="material"
-                                v-model="form.material"
-                                type="text"
+                                id="price"
+                                v-model.number="form.price_yuan"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="125.00"
                                 class="form-input"
-                                placeholder="cotton"
                             />
                         </div>
                         
                         <div class="form-group flex-1">
-                            <label for="colors">Цвета</label>
+                            <label for="weight">Вес единицы (кг)</label>
                             <input
-                                id="colors"
-                                v-model="form.colors"
-                                type="text"
+                                id="weight"
+                                v-model.number="form.weight_kg"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.2"
                                 class="form-input"
-                                placeholder="white, black"
                             />
                         </div>
                     </div>
                 </div>
                 
-                <!-- Кнопки -->
-                <div class="form-actions">
-                    <button type="button" @click="cancel" class="btn-secondary">
+                <!-- ШАГ 3: Кастомизация и фото -->
+                <div v-show="currentStep === 3" class="step-content">
+                    <h3 class="step-title">Кастомизация и материалы</h3>
+                    
+                    <div class="form-group">
+                        <label for="customization">Кастомизация товара</label>
+                        <textarea
+                            id="customization"
+                            v-model="form.customization"
+                            rows="3"
+                            placeholder="Требования к кастомизации (печать, гравировка и т.д.)"
+                            class="form-input"
+                        ></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Фотографии товара (URL)</label>
+                        <input
+                            v-model="photoUrl"
+                            type="url"
+                            placeholder="https://example.com/photo.jpg"
+                            class="form-input"
+                            @keyup.enter="addPhoto"
+                        />
+                        <button type="button" @click="addPhoto" class="btn-secondary btn-sm" style="margin-top: 8px;">
+                            Добавить фото
+                        </button>
+                        
+                        <div v-if="form.design_files_urls.length > 0" class="photo-list">
+                            <div v-for="(url, index) in form.design_files_urls" :key="index" class="photo-item">
+                                <img :src="url" :alt="'Фото ' + (index + 1)" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" />
+                                <span class="photo-url">{{ truncateUrl(url) }}</span>
+                                <button type="button" @click="removePhoto(index)" class="btn-remove">×</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Навигация -->
+                <div class="form-actions" style="justify-content: space-between;">
+                    <button type="button" @click="prevStep" v-if="currentStep > 1" class="btn-secondary">
+                        ← Назад
+                    </button>
+                    <button type="button" @click="close" class="btn-secondary">
                         Отмена
                     </button>
-                    <button type="submit" :disabled="isSaving" class="btn-primary">
-                        {{ isSaving ? 'Сохранение...' : 'Сохранить' }}
-                    </button>
+                    <div style="display: flex; gap: 12px;">
+                        <button type="button" @click="nextStep" v-if="currentStep < 3" class="btn-primary">
+                            Далее →
+                        </button>
+                        <button type="submit" v-if="currentStep === 3" :disabled="isSaving" class="btn-primary">
+                            {{ isSaving ? 'Сохранение...' : 'Сохранить позицию' }}
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
     `,
     
+    props: {
+        position: {
+            type: Object,
+            default: null
+        }
+    },
+    
     data() {
         return {
+            currentStep: 1,
             form: {
                 name: '',
                 category: '',
                 description: '',
+                factory_url: '',
+                price_yuan: null,
+                weight_kg: null,
                 customization: '',
-                material: '',
-                colors: ''
+                design_files_urls: []
             },
-            
-            photos: [],
-            mainPhotoIndex: 0,
-            isDragging: false,
-            isSaving: false,
-            uploadProgress: 0,
-            
-            availableCategories: []
+            photoUrl: '',
+            isSaving: false
         };
     },
     
-    async mounted() {
-        await this.loadCategories();
-        if (this.positionId) {
-            await this.loadPosition();
+    computed: {
+        isEdit() {
+            return !!this.position;
+        }
+    },
+    
+    mounted() {
+        if (this.position) {
+            this.form = { 
+                ...this.position,
+                design_files_urls: this.position.design_files_urls || []
+            };
         }
     },
     
     methods: {
-        async loadCategories() {
-            try {
-                const v3 = window.useCalculationV3();
-                const categories = await v3.getCategories();
-                this.availableCategories = categories.map(c => c.category || c.name || c);
-            } catch (error) {
-                console.error('Ошибка загрузки категорий:', error);
-            }
-        },
-        
-        async loadPosition() {
-            try {
-                const api = window.usePositionsV3();
-                const position = await api.getPosition(this.positionId);
-                
-                this.form.name = position.name;
-                this.form.category = position.category || '';
-                this.form.description = position.description || '';
-                
-                // Загружаем custom_fields
-                if (position.custom_fields) {
-                    this.form.customization = position.custom_fields.customization || '';
-                    this.form.material = position.custom_fields.material || '';
-                    this.form.colors = position.custom_fields.colors || '';
+        nextStep() {
+            // Валидация шага 1
+            if (this.currentStep === 1) {
+                if (!this.form.name || !this.form.category) {
+                    alert('Заполните обязательные поля');
+                    return;
                 }
-                
-                // Загружаем фото
-                if (position.design_files_urls && position.design_files_urls.length > 0) {
-                    this.photos = position.design_files_urls.map(url => ({
-                        url: url,
-                        preview: url,
-                        isUploaded: true
-                    }));
-                }
-            } catch (error) {
-                console.error('Ошибка загрузки позиции:', error);
-                alert('Не удалось загрузить позицию');
             }
-        },
-        
-        onFileSelect(event) {
-            const files = Array.from(event.target.files);
-            this.addFiles(files);
-        },
-        
-        onDrop(event) {
-            this.isDragging = false;
-            const files = Array.from(event.dataTransfer.files);
-            this.addFiles(files);
-        },
-        
-        async addFiles(files) {
-            const uploadApi = window.useSFTPUpload();
             
-            for (const file of files) {
-                // Валидация
-                if (!uploadApi.isValidImage(file)) continue;
-                
-                // Создаём превью
-                const preview = await uploadApi.createPreview(file);
-                
-                this.photos.push({
-                    file: file,
-                    preview: preview,
-                    isUploaded: false
-                });
-            }
+            this.currentStep++;
         },
         
-        setMainPhoto(index) {
-            this.mainPhotoIndex = index;
+        prevStep() {
+            this.currentStep--;
         },
         
-        removePhoto(index) {
-            this.photos.splice(index, 1);
-            if (this.mainPhotoIndex >= this.photos.length) {
-                this.mainPhotoIndex = 0;
+        handleSubmit() {
+            if (this.currentStep === 3) {
+                this.save();
             }
         },
         
         async save() {
-            if (!this.form.name) {
-                alert('Заполните название позиции');
-                return;
-            }
-            
             this.isSaving = true;
-            this.uploadProgress = 0;
-            
             try {
-                const api = window.usePositionsV3();
+                const positionsAPI = window.usePositionsV3();
                 
-                // Сначала создаём/обновляем позицию без фото
-                const positionData = {
-                    name: this.form.name,
-                    category: this.form.category,
-                    description: this.form.description,
-                    custom_fields: {
-                        customization: this.form.customization,
-                        material: this.form.material,
-                        colors: this.form.colors
-                    },
-                    photo_urls: []
-                };
-                
-                let position;
-                if (this.positionId) {
-                    position = await api.updatePosition(this.positionId, positionData);
-                } else {
-                    position = await api.createPosition(positionData);
-                }
-                
-                // Загружаем фото на SFTP
-                const uploadApi = window.useSFTPUpload();
-                const photoUrls = [];
-                
-                for (let i = 0; i < this.photos.length; i++) {
-                    const photo = this.photos[i];
-                    
-                    if (photo.isUploaded) {
-                        // Фото уже загружено
-                        photoUrls.push(photo.url);
-                    } else {
-                        // Загружаем новое фото
-                        this.uploadProgress = Math.round((i / this.photos.length) * 100);
-                        const url = await uploadApi.uploadPhoto(photo.file, position.id);
-                        photoUrls.push(url);
+                // Подготавливаем данные (убираем null значения)
+                const data = { ...this.form };
+                Object.keys(data).forEach(key => {
+                    if (data[key] === null || data[key] === '') {
+                        delete data[key];
                     }
+                });
+                
+                if (this.isEdit) {
+                    await positionsAPI.updatePosition(this.position.id, data);
+                    console.log('✅ Позиция обновлена');
+                } else {
+                    await positionsAPI.createPosition(data);
+                    console.log('✅ Позиция создана');
                 }
                 
-                // Переставляем основное фото на первое место
-                if (this.mainPhotoIndex > 0) {
-                    const mainPhoto = photoUrls[this.mainPhotoIndex];
-                    photoUrls.splice(this.mainPhotoIndex, 1);
-                    photoUrls.unshift(mainPhoto);
-                }
-                
-                // Обновляем позицию с фото
-                if (photoUrls.length > 0) {
-                    await api.updatePosition(position.id, {
-                        photo_urls: photoUrls
-                    });
-                }
-                
-                this.uploadProgress = 100;
-                alert('Позиция сохранена!');
-                this.$emit('saved', position.id);
-                
+                this.$emit('saved');
+                this.close();
             } catch (error) {
-                console.error('Ошибка сохранения:', error);
-                alert(`Ошибка: ${error.message || 'Не удалось сохранить позицию'}`);
+                console.error('❌ Ошибка сохранения:', error);
+                alert('Не удалось сохранить позицию');
             } finally {
                 this.isSaving = false;
             }
         },
         
-        cancel() {
-            this.$emit('cancel');
+        addPhoto() {
+            if (this.photoUrl && this.photoUrl.trim()) {
+                this.form.design_files_urls.push(this.photoUrl.trim());
+                this.photoUrl = '';
+            }
+        },
+        
+        removePhoto(index) {
+            this.form.design_files_urls.splice(index, 1);
+        },
+        
+        truncateUrl(url) {
+            return url.length > 50 ? url.substring(0, 47) + '...' : url;
+        },
+        
+        close() {
+            this.$emit('close');
         }
     }
 };
-
-

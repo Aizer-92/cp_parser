@@ -434,81 +434,8 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    """Главная страница с общей статистикой"""
-    try:
-        print("🔍 [DEBUG] Начинаем запрос к БД...")
-        
-        with db_manager.get_session() as session:
-            print("🔍 [DEBUG] Сессия создана успешно")
-            
-            # ТЕСТОВЫЙ ЗАПРОС: Пробуем простой COUNT
-            try:
-                print("🔍 [DEBUG] Пробуем COUNT(*)...")
-                projects_count = session.query(Project).count()
-                print(f"✅ [DEBUG] COUNT успешен: {projects_count}")
-            except Exception as e:
-                print(f"❌ [DEBUG] Ошибка в COUNT: {e}")
-                import traceback
-                traceback.print_exc()
-                raise
-            
-            # Получаем статистику
-            products_count = session.query(Product).count()
-            offers_count = session.query(PriceOffer).count()
-            images_count = session.query(ProductImage).count()
-            completed_projects = session.query(Project).filter(Project.parsing_status == 'complete').count()
-            
-            # Получаем последние обработанные проекты (только с товарами)
-            print("🔍 [DEBUG] Пробуем получить последние проекты через RAW SQL...")
-            
-            # Используем RAW SQL чтобы обойти проблему с типами
-            from sqlalchemy import text
-            raw_sql = text("""
-                SELECT id, project_name, file_name, google_sheets_url, 
-                       manager_name, total_products_found, total_images_found,
-                       updated_at, created_at
-                FROM projects 
-                WHERE parsing_status = 'complete' AND total_products_found > 0
-                ORDER BY updated_at DESC 
-                LIMIT 6
-            """)
-            
-            result = session.execute(raw_sql)
-            rows = result.fetchall()
-            
-            # Преобразуем в объекты Project вручную
-            recent_projects = []
-            for row in rows:
-                project = Project()
-                project.id = row[0]
-                project.project_name = row[1]
-                project.file_name = row[2]
-                project.google_sheets_url = row[3]
-                project.manager_name = row[4]
-                project.total_products_found = row[5]
-                project.total_images_found = row[6]
-                # Преобразуем строки в datetime объекты
-                project.updated_at = datetime.fromisoformat(str(row[7])) if row[7] else None
-                project.created_at = datetime.fromisoformat(str(row[8])) if row[8] else None
-                recent_projects.append(project)
-            
-            print(f"✅ [DEBUG] Получено проектов через RAW SQL: {len(recent_projects)}")
-            
-            stats = {
-                'projects': projects_count,
-                'products': products_count,
-                'offers': offers_count,
-                'images': images_count,
-                'completed_projects': completed_projects
-            }
-            
-            print("🔍 [DEBUG] Рендерим шаблон...")
-            return render_template('index_new.html', stats=stats, recent_projects=recent_projects)
-    except Exception as e:
-        print(f"❌ [ERROR] Критическая ошибка в index(): {e}")
-        import traceback
-        traceback.print_exc()
-        return f"Ошибка: {e}", 500
+    """Главная страница - редирект на товары с сортировкой по дате добавления в КП"""
+    return redirect(url_for('products_list', sort='kp_date', order='desc'))
 
 @app.route('/products')
 @login_required
