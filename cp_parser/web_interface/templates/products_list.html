@@ -193,7 +193,7 @@
         <a href="/product/{{ product.id }}" class="group">
             <div class="w-full h-48 overflow-hidden rounded-lg bg-gray-200 flex items-center justify-center">
                 {% if product.images and product.images[0] %}
-                <img src="{{ get_image_url(product.images[0].image_filename) }}" 
+                <img src="{{ product.images[0].image_filename }}" 
                      alt="{{ product.name }}" 
                      class="max-w-full max-h-full object-contain group-hover:opacity-75 transition-all">
                 {% else %}

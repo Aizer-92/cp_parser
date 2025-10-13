@@ -589,7 +589,7 @@ def products_list():
             
             # Получаем изображения для товара
             images_sql = text("""
-                SELECT id, image_filename, is_main_image 
+                SELECT id, image_filename, is_main_image, image_url
                 FROM product_images 
                 WHERE product_id = :product_id 
                 ORDER BY is_main_image DESC, display_order
@@ -600,7 +600,7 @@ def products_list():
             for img_row in image_rows:
                 img = ProductImage()
                 img.id = img_row[0]
-                img.image_filename = img_row[1]
+                img.image_filename = img_row[3] or img_row[1]  # Используем image_url напрямую
                 img.is_main_image = img_row[2]
                 product.images.append(img)
             
@@ -834,7 +834,7 @@ def project_detail(project_id):
             
             # Получаем изображения
             images_sql = text("""
-                SELECT id, image_filename, is_main_image 
+                SELECT id, image_filename, is_main_image, image_url
                 FROM product_images 
                 WHERE product_id = :product_id 
                 ORDER BY is_main_image DESC, display_order
@@ -844,7 +844,7 @@ def project_detail(project_id):
             for img_row in image_rows:
                 img = ProductImage()
                 img.id = img_row[0]
-                img.image_filename = img_row[1]
+                img.image_filename = img_row[3] or img_row[1]  # Используем image_url напрямую
                 img.is_main_image = img_row[2]
                 product.images.append(img)
             
@@ -983,7 +983,7 @@ def product_detail(product_id):
         
         # Получаем все изображения
         images_sql = text("""
-            SELECT id, image_filename, is_main_image, display_order
+            SELECT id, image_filename, is_main_image, display_order, image_url
             FROM product_images 
             WHERE product_id = :product_id 
             ORDER BY is_main_image DESC, display_order
@@ -994,7 +994,8 @@ def product_detail(product_id):
         for row in image_rows:
             img = ProductImage()
             img.id = row[0]
-            img.image_filename = row[1]
+            img.image_filename = row[4] or row[1]  # Используем image_url (row[4]) напрямую из БД
+            img.image_url = row[4] or row[1]
             img.is_main_image = bool(row[2]) if row[2] is not None else False
             img.display_order = int(row[3]) if row[3] is not None else 1
             images.append(img)

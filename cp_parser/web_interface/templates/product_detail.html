@@ -34,7 +34,7 @@
             <div class="aspect-h-1 aspect-w-1 w-full mb-6">
                 {% if images %}
                 <img id="main-image" 
-                     src="{{ get_image_url(images[0].image_filename) }}" 
+                     src="{{ images[0].image_filename }}" 
                      alt="{{ product.name }}" 
                      class="h-full w-full object-cover object-center sm:rounded-lg">
                 {% else %}
@@ -50,11 +50,11 @@
                 <div class="grid grid-cols-4 gap-6">
                     {% for image in images[:8] %}
                     <button type="button" 
-                            onclick="changeMainImage('{{ get_image_url(image.image_filename) }}')"
+                            onclick="changeMainImage('{{ image.image_filename }}')"
                             class="relative h-24 bg-white rounded-md flex items-center justify-center text-sm font-medium uppercase text-gray-900 cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring focus:ring-opacity-50 focus:ring-offset-4 border-2 border-gray-200">
                         <span class="sr-only">{{ image.image_filename }}</span>
                         <span class="absolute inset-0 rounded-md overflow-hidden">
-                            <img src="{{ get_image_url(image.image_filename) }}" 
+                            <img src="{{ image.image_filename }}" 
                                  alt="" 
                                  class="h-full w-full object-cover object-center">
                         </span>
