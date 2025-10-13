@@ -249,9 +249,16 @@ class KPGoogleSheetsGenerator:
                     if not image_url and img_row[1]:
                         image_url = f"https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods/images/{img_row[1]}"
                     
-                    # ИСПРАВЛЕНИЕ: Заменяем FTP на S3 если URL содержит ftp://
-                    if image_url and 'ftp://' in image_url:
-                        image_url = image_url.replace('ftp://ftp.promogoods.website', 'https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods')
+                    # ИСПРАВЛЕНИЕ: Заменяем FTP на S3 (любой вариант ftp://)
+                    if image_url and image_url.startswith('ftp://'):
+                        # Извлекаем путь после ftp://hostname/
+                        if 'ftp.promogoods.website' in image_url:
+                            path = image_url.split('ftp.promogoods.website')[-1]
+                            image_url = f"https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods{path}"
+                        else:
+                            # Универсальная замена для любого FTP хоста
+                            image_url = image_url.replace('ftp://', 'https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods/')
+                        print(f"   🔄 Заменен FTP → S3: {image_url}")
                     
                     if image_url:
                         products_grouped[product_id]['images'].append(image_url)
@@ -332,7 +339,9 @@ class KPGoogleSheetsGenerator:
             if product_info['sample_price']:
                 # Конвертируем в рубли (примерный курс 95)
                 sample_price_rub = product_info['sample_price'] * 95
-                sample_info.append(f"{sample_price_rub:,.2f}".replace(',', ' ').replace('.', ','))
+                # ИСПРАВЛЕНИЕ: Правильное форматирование с запятой вместо точки
+                sample_price_str = f"{sample_price_rub:.2f}".replace('.', ',')  # 904.40 → 904,40
+                sample_info.append(sample_price_str)
             if product_info['sample_delivery_time']:
                 sample_info.append(f"Срок: {product_info['sample_delivery_time']} дн.")
             sample_text = ' | '.join(sample_info) if sample_info else '-'
@@ -394,10 +403,10 @@ class KPGoogleSheetsGenerator:
                 current_row += 1
             
             # Запоминаем merge для фото, названия, дизайна, характеристик, образца и доп. фото
+            end_row = current_row - 1
+            offers_count = len(offers)  # Количество тиражей для этого товара
+            
             if len(offers) > 1:
-                end_row = current_row - 1
-                offers_count = len(offers)  # Количество тиражей для этого товара
-                
                 # Merge для основного фото (колонка A = 0)
                 merge_requests.append({
                     'startRowIndex': start_row,
@@ -454,6 +463,16 @@ class KPGoogleSheetsGenerator:
                     'endRowIndex': end_row + 1,
                     'startColumnIndex': 12,
                     'endColumnIndex': 13
+                })
+            else:
+                # ИСПРАВЛЕНИЕ: Для 1 тиража добавляем специальный request для высоты 250px
+                merge_requests.append({
+                    'startRowIndex': start_row,
+                    'endRowIndex': end_row + 1,
+                    'startColumnIndex': 0,
+                    'endColumnIndex': 1,
+                    'offers_count': 1,
+                    'single_offer_height': True  # Флаг для установки высоты 250px
                 })
         
         return rows, merge_requests
@@ -791,26 +810,34 @@ class KPGoogleSheetsGenerator:
             row_heights = {}
             
             for merge_range in merge_requests:
-                # Добавляем merge request
-                requests.append({
-                    'mergeCells': {
-                        'range': {
-                            'sheetId': 0,
-                            'startRowIndex': merge_range['startRowIndex'],
-                            'endRowIndex': merge_range['endRowIndex'],
-                            'startColumnIndex': merge_range['startColumnIndex'],
-                            'endColumnIndex': merge_range['endColumnIndex']
-                        },
-                        'mergeType': 'MERGE_ALL'  # Объединить все ячейки
-                    }
-                })
+                # Проверяем, нужно ли только установить высоту (для 1 тиража)
+                is_single_offer = merge_range.get('single_offer_height', False)
+                
+                if not is_single_offer:
+                    # Добавляем merge request только если это НЕ single offer
+                    requests.append({
+                        'mergeCells': {
+                            'range': {
+                                'sheetId': 0,
+                                'startRowIndex': merge_range['startRowIndex'],
+                                'endRowIndex': merge_range['endRowIndex'],
+                                'startColumnIndex': merge_range['startColumnIndex'],
+                                'endColumnIndex': merge_range['endColumnIndex']
+                            },
+                            'mergeType': 'MERGE_ALL'  # Объединить все ячейки
+                        }
+                    })
                 
                 # Вычисляем высоту строк для фото (колонка A)
                 if merge_range['startColumnIndex'] == 0 and merge_range['endColumnIndex'] == 1:
                     offers_count = merge_range.get('offers_count', 1)
                     
-                    # ИСПРАВЛЕНИЕ: Высота каждой строки = 250px / количество тиражей
-                    row_height = int(250 / offers_count)
+                    if is_single_offer:
+                        # Для 1 тиража - фиксированная высота 250px
+                        row_height = 250
+                    else:
+                        # Для нескольких тиражей - пропорциональная высота
+                        row_height = int(250 / offers_count)
                     
                     # Устанавливаем высоту для каждой строки в merged диапазоне
                     for row_idx in range(merge_range['startRowIndex'], merge_range['endRowIndex']):
