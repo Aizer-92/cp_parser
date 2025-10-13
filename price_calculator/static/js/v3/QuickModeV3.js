@@ -106,25 +106,25 @@ window.QuickModeV3 = {
                     <label class="toggle-label">
                         <input
                             type="radio"
-                            :value="true"
-                            v-model="packingMode"
-                            class="toggle-radio"
-                        />
-                        <span>Полный расчёт (упаковка)</span>
-                    </label>
-                    <label class="toggle-label">
-                        <input
-                            type="radio"
                             :value="false"
-                            v-model="packingMode"
+                            v-model="detailedMode"
                             class="toggle-radio"
                         />
                         <span>Быстрый расчёт (по весу)</span>
                     </label>
+                    <label class="toggle-label">
+                        <input
+                            type="radio"
+                            :value="true"
+                            v-model="detailedMode"
+                            class="toggle-radio"
+                        />
+                        <span>Детальный расчёт (упаковка)</span>
+                    </label>
                 </div>
                 
-                <!-- Паккинг (основной режим) -->
-                <div v-if="packingMode" class="packing-section">
+                <!-- Вес (быстрый режим, по умолчанию) -->
+                <div v-if="!detailedMode" class="weight-section">
                     <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 12px;">Упаковка *</h3>
                     
                     <div class="form-row">
@@ -207,20 +207,8 @@ window.QuickModeV3 = {
                     </div>
                 </div>
                 
-                <!-- Вес (дополнительный режим) -->
-                <div v-else class="weight-section">
-                    <div class="form-group">
-                        <label for="weight">Вес 1 единицы (кг) *</label>
-                        <input
-                            id="weight"
-                            v-model.number="form.weight_kg"
-                            type="number"
-                            step="0.01"
-                            required
-                            class="form-input"
-                        />
-                    </div>
-                </div>
+                <!-- Паккинг (детальный режим) -->
+                <div v-else class="packing-section">
                 
                 <!-- Кнопки -->
                 <div class="form-actions">
@@ -310,7 +298,7 @@ window.QuickModeV3 = {
     
     data() {
         return {
-            packingMode: true, // true = паккинг (по умолчанию), false = по весу
+            detailedMode: false, // false = быстрый (вес), true = детальный (паккинг)
             
             form: {
                 product_name: '',
@@ -320,10 +308,10 @@ window.QuickModeV3 = {
                 markup: 1.7,
                 product_url: '',
                 
-                // Режим по весу
-                weight_kg: 0,
+                // Режим по весу (по умолчанию)
+                weight_kg: 0.2,
                 
-                // Режим паккинга (основной)
+                // Режим паккинга (детальный)
                 packing_units_per_box: 0,
                 packing_box_weight: 0,
                 packing_box_length: 0,
@@ -344,7 +332,7 @@ window.QuickModeV3 = {
     
     computed: {
         calculatedWeightPerUnit() {
-            if (!this.packingMode) return null;
+            if (!this.detailedMode) return null;
             
             if (!this.form.packing_units_per_box || !this.form.packing_box_weight) {
                 return null;
@@ -354,7 +342,7 @@ window.QuickModeV3 = {
         },
         
         calculatedBoxVolume() {
-            if (!this.packingMode) return null;
+            if (!this.detailedMode) return null;
             
             const l = this.form.packing_box_length;
             const w = this.form.packing_box_width;
@@ -366,7 +354,7 @@ window.QuickModeV3 = {
         },
         
         calculatedDensity() {
-            if (!this.packingMode) return null;
+            if (!this.detailedMode) return null;
             
             const volume = this.calculatedBoxVolume;
             const weight = this.form.packing_box_weight;
@@ -381,7 +369,7 @@ window.QuickModeV3 = {
                 return false;
             }
             
-            if (this.packingMode) {
+            if (this.detailedMode) {
                 return this.form.packing_units_per_box > 0 &&
                        this.form.packing_box_weight > 0 &&
                        this.form.packing_box_length > 0 &&
@@ -455,11 +443,11 @@ window.QuickModeV3 = {
                     quantity: this.form.quantity,
                     markup: this.form.markup,
                     forced_category: this.form.category || undefined,
-                    is_precise_calculation: this.packingMode
+                    is_precise_calculation: this.detailedMode
                 };
                 
                 // Добавляем данные упаковки или веса
-                if (this.packingMode) {
+                if (this.detailedMode) {
                     requestData.packing_units_per_box = this.form.packing_units_per_box;
                     requestData.packing_box_weight = this.form.packing_box_weight;
                     requestData.packing_box_length = this.form.packing_box_length;

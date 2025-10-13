@@ -41,21 +41,69 @@ def download_dejavu_font():
     if not font_file.exists():
         try:
             print("📥 [PDF] Скачиваю шрифт DejaVu Sans...")
-            url = 'https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans.ttf'
-            urllib.request.urlretrieve(url, font_file)
-            print(f"✅ [PDF] Шрифт скачан: {font_file}")
+            
+            # Пробуем несколько URL для скачивания
+            urls = [
+                'https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans.ttf',
+                'https://raw.githubusercontent.com/dejavu-fonts/dejavu-fonts/master/ttf/DejaVuSans.ttf',
+            ]
+            
+            downloaded = False
+            for url in urls:
+                try:
+                    import ssl
+                    # Создаем контекст SSL для обхода проблем с сертификатами
+                    context = ssl._create_unverified_context()
+                    response = urllib.request.urlopen(url, context=context, timeout=30)
+                    with open(font_file, 'wb') as f:
+                        f.write(response.read())
+                    downloaded = True
+                    print(f"✅ [PDF] Шрифт скачан: {font_file}")
+                    break
+                except Exception as e:
+                    print(f"   ⚠️  Ошибка с URL {url}: {e}")
+                    continue
+            
+            if not downloaded:
+                print(f"❌ [PDF] Не удалось скачать шрифт ни с одного источника")
+                return None, None
+                
         except Exception as e:
-            print(f"⚠️  [PDF] Не удалось скачать шрифт: {e}")
+            print(f"⚠️  [PDF] Критическая ошибка при скачивании шрифта: {e}")
             return None, None
+    else:
+        print(f"✅ [PDF] Найден локальный шрифт: {font_file}")
     
     if not font_bold_file.exists():
         try:
-            url_bold = 'https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans-Bold.ttf'
-            urllib.request.urlretrieve(url_bold, font_bold_file)
+            urls_bold = [
+                'https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans-Bold.ttf',
+                'https://raw.githubusercontent.com/dejavu-fonts/dejavu-fonts/master/ttf/DejaVuSans-Bold.ttf',
+            ]
+            
+            for url in urls_bold:
+                try:
+                    import ssl
+                    context = ssl._create_unverified_context()
+                    response = urllib.request.urlopen(url, context=context, timeout=30)
+                    with open(font_bold_file, 'wb') as f:
+                        f.write(response.read())
+                    break
+                except:
+                    continue
         except:
             pass
     
     return str(font_file), str(font_bold_file) if font_bold_file.exists() else str(font_file)
+
+
+# АВТОМАТИЧЕСКОЕ СКАЧИВАНИЕ ШРИФТА ПРИ ИМПОРТЕ МОДУЛЯ
+print("🔄 [PDF] Проверка наличия шрифта для кириллицы...")
+_FONT_DOWNLOADED = download_dejavu_font()
+if _FONT_DOWNLOADED and _FONT_DOWNLOADED[0]:
+    print(f"✅ [PDF] Шрифт готов к использованию: {_FONT_DOWNLOADED[0]}")
+else:
+    print("⚠️  [PDF] Шрифт не загружен, будут проблемы с кириллицей")
 
 
 class KPPDFGenerator:
@@ -65,60 +113,58 @@ class KPPDFGenerator:
         self.db_manager = PostgreSQLManager()
         
         # Регистрация шрифта для русского языка
-        # Пробуем несколько вариантов путей к DejaVu шрифту
-        font_paths = [
-            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',  # Linux (Debian/Ubuntu)
-            '/usr/share/fonts/dejavu/DejaVuSans.ttf',  # Linux (альтернативный путь)
-            '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',  # macOS
-            'C:\\Windows\\Fonts\\arial.ttf',  # Windows
-        ]
-        
         font_loaded = False
-        for font_path in font_paths:
+        
+        # 1. ПРИОРИТЕТ: Используем предварительно скачанный шрифт
+        if _FONT_DOWNLOADED and _FONT_DOWNLOADED[0]:
             try:
-                if os.path.exists(font_path):
-                    from reportlab.pdfbase.ttfonts import TTFont
-                    pdfmetrics.registerFont(TTFont('CustomFont', font_path))
-                    
-                    # Пробуем загрузить bold версию
-                    bold_path = font_path.replace('Sans.ttf', 'Sans-Bold.ttf').replace('arial.ttf', 'arialbd.ttf')
-                    if os.path.exists(bold_path):
-                        pdfmetrics.registerFont(TTFont('CustomFont-Bold', bold_path))
-                    else:
-                        pdfmetrics.registerFont(TTFont('CustomFont-Bold', font_path))
-                    
-                    self.font_name = 'CustomFont'
-                    self.font_name_bold = 'CustomFont-Bold'
-                    font_loaded = True
-                    print(f"✅ [PDF] Загружен шрифт: {font_path}")
-                    break
+                from reportlab.pdfbase.ttfonts import TTFont
+                pdfmetrics.registerFont(TTFont('DejaVuSans', _FONT_DOWNLOADED[0]))
+                pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', _FONT_DOWNLOADED[1]))
+                
+                self.font_name = 'DejaVuSans'
+                self.font_name_bold = 'DejaVuSans-Bold'
+                font_loaded = True
+                print(f"✅ [PDF] Зарегистрирован шрифт: {_FONT_DOWNLOADED[0]}")
             except Exception as e:
-                continue
+                print(f"⚠️  [PDF] Ошибка регистрации предварительно скачанного шрифта: {e}")
         
+        # 2. РЕЗЕРВНЫЙ: Проверяем системные шрифты
         if not font_loaded:
-            # Пробуем скачать DejaVu шрифт
-            print("📥 [PDF] Пробую скачать шрифт DejaVu...")
-            font_file, font_bold_file = download_dejavu_font()
+            font_paths = [
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',  # Linux (Debian/Ubuntu)
+                '/usr/share/fonts/dejavu/DejaVuSans.ttf',  # Linux (альтернативный путь)
+                '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',  # macOS
+                'C:\\Windows\\Fonts\\arial.ttf',  # Windows
+            ]
             
-            if font_file:
+            for font_path in font_paths:
                 try:
-                    from reportlab.pdfbase.ttfonts import TTFont
-                    pdfmetrics.registerFont(TTFont('CustomFont', font_file))
-                    pdfmetrics.registerFont(TTFont('CustomFont-Bold', font_bold_file))
-                    
-                    self.font_name = 'CustomFont'
-                    self.font_name_bold = 'CustomFont-Bold'
-                    font_loaded = True
-                    print(f"✅ [PDF] Загружен скачанный шрифт: {font_file}")
+                    if os.path.exists(font_path):
+                        from reportlab.pdfbase.ttfonts import TTFont
+                        pdfmetrics.registerFont(TTFont('SystemFont', font_path))
+                        
+                        # Пробуем загрузить bold версию
+                        bold_path = font_path.replace('Sans.ttf', 'Sans-Bold.ttf').replace('arial.ttf', 'arialbd.ttf')
+                        if os.path.exists(bold_path):
+                            pdfmetrics.registerFont(TTFont('SystemFont-Bold', bold_path))
+                        else:
+                            pdfmetrics.registerFont(TTFont('SystemFont-Bold', font_path))
+                        
+                        self.font_name = 'SystemFont'
+                        self.font_name_bold = 'SystemFont-Bold'
+                        font_loaded = True
+                        print(f"✅ [PDF] Загружен системный шрифт: {font_path}")
+                        break
                 except Exception as e:
-                    print(f"⚠️  [PDF] Ошибка загрузки скачанного шрифта: {e}")
+                    continue
         
+        # 3. КРИТИЧЕСКОЕ FALLBACK: Helvetica БЕЗ кириллицы
         if not font_loaded:
-            # Последний вариант - используем встроенный Helvetica
-            # Для кириллицы это не будет работать, но хотя бы не упадет
             self.font_name = 'Helvetica'
             self.font_name_bold = 'Helvetica-Bold'
-            print("⚠️  [PDF] Шрифт с кириллицей не найден, используется Helvetica (кириллица не будет работать)")
+            print("❌ [PDF] ВНИМАНИЕ: Кириллица НЕ будет отображаться! Используется Helvetica.")
+            print("   Проверьте логи скачивания шрифта выше.")
         
         # Стили в минималистичном UI стиле (серый, без ярких цветов)
         self.styles = getSampleStyleSheet()
@@ -280,8 +326,14 @@ class KPPDFGenerator:
                 img.save(img_byte_arr, format='JPEG', quality=85)
                 img_byte_arr.seek(0)
                 
-                # Создаем RLImage с фиксированной шириной
-                rl_img = RLImage(img_byte_arr, width=max_width*mm, height=max_width*mm)
+                # Создаем RLImage с адаптивной высотой (сохраняем пропорции)
+                original_width, original_height = img.size
+                aspect_ratio = original_height / original_width
+                
+                target_width = max_width * mm
+                target_height = target_width * aspect_ratio
+                
+                rl_img = RLImage(img_byte_arr, width=target_width, height=target_height)
                 return rl_img
             else:
                 print(f"⚠️  Не удалось загрузить изображение: {url} (статус {response.status_code})")
