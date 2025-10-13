@@ -473,23 +473,15 @@ def products_list():
             else:
                 print(f"⚠️  [IMAGE SEARCH] Результаты не найдены в сессии (search_id: {image_search_id})")
         
-        # ===== УМНЫЙ ПОИСК: pgvector → fallback на ILIKE =====
-        vector_product_ids = None
+        # ===== ТЕКСТОВЫЙ ПОИСК: только ILIKE (векторный отключен) =====
+        # ОТКЛЮЧЕНО: Векторный поиск (тормозит) - используем только ILIKE
+        # vector_product_ids = vector_search_pgvector(search.strip(), limit=200)
+        
         if search.strip():
-            # 1. Пробуем pgvector поиск (СУПЕР БЫСТРО!)
-            vector_product_ids = vector_search_pgvector(search.strip(), limit=200)
-            
-            # 2. Выбираем метод поиска
-            if vector_product_ids:
-                # pgvector поиск успешен - ищем по ID
-                print(f"🔍 [SEARCH] Используем pgvector поиск: {len(vector_product_ids)} товаров")
-                where_conditions.append(f"p.id IN :vector_ids")
-                params["vector_ids"] = tuple(vector_product_ids)
-            else:
-                # Fallback на обычный текстовый поиск
-                print(f"🔍 [SEARCH] Используем текстовый поиск (ILIKE)")
-                where_conditions.append("(p.name ILIKE :search OR p.description ILIKE :search)")
-                params["search"] = f"%{search.strip()}%"
+            # Используем только текстовый поиск (быстро и надежно)
+            print(f"🔍 [SEARCH] Используем текстовый поиск (ILIKE)")
+            where_conditions.append("(p.name ILIKE :search OR p.description ILIKE :search)")
+            params["search"] = f"%{search.strip()}%"
         
         # Фильтр по региону ОАЭ
         if region_uae:
