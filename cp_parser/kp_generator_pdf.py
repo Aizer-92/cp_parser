@@ -24,9 +24,38 @@ from reportlab.lib.utils import ImageReader
 import requests
 from io import BytesIO
 from PIL import Image as PILImage
+import urllib.request
 
 from database.postgresql_manager import PostgreSQLManager
 from sqlalchemy import text
+
+
+def download_dejavu_font():
+    """Скачивает DejaVu Sans шрифт если его нет в системе"""
+    font_dir = Path(__file__).parent / 'fonts'
+    font_dir.mkdir(exist_ok=True)
+    
+    font_file = font_dir / 'DejaVuSans.ttf'
+    font_bold_file = font_dir / 'DejaVuSans-Bold.ttf'
+    
+    if not font_file.exists():
+        try:
+            print("📥 [PDF] Скачиваю шрифт DejaVu Sans...")
+            url = 'https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans.ttf'
+            urllib.request.urlretrieve(url, font_file)
+            print(f"✅ [PDF] Шрифт скачан: {font_file}")
+        except Exception as e:
+            print(f"⚠️  [PDF] Не удалось скачать шрифт: {e}")
+            return None, None
+    
+    if not font_bold_file.exists():
+        try:
+            url_bold = 'https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans-Bold.ttf'
+            urllib.request.urlretrieve(url_bold, font_bold_file)
+        except:
+            pass
+    
+    return str(font_file), str(font_bold_file) if font_bold_file.exists() else str(font_file)
 
 
 class KPPDFGenerator:
@@ -35,21 +64,61 @@ class KPPDFGenerator:
     def __init__(self):
         self.db_manager = PostgreSQLManager()
         
-        # Регистрация шрифта DejaVu для русского языка
-        try:
-            # Попытка использовать DejaVu Sans (поддерживает кириллицу)
-            # В большинстве Linux систем и на многих серверах этот шрифт есть
-            from reportlab.pdfbase.ttfonts import TTFont
-            pdfmetrics.registerFont(TTFont('DejaVu', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'))
-            pdfmetrics.registerFont(TTFont('DejaVu-Bold', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'))
-            self.font_name = 'DejaVu'
-            self.font_name_bold = 'DejaVu-Bold'
-            print("✅ [PDF] Используется шрифт DejaVu (кириллица поддерживается)")
-        except:
-            # Fallback на Helvetica (только латиница, но не будет ошибки)
+        # Регистрация шрифта для русского языка
+        # Пробуем несколько вариантов путей к DejaVu шрифту
+        font_paths = [
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',  # Linux (Debian/Ubuntu)
+            '/usr/share/fonts/dejavu/DejaVuSans.ttf',  # Linux (альтернативный путь)
+            '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',  # macOS
+            'C:\\Windows\\Fonts\\arial.ttf',  # Windows
+        ]
+        
+        font_loaded = False
+        for font_path in font_paths:
+            try:
+                if os.path.exists(font_path):
+                    from reportlab.pdfbase.ttfonts import TTFont
+                    pdfmetrics.registerFont(TTFont('CustomFont', font_path))
+                    
+                    # Пробуем загрузить bold версию
+                    bold_path = font_path.replace('Sans.ttf', 'Sans-Bold.ttf').replace('arial.ttf', 'arialbd.ttf')
+                    if os.path.exists(bold_path):
+                        pdfmetrics.registerFont(TTFont('CustomFont-Bold', bold_path))
+                    else:
+                        pdfmetrics.registerFont(TTFont('CustomFont-Bold', font_path))
+                    
+                    self.font_name = 'CustomFont'
+                    self.font_name_bold = 'CustomFont-Bold'
+                    font_loaded = True
+                    print(f"✅ [PDF] Загружен шрифт: {font_path}")
+                    break
+            except Exception as e:
+                continue
+        
+        if not font_loaded:
+            # Пробуем скачать DejaVu шрифт
+            print("📥 [PDF] Пробую скачать шрифт DejaVu...")
+            font_file, font_bold_file = download_dejavu_font()
+            
+            if font_file:
+                try:
+                    from reportlab.pdfbase.ttfonts import TTFont
+                    pdfmetrics.registerFont(TTFont('CustomFont', font_file))
+                    pdfmetrics.registerFont(TTFont('CustomFont-Bold', font_bold_file))
+                    
+                    self.font_name = 'CustomFont'
+                    self.font_name_bold = 'CustomFont-Bold'
+                    font_loaded = True
+                    print(f"✅ [PDF] Загружен скачанный шрифт: {font_file}")
+                except Exception as e:
+                    print(f"⚠️  [PDF] Ошибка загрузки скачанного шрифта: {e}")
+        
+        if not font_loaded:
+            # Последний вариант - используем встроенный Helvetica
+            # Для кириллицы это не будет работать, но хотя бы не упадет
             self.font_name = 'Helvetica'
             self.font_name_bold = 'Helvetica-Bold'
-            print("⚠️  [PDF] DejaVu не найден, используется Helvetica (кириллица может не отображаться)")
+            print("⚠️  [PDF] Шрифт с кириллицей не найден, используется Helvetica (кириллица не будет работать)")
         
         # Стили в минималистичном UI стиле (серый, без ярких цветов)
         self.styles = getSampleStyleSheet()
@@ -308,29 +377,34 @@ class KPPDFGenerator:
             else:
                 images_cell = Paragraph('Нет изображения', self.description_style)
             
-            # Информация о товаре
-            info_elements = []
+            # ВЕРТИКАЛЬНАЯ СТРУКТУРА: изображения → название/описание → таблица
+            product_elements = []
             
-            # Название
-            info_elements.append(Paragraph(product_info['name'], self.product_style))
+            # 1. Блок с изображениями (если есть)
+            if images_cell:
+                product_elements.append(images_cell)
+                product_elements.append(Spacer(1, 5*mm))
             
-            # Описание
+            # 2. Название товара
+            product_elements.append(Paragraph(product_info['name'], self.product_style))
+            
+            # 3. Описание
             if product_info['description']:
                 desc_text = product_info['description'][:250] + ('...' if len(product_info['description']) > 250 else '')
-                info_elements.append(Paragraph(desc_text, self.description_style))
+                product_elements.append(Paragraph(desc_text, self.description_style))
             
-            # Информация об образце
+            # 4. Информация об образце
             if product_info['sample_price'] or product_info['sample_delivery_time']:
                 sample_parts = []
                 if product_info['sample_price']:
                     sample_parts.append(f"Образец: ${product_info['sample_price']:.2f}")
                 if product_info['sample_delivery_time']:
                     sample_parts.append(f"Срок: {product_info['sample_delivery_time']} дн.")
-                info_elements.append(Paragraph(' | '.join(sample_parts), self.sample_style))
+                product_elements.append(Paragraph(' | '.join(sample_parts), self.sample_style))
             
-            info_elements.append(Spacer(1, 5*mm))
+            product_elements.append(Spacer(1, 5*mm))
             
-            # Таблица ценовых предложений
+            # 5. Таблица ценовых предложений
             price_table_data = [
                 ['Тираж', 'USD', 'RUB', 'Доставка', 'Срок']
             ]
@@ -344,7 +418,7 @@ class KPPDFGenerator:
                     f"{offer['delivery_days']} дн." if offer['delivery_days'] else '-'
                 ])
             
-            price_table = Table(price_table_data, colWidths=[30*mm, 25*mm, 30*mm, 25*mm, 20*mm])
+            price_table = Table(price_table_data, colWidths=[34*mm, 28*mm, 34*mm, 28*mm, 22*mm])
             price_table.setStyle(TableStyle([
                 # Заголовок (минималистичный серый стиль)
                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f3f4f6')),  # Светло-серый фон
@@ -365,23 +439,12 @@ class KPPDFGenerator:
                 ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
             ]))
             
-            info_elements.append(price_table)
+            product_elements.append(price_table)
             
-            # Собираем всю информацию в вертикальную таблицу
-            info_cell = Table([[elem] for elem in info_elements], colWidths=[110*mm])
-            info_cell.setStyle(TableStyle([
-                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ]))
+            # Добавляем все элементы товара в story
+            for elem in product_elements:
+                story.append(elem)
             
-            # Финальная таблица: изображения + информация
-            product_table = Table([[images_cell, info_cell]], colWidths=[95*mm, 75*mm])
-            product_table.setStyle(TableStyle([
-                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ('LEFTPADDING', (0, 0), (-1, -1), 5),
-                ('RIGHTPADDING', (0, 0), (-1, -1), 5),
-            ]))
-            
-            story.append(product_table)
             story.append(Spacer(1, 10*mm))
             
             # Page break после каждых 2 товаров (чтобы не было перегруза страницы)

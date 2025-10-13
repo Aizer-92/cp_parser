@@ -2424,8 +2424,20 @@ async def execute_calculation_v3(request: ProductInputDTO):
             calc_result['result']['created_at'] = datetime.now().isoformat()
             print(f"✅ V3 EXECUTE SUCCESS: ID={saved_id}")
         
+        # Очистка данных перед возвратом (конвертация строк "10%" в float)
+        result = calc_result['result']
+        if 'customs_info' in result and result['customs_info']:
+            customs = result['customs_info']
+            # Конвертируем duty_rate и vat_rate из "10%" в 10.0
+            if 'duty_rate' in customs and isinstance(customs['duty_rate'], str):
+                if customs['duty_rate'].endswith('%'):
+                    customs['duty_rate'] = float(customs['duty_rate'].rstrip('%'))
+            if 'vat_rate' in customs and isinstance(customs['vat_rate'], str):
+                if customs['vat_rate'].endswith('%'):
+                    customs['vat_rate'] = float(customs['vat_rate'].rstrip('%'))
+        
         # Возвращаем результат в формате совместимом с V2
-        return calc_result['result']
+        return result
         
     except HTTPException:
         raise
