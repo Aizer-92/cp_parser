@@ -1390,6 +1390,35 @@ def api_kp_generate_excel():
         traceback.print_exc()
         return jsonify({'success': False, 'error': f'Ошибка генерации: {str(e)}'}), 500
 
+@app.route('/api/kp/generate/pdf', methods=['POST'])
+@login_required
+def api_kp_generate_pdf():
+    """Генерирует PDF файл коммерческого предложения"""
+    
+    try:
+        session_id = get_session_id()
+        
+        # Импортируем генератор
+        from kp_generator_pdf import KPPDFGenerator
+        
+        generator = KPPDFGenerator()
+        output_path = generator.generate(session_id)
+        
+        # Отправляем файл клиенту
+        from flask import send_file
+        return send_file(
+            output_path,
+            as_attachment=True,
+            download_name=f'КП_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf',
+            mimetype='application/pdf'
+        )
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Ошибка генерации PDF: {str(e)}'}), 500
+
 print("✅ [APP] API КП зарегистрирован (/api/kp/*)")
 
 # ===== API ДЛЯ ПОИСКА ПО ИЗОБРАЖЕНИЮ =====
