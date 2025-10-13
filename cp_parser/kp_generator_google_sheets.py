@@ -188,6 +188,7 @@ class KPGoogleSheetsGenerator:
                     p.description,
                     p.sample_price,
                     p.sample_delivery_time,
+                    p.custom_field,
                     po.id as price_offer_id,
                     po.quantity,
                     po.route,
@@ -217,7 +218,8 @@ class KPGoogleSheetsGenerator:
                         'name': row[2],
                         'description': row[3],
                         'sample_price': float(row[4]) if row[4] else None,
-                        'sample_delivery_time': row[5]
+                        'sample_delivery_time': row[5],
+                        'custom_field': row[6]  # Дизайн/кастомизация
                     }
                 
                 # Добавляем ценовое предложение
@@ -281,7 +283,9 @@ class KPGoogleSheetsGenerator:
             
             # Подготовка данных
             main_image = f'=IMAGE("{images[0]}"; 2)' if images else ''
-            design_image = f'=IMAGE("{images[1]}"; 1)' if len(images) > 1 else ''
+            
+            # ДИЗАЙН - текстовое поле из БД (custom_field)
+            design_text = product_info.get('custom_field') or '-'
             
             # Характеристики в одной ячейке
             characteristics = []
@@ -294,10 +298,10 @@ class KPGoogleSheetsGenerator:
                 characteristics.append(f"Срок образца: {product_info['sample_delivery_time']} дн.")
             characteristics_text = '\n'.join(characteristics) if characteristics else '-'
             
-            # Дополнительные фото (3-4-5 изображения)
+            # Дополнительные фото (2-3-4-5 изображения, все кроме первого)
             additional_photos = []
-            if len(images) > 2:
-                for img_url in images[2:6]:  # До 4 дополнительных
+            if len(images) > 1:
+                for img_url in images[1:5]:  # До 4 дополнительных (со 2-го по 5-е)
                     additional_photos.append(f'=IMAGE("{img_url}"; 1)')
             additional_photos_text = ' '.join(additional_photos) if additional_photos else ''
             
@@ -311,7 +315,7 @@ class KPGoogleSheetsGenerator:
                     row_data = [
                         main_image,  # Фото (будет объединено вертикально)
                         product_info['name'],  # Название
-                        design_image,  # Дизайн
+                        design_text,  # Дизайн (текст из БД)
                         characteristics_text,  # Характеристики
                         f"{offer['quantity']:,.0f}".replace(',', ' '),  # Тираж
                         f"${offer['price_usd']:.2f}" if offer['price_usd'] else '-',  # USD
