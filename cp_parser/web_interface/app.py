@@ -434,8 +434,17 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    """Главная страница - редирект на товары с сортировкой по дате КП"""
-    return redirect(url_for('products_list', sort_by='date_desc'))
+    """Главная страница - список товаров (без редиректа)"""
+    # Устанавливаем sort_by по умолчанию для главной страницы
+    request.args = request.args.copy()
+    if 'sort_by' not in request.args:
+        from werkzeug.datastructures import ImmutableMultiDict
+        args_dict = dict(request.args)
+        args_dict['sort_by'] = 'date_desc'
+        request.args = ImmutableMultiDict(args_dict)
+    
+    # Вызываем products_list напрямую (без redirect)
+    return products_list()
 
 @app.route('/products')
 @login_required
@@ -520,18 +529,8 @@ def products_list():
         order_by = "p.id DESC"  # По умолчанию
         select_fields = base_select
         
-        # ПРИОРИТЕТ: При поиске сортируем по релевантности (название > описание)
-        if search_mode == 'active':
-            # Добавляем поле relevance_rank для сортировки
-            select_fields = base_select + """, 
-                CASE 
-                    WHEN p.name ILIKE :search THEN 1
-                    WHEN p.description ILIKE :search THEN 2
-                    ELSE 3
-                END as relevance_rank"""
-            order_by = "relevance_rank ASC, p.id DESC"
-            print(f"   → Сортировка: сначала по названию, потом по описанию")
-        elif sort_by == "date_asc":
+        # Определяем сортировку
+        if sort_by == "date_asc":
             order_by = "pr.offer_created_at ASC NULLS LAST, p.id ASC"
         elif sort_by == "date_desc":
             order_by = "pr.offer_created_at DESC NULLS LAST, p.id DESC"
@@ -547,6 +546,16 @@ def products_list():
         elif sort_by == "price_desc":
             select_fields = base_select + """, (SELECT MIN(CAST(po.price_rub AS NUMERIC)) FROM price_offers po WHERE po.product_id = p.id) as min_price"""
             order_by = "min_price DESC NULLS LAST, p.id DESC"
+        elif search_mode == 'active' and not sort_by:
+            # ПРИОРИТЕТ: При поиске БЕЗ явной сортировки - сортируем по релевантности (название > описание)
+            select_fields = base_select + """, 
+                CASE 
+                    WHEN p.name ILIKE :search THEN 1
+                    WHEN p.description ILIKE :search THEN 2
+                    ELSE 3
+                END as relevance_rank"""
+            order_by = "relevance_rank ASC, p.id DESC"
+            print(f"   → Сортировка: сначала по названию, потом по описанию")
         
         # Подсчитываем общее количество с фильтрами
         count_sql = text(f"""

@@ -2610,39 +2610,47 @@ async def settings_page(request: Request):
 
 # ==================== UPLOAD API ====================
 
+@app.post("/api/sftp/upload")
 @app.post("/api/v3/upload/photo")
 async def upload_photo(
     file: UploadFile = File(...),
-    position_id: int = Form(...)
+    folder: str = Form(default="calc"),
+    position_id: int = Form(default=None)
 ):
     """
     Загрузка фото на SFTP сервер Beget Cloud
     
     Args:
         file: файл изображения
-        position_id: ID позиции для организации файлов
+        folder: папка для загрузки (по умолчанию "calc")
+        position_id: ID позиции для организации файлов (опционально)
         
     Returns:
         {"url": "https://..."}
     """
     try:
         # Проверка типа файла
-        allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp']
+        allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'image/gif']
         if file.content_type not in allowed_types:
-            raise HTTPException(400, f"Недопустимый тип файла: {file.content_type}")
+            raise HTTPException(400, f"Недопустимый тип файла: {file.content_type}. Разрешены: JPEG, PNG, JPG, WEBP, GIF")
         
         # Читаем содержимое файла
         content = await file.read()
+        
+        print(f"📤 Загрузка фото: {file.filename} ({len(content)} байт)")
         
         # Загружаем на SFTP
         from services.sftp_uploader import SFTPUploader
         uploader = SFTPUploader()
         url = uploader.upload_photo(content, file.filename, position_id)
         
+        print(f"✅ Фото загружено: {url}")
         return {"url": url}
         
     except Exception as e:
+        import traceback
         print(f"❌ Ошибка загрузки фото: {e}")
+        print(traceback.format_exc())
         raise HTTPException(500, f"Ошибка загрузки: {str(e)}")
 
 

@@ -820,11 +820,44 @@ textarea.form-input {
 
 .route-quick-info {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 16px;
+    width: 100%;
 }
 
 .route-prices {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.route-label {
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.route-price {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.route-divider {
+    color: #d1d5db;
+    font-weight: 300;
+}
+
+.route-arrow {
+    font-size: 14px;
+    color: #6b7280;
+    margin-left: 12px;
+    transition: transform 0.2s;
+}
+
+/* Дублирующие стили (нужно проверить и удалить) */
+.route-prices-old {
     display: flex;
     align-items: center;
     gap: 8px;

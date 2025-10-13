@@ -142,38 +142,41 @@ window.QuickModeV3 = {
                     
                     <div class="form-row">
                         <div class="form-group flex-1">
-                            <label for="box-length">Длина (м) *</label>
+                            <label for="box-length">Длина (см) *</label>
                             <input
                                 id="box-length"
                                 v-model.number="packingBoxLength"
                                 type="number"
-                                step="0.01"
+                                step="0.1"
                                 required
                                 class="form-input"
+                                placeholder="50"
                             />
                         </div>
                         
                         <div class="form-group flex-1">
-                            <label for="box-width">Ширина (м) *</label>
+                            <label for="box-width">Ширина (см) *</label>
                             <input
                                 id="box-width"
                                 v-model.number="packingBoxWidth"
                                 type="number"
-                                step="0.01"
+                                step="0.1"
                                 required
                                 class="form-input"
+                                placeholder="40"
                             />
                         </div>
                         
                         <div class="form-group flex-1">
-                            <label for="box-height">Высота (м) *</label>
+                            <label for="box-height">Высота (см) *</label>
                             <input
                                 id="box-height"
                                 v-model.number="packingBoxHeight"
                                 type="number"
-                                step="0.01"
+                                step="0.1"
                                 required
                                 class="form-input"
+                                placeholder="30"
                             />
                         </div>
                     </div>
@@ -425,10 +428,8 @@ window.QuickModeV3 = {
                 if (newPosition) {
                     console.log('📥 Получена позиция для расчета:', newPosition);
                     this.fillFromPosition(newPosition);
-                    // Автоматически запускаем расчет через 100мс
-                    setTimeout(() => {
-                        this.calculate();
-                    }, 100);
+                    // НЕ запускаем расчет автоматически - пользователь должен ввести количество и наценку
+                    console.log('ℹ️ Введите количество и наценку, затем нажмите "Рассчитать"');
                 }
             }
         }

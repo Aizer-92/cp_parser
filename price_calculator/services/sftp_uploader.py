@@ -24,14 +24,14 @@ class SFTPUploader:
         sftp = paramiko.SFTPClient.from_transport(transport)
         return sftp, transport
     
-    def upload_photo(self, file_content: bytes, filename: str, position_id: int) -> str:
+    def upload_photo(self, file_content: bytes, filename: str, position_id: int = None) -> str:
         """
         Загрузить фото на SFTP
         
         Args:
             file_content: содержимое файла в байтах
             filename: оригинальное имя файла
-            position_id: ID позиции для организации папок
+            position_id: ID позиции для организации папок (опционально)
             
         Returns:
             URL загруженного файла
@@ -43,9 +43,19 @@ class SFTPUploader:
             sftp, transport = self._get_connection()
             
             # Создаем уникальное имя файла с timestamp
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            ext = os.path.splitext(filename)[1]
-            new_filename = f"pos_{position_id}_{timestamp}{ext}"
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]  # микросекунды для уникальности
+            
+            # Извлекаем расширение (обрабатываем кириллицу)
+            import re
+            ext = os.path.splitext(filename)[1].lower()
+            if not ext or len(ext) > 5:
+                ext = '.jpg'  # По умолчанию если расширение странное
+            
+            # Создаем безопасное имя (только ASCII)
+            if position_id:
+                new_filename = f"pos_{position_id}_{timestamp}{ext}"
+            else:
+                new_filename = f"calc_{timestamp}{ext}"
             
             # Полный путь на сервере
             remote_path = f"{self.base_path}{new_filename}"

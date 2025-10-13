@@ -1079,8 +1079,8 @@ class KPGoogleSheetsGenerator:
                     }
                 })
             
-            # 5. Автоподбор ширины остальных колонок (B, E-J, индексы: 1, 4-9)
-            # Пропускаем C-D (2-3) и K-M (10-12) т.к. они уже настроены
+            # 5. Автоподбор ширины остальных колонок (B, E, I-J)
+            # Пропускаем C-D (2-3), F-G-H (5-7) и K-M (10-12) т.к. они уже настроены
             requests.append({
                 'autoResizeDimensions': {
                     'dimensions': {
@@ -1097,7 +1097,17 @@ class KPGoogleSheetsGenerator:
                         'sheetId': 0,
                         'dimension': 'COLUMNS',
                         'startIndex': 4,
-                        'endIndex': 10  # E-J
+                        'endIndex': 5  # Только E (Тираж)
+                    }
+                }
+            })
+            requests.append({
+                'autoResizeDimensions': {
+                    'dimensions': {
+                        'sheetId': 0,
+                        'dimension': 'COLUMNS',
+                        'startIndex': 8,
+                        'endIndex': 10  # I-J (Срок, Образец)
                     }
                 }
             })

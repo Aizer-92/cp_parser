@@ -82,8 +82,8 @@ window.PositionFormV3 = {
                                     :class="{ 'dragging': isDragging }"
                                 >
                                     <div v-if="form.design_files_urls.length === 0" class="dropzone-placeholder">
-                                        <div style="text-align: center;">
-                                            <div style="font-size: 14px; color: #6b7280; margin-bottom: 12px;">
+                                        <div style="text-align: center; width: 100%;">
+                                            <div style="font-size: 14px; color: #6b7280; margin-bottom: 16px;">
                                                 Перетащите фото сюда, выберите файл<br>или введите ссылку
                                             </div>
                                             <input
@@ -92,22 +92,24 @@ window.PositionFormV3 = {
                                                 multiple
                                                 @change="handleFileSelect"
                                                 style="display: none;"
-                                                ref="fileInput"
+                                                :ref="el => fileInputRef = el"
                                             />
-                                            <button type="button" @click="$refs.fileInput.click()" class="btn-primary btn-sm" style="margin-bottom: 8px;">
-                                                Выбрать файлы
+                                            <button type="button" @click="triggerFileInput" class="btn-primary" style="margin-bottom: 12px; width: 100%;">
+                                                📁 Выбрать файлы с компьютера
                                             </button>
-                                            <input
-                                                v-model="photoUrl"
-                                                type="url"
-                                                placeholder="Или вставьте ссылку на фото"
-                                                class="form-input"
-                                                style="margin-bottom: 8px;"
-                                                @keyup.enter="addPhoto"
-                                            />
-                                            <button type="button" @click="addPhoto" class="btn-secondary btn-sm">
-                                                Добавить по ссылке
-                                            </button>
+                                            <div style="display: flex; gap: 8px; align-items: center;">
+                                                <input
+                                                    v-model="photoUrl"
+                                                    type="url"
+                                                    placeholder="Или вставьте ссылку на фото"
+                                                    class="form-input"
+                                                    @keyup.enter="addPhoto"
+                                                    style="flex: 1;"
+                                                />
+                                                <button type="button" @click="addPhoto" class="btn-secondary">
+                                                    + Ссылка
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                     
@@ -124,9 +126,9 @@ window.PositionFormV3 = {
                                                 multiple
                                                 @change="handleFileSelect"
                                                 style="display: none;"
-                                                ref="fileInputMore"
+                                                :ref="el => fileInputMoreRef = el"
                                             />
-                                            <button type="button" @click="$refs.fileInputMore.click()" class="btn-primary btn-sm" style="margin-bottom: 8px;">
+                                            <button type="button" @click="triggerFileInputMore" class="btn-primary btn-sm" style="margin-bottom: 8px; width: 100%;">
                                                 📁 Файл
                                             </button>
                                             <input
@@ -135,9 +137,9 @@ window.PositionFormV3 = {
                                                 placeholder="Ссылка"
                                                 class="form-input"
                                                 @keyup.enter="addPhoto"
-                                                style="font-size: 12px;"
+                                                style="font-size: 12px; margin-bottom: 4px;"
                                             />
-                                            <button type="button" @click="addPhoto" class="btn-secondary btn-sm">+ Ссылка</button>
+                                            <button type="button" @click="addPhoto" class="btn-secondary btn-sm" style="width: 100%;">+ Ссылка</button>
                                         </div>
                                     </div>
                                 </div>
@@ -324,6 +326,8 @@ window.PositionFormV3 = {
             useSimpleWeight: false,
             isDragging: false,
             availableCategories: [],
+            fileInputRef: null,
+            fileInputMoreRef: null,
             form: {
                 name: '',
                 category: '',
@@ -482,7 +486,17 @@ window.PositionFormV3 = {
         async loadCategories() {
             try {
                 const response = await axios.get('/api/v3/categories');
-                this.availableCategories = response.data || [];
+                const data = response.data;
+                
+                // Обрабатываем разные форматы ответа
+                if (Array.isArray(data)) {
+                    this.availableCategories = data;
+                } else if (data.categories && Array.isArray(data.categories)) {
+                    this.availableCategories = data.categories;
+                } else {
+                    this.availableCategories = [];
+                }
+                
                 console.log('✅ Категории загружены:', this.availableCategories);
             } catch (error) {
                 console.error('❌ Ошибка загрузки категорий:', error);
@@ -492,25 +506,48 @@ window.PositionFormV3 = {
         detectCategory() {
             if (!this.form.name || this.form.name.length < 3) return;
             
-            const name = this.form.name.toLowerCase();
+            const name = this.form.name.toLowerCase().trim();
             
-            for (const cat of this.availableCategories) {
-                const category = cat.category?.toLowerCase();
+            // Список категорий из availableCategories
+            const categories = this.availableCategories.map(c => {
+                if (typeof c === 'string') return c.toLowerCase();
+                if (c.category) return c.category.toLowerCase();
+                return '';
+            }).filter(c => c);
+            
+            console.log('🔍 Поиск категории для:', name, 'в списке:', categories);
+            
+            // Ищем точное совпадение или вхождение
+            for (const category of categories) {
                 if (!category) continue;
                 
                 // Если категория содержится в названии
                 if (name.includes(category)) {
-                    this.form.category = cat.category;
-                    console.log('✅ Категория автоопределена:', cat.category);
+                    this.form.category = category;
+                    console.log('✅ Категория автоопределена:', category);
                     return;
                 }
                 
                 // Или если название содержится в категории
                 if (category.includes(name)) {
-                    this.form.category = cat.category;
-                    console.log('✅ Категория автоопределена:', cat.category);
+                    this.form.category = category;
+                    console.log('✅ Категория автоопределена:', category);
                     return;
                 }
+            }
+            
+            console.log('⚠️ Категория не найдена для:', name);
+        },
+        
+        triggerFileInput() {
+            if (this.fileInputRef) {
+                this.fileInputRef.click();
+            }
+        },
+        
+        triggerFileInputMore() {
+            if (this.fileInputMoreRef) {
+                this.fileInputMoreRef.click();
             }
         },
         
