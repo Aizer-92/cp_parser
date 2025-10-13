@@ -270,10 +270,10 @@ class KPGoogleSheetsGenerator:
             
             print(f"   Обрабатываю: {product_info['name']} ({len(offers)} вариантов, {len(images)} изображений)")
             
-            # Строка 1: Основное изображение (большое - 2 ячейки высоты)
+            # Строка 1: Основное изображение (размер 3 = максимальный)
             if images:
-                # Формула IMAGE с размером 2 (средний размер)
-                main_image_formula = f'=IMAGE("{images[0]}"; 2)'
+                # Формула IMAGE с размером 3 (большой размер)
+                main_image_formula = f'=IMAGE("{images[0]}"; 3)'
                 rows.append([main_image_formula])
             else:
                 rows.append([''])
@@ -285,8 +285,8 @@ class KPGoogleSheetsGenerator:
             if len(images) > 1:
                 additional_images_row = []
                 for img_url in images[1:5]:  # До 4 дополнительных
-                    # Размер 1 = маленькие изображения
-                    additional_images_row.append(f'=IMAGE("{img_url}"; 1)')
+                    # Размер 2 = средние изображения (увеличено с 1)
+                    additional_images_row.append(f'=IMAGE("{img_url}"; 2)')
                 rows.append(additional_images_row)
             
             # Строка 4: Описание (если есть)
@@ -611,15 +611,20 @@ class KPGoogleSheetsGenerator:
                 }
             })
             
-            # 4. Автоподбор высоты строк (для изображений)
+            # 4. Установка фиксированной высоты для строк с изображениями (200 пикселей)
+            # Это даст изображениям больше места по вертикали
             requests.append({
-                'autoResizeDimensions': {
-                    'dimensions': {
+                'updateDimensionProperties': {
+                    'range': {
                         'sheetId': 0,
                         'dimension': 'ROWS',
-                        'startIndex': 0,
+                        'startIndex': 3,  # Начиная с 4-й строки (первые товары)
                         'endIndex': 1000
-                    }
+                    },
+                    'properties': {
+                        'pixelSize': 150  # 150 пикселей высота для строк с изображениями
+                    },
+                    'fields': 'pixelSize'
                 }
             })
             
