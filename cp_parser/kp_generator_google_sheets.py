@@ -331,6 +331,26 @@ class KPGoogleSheetsGenerator:
             'products': products  # Для вставки изображений
         }
     
+    def get_first_sheet_name(self, spreadsheet_id):
+        """Получает имя первого листа в spreadsheet"""
+        try:
+            spreadsheet = self.sheets_service.spreadsheets().get(
+                spreadsheetId=spreadsheet_id
+            ).execute()
+            
+            sheets = spreadsheet.get('sheets', [])
+            if sheets:
+                first_sheet_title = sheets[0]['properties']['title']
+                print(f"📄 [Google Sheets] Первый лист: '{first_sheet_title}'")
+                return first_sheet_title
+            
+            # Fallback
+            return 'Sheet1'
+            
+        except Exception as e:
+            print(f"⚠️  [Google Sheets] Не удалось получить имя листа: {e}")
+            return 'Sheet1'
+    
     def create_spreadsheet(self, title):
         """Создает новый Google Spreadsheet (в расшаренной папке для экономии квоты)"""
         if not self.sheets_service:
@@ -609,8 +629,11 @@ class KPGoogleSheetsGenerator:
         title = f'КП_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
         spreadsheet_id, spreadsheet_url = self.create_spreadsheet(title)
         
+        # Получаем реальное имя первого листа
+        first_sheet_name = self.get_first_sheet_name(spreadsheet_id)
+        
         # Заполняем данными
-        self.update_cells(spreadsheet_id, 'Sheet1!A1', sheet_data)
+        self.update_cells(spreadsheet_id, f'{first_sheet_name}!A1', sheet_data)
         
         # Применяем форматирование
         self.format_sheet(spreadsheet_id)
