@@ -523,9 +523,28 @@ def products_list():
         # Определяем SELECT и ORDER BY в зависимости от sort_by
         # ВАЖНО: для SELECT DISTINCT все поля в ORDER BY должны быть в SELECT
         # Используем offer_created_at (TIMESTAMP) вместо offer_creation_date (TEXT) для корректной сортировки
+        # ОПТИМИЗАЦИЯ: Добавлены подзапросы для изображений и цен (решение проблемы N+1)
         base_select = """p.id, p.project_id, p.name, p.description, p.article_number, 
                    p.sample_price, p.sample_delivery_time, p.row_number, pr.region, pr.offer_created_at,
-                   (SELECT MAX(ki.added_at) FROM kp_items ki WHERE ki.product_id = p.id AND ki.session_id = :session_id_kp) as kp_added_at"""
+                   (SELECT MAX(ki.added_at) FROM kp_items ki WHERE ki.product_id = p.id AND ki.session_id = :session_id_kp) as kp_added_at,
+                   pr.project_name,
+                   (SELECT pi.image_url 
+                    FROM product_images pi 
+                    WHERE pi.product_id = p.id 
+                    AND pi.image_url IS NOT NULL
+                    ORDER BY 
+                        CASE WHEN pi.is_main_image::text = 'true' THEN 0 ELSE 1 END,
+                        pi.cell_position
+                    LIMIT 1) as main_image_url,
+                   (SELECT COUNT(*) 
+                    FROM product_images pi2 
+                    WHERE pi2.product_id = p.id) as images_count,
+                   (SELECT MIN(CAST(po.price_rub AS NUMERIC)) 
+                    FROM price_offers po 
+                    WHERE po.product_id = p.id) as min_price_rub,
+                   (SELECT MAX(CAST(po.price_rub AS NUMERIC)) 
+                    FROM price_offers po 
+                    WHERE po.product_id = p.id) as max_price_rub"""
         
         # Добавляем session_id для подзапроса kp_added_at
         params["session_id_kp"] = get_session_id()
@@ -601,75 +620,35 @@ def products_list():
             product.region = row[8]  # Регион проекта
             product.offer_created_at = row[9]  # Дата создания КП (TIMESTAMP)
             product.kp_added_at = row[10]  # Дата добавления в КП
-            # row[11] = min_price (только для сортировки по цене, если применимо)
-            # row[12] = relevance_rank (только для поиска)
             
-            # Получаем изображения для товара
-            images_sql = text("""
-                SELECT id, image_filename, is_main_image, image_url
-                FROM product_images 
-                WHERE product_id = :product_id 
-                ORDER BY 
-                    CASE WHEN is_main_image::text = 'true' THEN 0 ELSE 1 END,
-                    cell_position,
-                    display_order
-            """)
-            image_rows = session.execute(images_sql, {"product_id": product.id}).fetchall()
+            # ОПТИМИЗАЦИЯ: Используем данные из подзапросов (NO N+1!)
+            project_name = row[11]  # pr.project_name
+            main_image_url = row[12]  # Главное изображение
+            images_count = row[13]  # Количество изображений
+            min_price_rub = row[14]  # Минимальная цена
+            max_price_rub = row[15]  # Максимальная цена
             
+            # Формируем объект изображения из главного изображения
             product.images = []
-            for img_row in image_rows:
+            if main_image_url:
                 img = ProductImage()
-                img.id = img_row[0]
-                
-                # Формируем корректный URL для изображения
-                image_url = img_row[3] or img_row[1]  # image_url или image_filename
-                
-                # ИСПРАВЛЕНИЕ: Если путь начинается с "images/", добавляем S3 префикс
-                if image_url and image_url.startswith('images/'):
-                    image_url = f'https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods/{image_url}'
-                # Заменяем FTP на S3 (если есть FTP домен)
-                elif image_url and 'ftp.ru1.storage.beget.cloud' in image_url:
-                    image_url = image_url.replace('ftp.ru1.storage.beget.cloud', 's3.ru1.storage.beget.cloud')
-                # Заменяем протокол ftp:// на https://s3...
-                elif image_url and image_url.lower().startswith('ftp://'):
-                    image_url = image_url.replace('ftp://', 'https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods/')
-                
-                img.image_filename = image_url
-                img.is_main_image = img_row[2]
+                img.image_url = main_image_url
+                img.image_filename = main_image_url
+                img.is_main_image = True
                 product.images.append(img)
             
-            # Получаем ценовые предложения для товара (для отображения в листинге)
-            offers_sql = text("""
-                SELECT id, quantity, price_usd, price_rub, delivery_time_days
-                FROM price_offers 
-                WHERE product_id = :product_id 
-                ORDER BY quantity
-                LIMIT 3
-            """)
-            offer_rows = session.execute(offers_sql, {"product_id": product.id}).fetchall()
-            
+            # Создаем фейковое ценовое предложение для отображения диапазона цен
             product.price_offers = []
-            for offer_row in offer_rows:
-                offer = PriceOffer()
-                offer.id = offer_row[0]
-                offer.quantity = int(offer_row[1]) if offer_row[1] is not None else None
-                offer.price_usd = parse_price(offer_row[2])  # Используем parse_price для TEXT формата
-                offer.price_rub = parse_price(offer_row[3])  # Используем parse_price для TEXT формата
-                offer.delivery_time_days = int(offer_row[4]) if offer_row[4] is not None else None
-                product.price_offers.append(offer)
+            if min_price_rub or max_price_rub:
+                # Показываем диапазон цен вместо всех предложений
+                product.min_price_rub = min_price_rub
+                product.max_price_rub = max_price_rub
             
-            # Получаем информацию о проекте
-            project_sql = text("""
-                SELECT id, project_name
-                FROM projects 
-                WHERE id = :project_id
-            """)
-            project_row = session.execute(project_sql, {"project_id": product.project_id}).fetchone()
-            
-            if project_row:
+            # Информация о проекте (из JOIN)
+            if project_name:
                 product.project = Project()
-                product.project.id = project_row[0]
-                product.project.project_name = project_row[1]
+                product.project.id = product.project_id
+                product.project.project_name = project_name
             
             products.append(product)
         
@@ -836,10 +815,30 @@ def project_detail(project_id):
             {"project_id": project_id}
         ).scalar()
         
-        # Получаем товары (с регионом)
+        # Получаем товары (с регионом) + ОПТИМИЗАЦИЯ: подзапросы для изображений и цен
         products_sql = text("""
             SELECT p.id, p.project_id, p.name, p.description, p.article_number, 
-                   p.sample_price, p.sample_delivery_time, p.row_number, pr.region
+                   p.sample_price, p.sample_delivery_time, p.row_number, pr.region,
+                   (SELECT pi.image_url 
+                    FROM product_images pi 
+                    WHERE pi.product_id = p.id 
+                    AND pi.image_url IS NOT NULL
+                    ORDER BY 
+                        CASE WHEN pi.is_main_image::text = 'true' THEN 0 ELSE 1 END,
+                        pi.cell_position
+                    LIMIT 1) as main_image_url,
+                   (SELECT COUNT(*) 
+                    FROM product_images pi2 
+                    WHERE pi2.product_id = p.id) as images_count,
+                   (SELECT MIN(CAST(po.price_rub AS NUMERIC)) 
+                    FROM price_offers po 
+                    WHERE po.product_id = p.id) as min_price_rub,
+                   (SELECT MAX(CAST(po.price_rub AS NUMERIC)) 
+                    FROM price_offers po 
+                    WHERE po.product_id = p.id) as max_price_rub,
+                   (SELECT COUNT(*) 
+                    FROM price_offers po2 
+                    WHERE po2.product_id = p.id) as offers_count
             FROM products p
             LEFT JOIN projects pr ON p.project_id = pr.id
             WHERE p.project_id = :project_id
@@ -866,47 +865,27 @@ def project_detail(project_id):
             product.row_number = int(row[7]) if row[7] is not None else None
             product.region = row[8] if len(row) > 8 else None  # Регион проекта
             
-            # Получаем изображения
-            images_sql = text("""
-                SELECT id, image_filename, is_main_image, image_url
-                FROM product_images 
-                WHERE product_id = :product_id 
-                ORDER BY 
-                    CASE WHEN is_main_image::text = 'true' THEN 0 ELSE 1 END,
-                    cell_position,
-                    display_order
-            """)
-            image_rows = session.execute(images_sql, {"product_id": product.id}).fetchall()
+            # ОПТИМИЗАЦИЯ: Используем данные из подзапросов (NO N+1!)
+            main_image_url = row[9]  # Главное изображение
+            images_count = row[10]  # Количество изображений
+            min_price_rub = row[11]  # Минимальная цена
+            max_price_rub = row[12]  # Максимальная цена
+            offers_count = row[13]  # Количество предложений
+            
+            # Формируем объект изображения из главного
             product.images = []
-            for img_row in image_rows:
+            if main_image_url:
                 img = ProductImage()
-                img.id = img_row[0]
-                img.image_filename = img_row[3] or img_row[1]  # Используем image_url напрямую
-                img.is_main_image = img_row[2]
+                img.image_url = main_image_url
+                img.image_filename = main_image_url
+                img.is_main_image = True
                 product.images.append(img)
             
-            # Получаем ценовые предложения
-            offers_sql = text("""
-                SELECT id, quantity, price_usd, price_rub, delivery_time_days
-                FROM price_offers 
-                WHERE product_id = :product_id 
-                ORDER BY quantity
-            """)
-            offer_rows = session.execute(offers_sql, {"product_id": product.id}).fetchall()
+            # Показываем диапазон цен и количество предложений
             product.price_offers = []
-            
-            print(f"🔍 [DEBUG] Товар ID {product.id}: найдено {len(offer_rows)} ценовых предложений")
-            
-            for offer_row in offer_rows:
-                offer = PriceOffer()
-                offer.id = offer_row[0]
-                offer.quantity = int(offer_row[1]) if offer_row[1] is not None else None
-                offer.price_usd = parse_price(offer_row[2])  # Используем parse_price для TEXT формата
-                offer.price_rub = parse_price(offer_row[3])  # Используем parse_price для TEXT формата
-                offer.delivery_time_days = int(offer_row[4]) if offer_row[4] is not None else None
-                product.price_offers.append(offer)
-                
-            print(f"✅ [DEBUG] Товар ID {product.id}: добавлено {len(product.price_offers)} предложений в объект")
+            product.min_price_rub = min_price_rub
+            product.max_price_rub = max_price_rub
+            product.offers_count = offers_count
             
             products.append(product)
         
