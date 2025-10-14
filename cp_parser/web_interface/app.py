@@ -523,7 +523,7 @@ def products_list():
         # Определяем SELECT и ORDER BY в зависимости от sort_by
         # ВАЖНО: для SELECT DISTINCT все поля в ORDER BY должны быть в SELECT
         # Используем offer_created_at (TIMESTAMP) вместо offer_creation_date (TEXT) для корректной сортировки
-        # ОПТИМИЗАЦИЯ: Добавлены подзапросы для изображений и цен (решение проблемы N+1)
+        # ОПТИМИЗАЦИЯ: Добавлен подзапрос только для главного изображения, цены загружаются батчем
         base_select = """p.id, p.project_id, p.name, p.description, p.article_number, 
                    p.sample_price, p.sample_delivery_time, p.row_number, pr.region, pr.offer_created_at,
                    (SELECT MAX(ki.added_at) FROM kp_items ki WHERE ki.product_id = p.id AND ki.session_id = :session_id_kp) as kp_added_at,
@@ -535,16 +535,7 @@ def products_list():
                     ORDER BY 
                         CASE WHEN pi.is_main_image::text = 'true' THEN 0 ELSE 1 END,
                         pi.cell_position
-                    LIMIT 1) as main_image_url,
-                   (SELECT COUNT(*) 
-                    FROM product_images pi2 
-                    WHERE pi2.product_id = p.id) as images_count,
-                   (SELECT MIN(CAST(po.price_rub AS NUMERIC)) 
-                    FROM price_offers po 
-                    WHERE po.product_id = p.id) as min_price_rub,
-                   (SELECT MAX(CAST(po.price_rub AS NUMERIC)) 
-                    FROM price_offers po 
-                    WHERE po.product_id = p.id) as max_price_rub"""
+                    LIMIT 1) as main_image_url"""
         
         # Добавляем session_id для подзапроса kp_added_at
         params["session_id_kp"] = get_session_id()
@@ -607,6 +598,8 @@ def products_list():
         
         # Преобразуем в объекты Product
         products = []
+        product_ids = []
+        
         for row in rows:
             product = Product()
             product.id = row[0]
@@ -621,12 +614,9 @@ def products_list():
             product.offer_created_at = row[9]  # Дата создания КП (TIMESTAMP)
             product.kp_added_at = row[10]  # Дата добавления в КП
             
-            # ОПТИМИЗАЦИЯ: Используем данные из подзапросов (NO N+1!)
+            # ОПТИМИЗАЦИЯ: Используем данные из подзапросов для изображений
             project_name = row[11]  # pr.project_name
             main_image_url = row[12]  # Главное изображение
-            images_count = row[13]  # Количество изображений
-            min_price_rub = row[14]  # Минимальная цена
-            max_price_rub = row[15]  # Максимальная цена
             
             # Формируем объект изображения из главного изображения
             product.images = []
@@ -637,20 +627,47 @@ def products_list():
                 img.is_main_image = True
                 product.images.append(img)
             
-            # Создаем фейковое ценовое предложение для отображения диапазона цен
-            product.price_offers = []
-            if min_price_rub or max_price_rub:
-                # Показываем диапазон цен вместо всех предложений
-                product.min_price_rub = min_price_rub
-                product.max_price_rub = max_price_rub
-            
             # Информация о проекте (из JOIN)
             if project_name:
                 product.project = Project()
                 product.project.id = product.project_id
                 product.project.project_name = project_name
             
+            # Инициализируем пустой массив для цен (заполним ниже батчем)
+            product.price_offers = []
+            
             products.append(product)
+            product_ids.append(product.id)
+        
+        # BATCH LOADING: Загружаем ВСЕ цены одним запросом (вместо N запросов)
+        if product_ids:
+            offers_sql = text("""
+                SELECT product_id, id, quantity, price_usd, price_rub, delivery_time_days
+                FROM price_offers
+                WHERE product_id = ANY(:product_ids)
+                ORDER BY product_id, quantity
+            """)
+            offer_rows = session.execute(offers_sql, {"product_ids": product_ids}).fetchall()
+            
+            # Группируем цены по product_id
+            offers_by_product = {}
+            for offer_row in offer_rows:
+                prod_id = offer_row[0]
+                if prod_id not in offers_by_product:
+                    offers_by_product[prod_id] = []
+                
+                offer = PriceOffer()
+                offer.id = offer_row[1]
+                offer.quantity = int(offer_row[2]) if offer_row[2] is not None else None
+                offer.price_usd = parse_price(offer_row[3])
+                offer.price_rub = parse_price(offer_row[4])
+                offer.delivery_time_days = int(offer_row[5]) if offer_row[5] is not None else None
+                offers_by_product[prod_id].append(offer)
+            
+            # Присваиваем цены товарам (берем первые 3 для листинга)
+            for product in products:
+                if product.id in offers_by_product:
+                    product.price_offers = offers_by_product[product.id][:3]
         
         # Вычисляем данные для пагинации
         total_pages = math.ceil(total / PRODUCTS_PER_PAGE)
@@ -815,7 +832,7 @@ def project_detail(project_id):
             {"project_id": project_id}
         ).scalar()
         
-        # Получаем товары (с регионом) + ОПТИМИЗАЦИЯ: подзапросы для изображений и цен
+        # Получаем товары (с регионом) + ОПТИМИЗАЦИЯ: подзапрос только для изображений, цены батчем
         products_sql = text("""
             SELECT p.id, p.project_id, p.name, p.description, p.article_number, 
                    p.sample_price, p.sample_delivery_time, p.row_number, pr.region,
@@ -826,19 +843,7 @@ def project_detail(project_id):
                     ORDER BY 
                         CASE WHEN pi.is_main_image::text = 'true' THEN 0 ELSE 1 END,
                         pi.cell_position
-                    LIMIT 1) as main_image_url,
-                   (SELECT COUNT(*) 
-                    FROM product_images pi2 
-                    WHERE pi2.product_id = p.id) as images_count,
-                   (SELECT MIN(CAST(po.price_rub AS NUMERIC)) 
-                    FROM price_offers po 
-                    WHERE po.product_id = p.id) as min_price_rub,
-                   (SELECT MAX(CAST(po.price_rub AS NUMERIC)) 
-                    FROM price_offers po 
-                    WHERE po.product_id = p.id) as max_price_rub,
-                   (SELECT COUNT(*) 
-                    FROM price_offers po2 
-                    WHERE po2.product_id = p.id) as offers_count
+                    LIMIT 1) as main_image_url
             FROM products p
             LEFT JOIN projects pr ON p.project_id = pr.id
             WHERE p.project_id = :project_id
@@ -853,6 +858,8 @@ def project_detail(project_id):
         
         # Преобразуем в объекты Product с изображениями и ценами
         products = []
+        product_ids = []
+        
         for row in rows:
             product = Product()
             product.id = row[0]
@@ -865,12 +872,8 @@ def project_detail(project_id):
             product.row_number = int(row[7]) if row[7] is not None else None
             product.region = row[8] if len(row) > 8 else None  # Регион проекта
             
-            # ОПТИМИЗАЦИЯ: Используем данные из подзапросов (NO N+1!)
+            # ОПТИМИЗАЦИЯ: Используем данные из подзапросов для изображений
             main_image_url = row[9]  # Главное изображение
-            images_count = row[10]  # Количество изображений
-            min_price_rub = row[11]  # Минимальная цена
-            max_price_rub = row[12]  # Максимальная цена
-            offers_count = row[13]  # Количество предложений
             
             # Формируем объект изображения из главного
             product.images = []
@@ -881,13 +884,41 @@ def project_detail(project_id):
                 img.is_main_image = True
                 product.images.append(img)
             
-            # Показываем диапазон цен и количество предложений
+            # Инициализируем пустой массив для цен (заполним ниже батчем)
             product.price_offers = []
-            product.min_price_rub = min_price_rub
-            product.max_price_rub = max_price_rub
-            product.offers_count = offers_count
             
             products.append(product)
+            product_ids.append(product.id)
+        
+        # BATCH LOADING: Загружаем ВСЕ цены одним запросом (вместо N запросов)
+        if product_ids:
+            offers_sql = text("""
+                SELECT product_id, id, quantity, price_usd, price_rub, delivery_time_days
+                FROM price_offers
+                WHERE product_id = ANY(:product_ids)
+                ORDER BY product_id, quantity
+            """)
+            offer_rows = session.execute(offers_sql, {"product_ids": product_ids}).fetchall()
+            
+            # Группируем цены по product_id
+            offers_by_product = {}
+            for offer_row in offer_rows:
+                prod_id = offer_row[0]
+                if prod_id not in offers_by_product:
+                    offers_by_product[prod_id] = []
+                
+                offer = PriceOffer()
+                offer.id = offer_row[1]
+                offer.quantity = int(offer_row[2]) if offer_row[2] is not None else None
+                offer.price_usd = parse_price(offer_row[3])
+                offer.price_rub = parse_price(offer_row[4])
+                offer.delivery_time_days = int(offer_row[5]) if offer_row[5] is not None else None
+                offers_by_product[prod_id].append(offer)
+            
+            # Присваиваем цены товарам (берем первые 2-3 для карточек проекта)
+            for product in products:
+                if product.id in offers_by_product:
+                    product.price_offers = offers_by_product[product.id][:3]
         
         # Вычисляем данные для пагинации
         total_pages = math.ceil(total / PRODUCTS_PER_PAGE)
