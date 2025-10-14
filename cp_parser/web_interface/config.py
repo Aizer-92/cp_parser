@@ -14,7 +14,7 @@ HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 5000))
 
 # Настройки пагинации
-PRODUCTS_PER_PAGE = int(os.getenv('PRODUCTS_PER_PAGE', 24))
+PRODUCTS_PER_PAGE = int(os.getenv('PRODUCTS_PER_PAGE', 50))
 PROJECTS_PER_PAGE = int(os.getenv('PROJECTS_PER_PAGE', 20))
 
 # Настройки облачного хранилища
