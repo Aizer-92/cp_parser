@@ -262,11 +262,7 @@
     min-width: 80px;
 }
 
-.route-prices {
-    font-size: 15px;
-    color: var(--color-gray-700);
-    flex: 1;
-}
+/* .route-prices - moved to line 828 */
 
 .route-arrow {
     color: var(--color-gray-400);
@@ -324,12 +320,7 @@
     font-weight: 600;
 }
 
-.route-prices {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 12px;
-}
+/* .route-prices - duplicate removed, see line 828 */
 
 .price-row {
     display: flex;
@@ -1462,6 +1453,218 @@ textarea.form-input {
     
     .photos-preview {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+}
+
+/* ============================================ */
+/* RouteEditorV3 Styles */
+/* ============================================ */
+
+.route-editor-card {
+    background: white;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.2s ease;
+}
+
+.route-editor-card:hover {
+    border-color: var(--color-gray-300);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.route-editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.route-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0;
+}
+
+.route-delivery-time {
+    font-size: 12px;
+    color: var(--color-gray-600);
+    margin-top: 4px;
+}
+
+.route-results {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.route-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+.route-label {
+    color: var(--color-gray-600);
+}
+
+.route-value {
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.route-edit-form {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-gray-200);
+}
+
+.form-hint {
+    font-size: 12px;
+    color: var(--color-gray-500);
+    margin-top: 4px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+/* Responsive для RouteEditor */
+@media (max-width: 768px) {
+    .route-editor-card {
+        padding: 16px;
+    }
+    
+    .route-editor-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .form-actions button {
+        width: 100%;
+    }
+}
+
+/* ============================================ */
+/* CalculationHistoryV3 Styles */
+/* ============================================ */
+
+.calculation-history {
+    background: white;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.history-item {
+    padding: 16px;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.history-item:hover {
+    border-color: var(--color-gray-300);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    background: var(--color-gray-50);
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.history-date {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.history-updated {
+    font-size: 12px;
+    color: var(--color-gray-500);
+    margin-top: 4px;
+}
+
+.history-arrow {
+    font-size: 18px;
+    color: var(--color-gray-400);
+    transition: transform 0.2s ease;
+}
+
+.history-item:hover .history-arrow {
+    transform: translateX(4px);
+}
+
+.history-params {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+.history-param {
+    display: flex;
+    gap: 4px;
+    font-size: 13px;
+}
+
+.param-label {
+    color: var(--color-gray-600);
+}
+
+.param-value {
+    font-weight: 500;
+    color: var(--color-gray-900);
+}
+
+.history-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.history-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    background: var(--color-gray-100);
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-gray-700);
+}
+
+/* Responsive для CalculationHistory */
+@media (max-width: 768px) {
+    .calculation-history {
+        padding: 16px;
+    }
+    
+    .history-item {
+        padding: 12px;
+    }
+    
+    .history-params {
+        flex-direction: column;
+        gap: 8px;
     }
 }
 

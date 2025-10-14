@@ -609,7 +609,10 @@ def products_list():
                 SELECT id, image_filename, is_main_image, image_url
                 FROM product_images 
                 WHERE product_id = :product_id 
-                ORDER BY is_main_image DESC, display_order
+                ORDER BY 
+                    CASE WHEN is_main_image::text = 'true' THEN 0 ELSE 1 END,
+                    cell_position,
+                    display_order
             """)
             image_rows = session.execute(images_sql, {"product_id": product.id}).fetchall()
             
@@ -868,7 +871,10 @@ def project_detail(project_id):
                 SELECT id, image_filename, is_main_image, image_url
                 FROM product_images 
                 WHERE product_id = :product_id 
-                ORDER BY is_main_image DESC, display_order
+                ORDER BY 
+                    CASE WHEN is_main_image::text = 'true' THEN 0 ELSE 1 END,
+                    cell_position,
+                    display_order
             """)
             image_rows = session.execute(images_sql, {"product_id": product.id}).fetchall()
             product.images = []
@@ -1017,7 +1023,10 @@ def product_detail(product_id):
             SELECT id, image_filename, is_main_image, display_order, image_url
             FROM product_images 
             WHERE product_id = :product_id 
-            ORDER BY is_main_image DESC, display_order
+            ORDER BY 
+                CASE WHEN is_main_image::text = 'true' THEN 0 ELSE 1 END,
+                cell_position,
+                display_order
         """)
         image_rows = session.execute(images_sql, {"product_id": product_id}).fetchall()
         

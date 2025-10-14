@@ -1,8 +1,14 @@
 """
 Calculation Model - Конкретный расчёт от фабрики для тиража
+
+ОБНОВЛЕНО: 14.10.2025
+- Добавлены поля для хранения результатов расчета (routes, customs_calculation)
+- Добавлены поля для кастомных параметров (custom_logistics, forced_category)
+- Добавлено поле markup для наценки
+- Добавлено поле comment для комментариев пользователя
 """
 
-from sqlalchemy import Column, Integer, String, Text, DECIMAL, DateTime, ForeignKey, CheckConstraint
+from sqlalchemy import Column, Integer, Float, String, Text, DECIMAL, DateTime, ForeignKey, CheckConstraint, JSON
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from .base import Base
@@ -124,17 +130,113 @@ class Calculation(Base):
         comment="Общий вес (кг)"
     )
     
-    # Метаданные
+    # ============================================
+    # ПАРАМЕТРЫ РАСЧЕТА (для пересчета)
+    # ============================================
+    markup = Column(
+        Float,
+        nullable=True,
+        comment="Наценка (множитель, например 1.4 = 40% прибыли)"
+    )
+    
+    # Принудительная категория (если пользователь изменил)
+    forced_category = Column(
+        String(100),
+        nullable=True,
+        comment="Категория, выбранная пользователем вручную (переопределяет автоопределение)"
+    )
+    
+    # Кастомные параметры логистики (JSON)
+    # Структура: {
+    #   "highway_rail": {"custom_rate": 3.5, "duty_rate": 15, "vat_rate": 20},
+    #   "highway_contract": {"duty_type": "combined", "duty_rate": 10, "specific_rate": 5, "vat_rate": 20}
+    # }
+    custom_logistics = Column(
+        JSON,
+        nullable=True,
+        comment="Кастомные параметры логистики для каждого маршрута (для пересчета)"
+    )
+    
+    # ============================================
+    # РЕЗУЛЬТАТЫ РАСЧЕТА (для отображения)
+    # ============================================
+    
+    # Определенная категория (автоматически или вручную)
+    category = Column(
+        String(100),
+        nullable=True,
+        index=True,
+        comment="Категория товара (автоопределенная или forced_category)"
+    )
+    
+    # Маршруты логистики (JSON)
+    # Структура: {
+    #   "highway_rail": {
+    #     "name": "Highway ЖД",
+    #     "cost_per_unit_rub": 450.50,
+    #     "sale_per_unit_rub": 765.85,
+    #     "profit_per_unit_rub": 315.35,
+    #     "cost_price_rub": 450500,
+    #     "sale_price_rub": 765850,
+    #     "profit_rub": 315350,
+    #     "delivery_days": 25,
+    #     "delivery_time": "25 дней",
+    #     "breakdown": {
+    #       "factory_price": 100.0,
+    #       "logistics": 150.0,
+    #       "duty": 50.0,
+    #       "vat": 80.0,
+    #       ...
+    #     }
+    #   },
+    #   "highway_air": {...},
+    #   ...
+    # }
+    routes = Column(
+        JSON,
+        nullable=True,
+        comment="Результаты расчета для всех маршрутов логистики"
+    )
+    
+    # Таможенные расчеты (JSON)
+    # Структура: {
+    #   "duty_amount_usd": 150.0,
+    #   "duty_amount_rub": 12600.0,
+    #   "vat_amount_usd": 450.0,
+    #   "vat_amount_rub": 37800.0,
+    #   "duty_rate": 9.6,
+    #   "vat_rate": 20,
+    #   "duty_type": "percent"
+    # }
+    customs_calculation = Column(
+        JSON,
+        nullable=True,
+        comment="Детали таможенных расчетов (пошлины, НДС)"
+    )
+    
+    # Комментарий пользователя (опционально)
+    comment = Column(
+        Text,
+        nullable=True,
+        comment="Комментарий пользователя к этому расчету"
+    )
+    
+    # ============================================
+    # МЕТАДАННЫЕ
+    # ============================================
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
-        nullable=False
+        nullable=False,
+        index=True,
+        comment="Дата создания расчета"
     )
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),
-        nullable=False
+        nullable=False,
+        comment="Дата последнего обновления (пересчета)"
     )
     
     # Relationships
@@ -182,6 +284,18 @@ class Calculation(Base):
             'packing_total_boxes': self.packing_total_boxes,
             'packing_total_volume': float(self.packing_total_volume) if self.packing_total_volume else None,
             'packing_total_weight': float(self.packing_total_weight) if self.packing_total_weight else None,
+            
+            # ✅ NEW: Параметры расчета
+            'markup': self.markup,
+            'forced_category': self.forced_category,
+            'custom_logistics': self.custom_logistics,
+            
+            # ✅ NEW: Результаты расчета
+            'category': self.category,
+            'routes': self.routes,
+            'customs_calculation': self.customs_calculation,
+            'comment': self.comment,
+            
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
@@ -190,8 +304,8 @@ class Calculation(Base):
         if self.factory:
             data['factory_info'] = self.factory.to_dict()
         
-        # Добавляем маршруты логистики
-        if include_routes:
+        # Добавляем маршруты логистики (старые LogisticsRoute если нужны)
+        if include_routes and self.logistics_routes:
             data['logistics_routes'] = [route.to_dict() for route in self.logistics_routes]
         
         return data

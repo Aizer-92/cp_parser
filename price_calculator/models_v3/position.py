@@ -57,7 +57,7 @@ class Position(Base):
         "Calculation",
         back_populates="position",
         cascade="all, delete-orphan",
-        order_by="Calculation.quantity"  # Сортировка по тиражу
+        order_by="Calculation.created_at.desc()"  # ✅ Новые расчеты сверху
     )
     
     def __repr__(self):

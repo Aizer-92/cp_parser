@@ -2410,12 +2410,12 @@ async def execute_calculation_v3(request: ProductInputDTO):
                 
                 # Создаём минимальный ответ для UI
                 partial_result = {
-                    'product_name': request.product_name,
+            'product_name': request.product_name,
                     'category': request.forced_category or 'Новая категория',
                     'unit_price_yuan': request.price_yuan,
-                    'quantity': request.quantity,
+            'quantity': request.quantity,
                     'weight_kg': request.weight_kg or 0.5,
-                    'markup': request.markup,
+            'markup': request.markup,
                     'needs_custom_params': True,  # 🔑 Флаг для UI
                     'routes': placeholder_routes,  # Заглушки маршрутов
                     'message': 'Для этой категории требуется указать кастомные параметры логистики'
@@ -2465,8 +2465,20 @@ async def execute_calculation_v3(request: ProductInputDTO):
         # Преобразуем breakdown для каждого маршрута в формат для фронтенда
         if 'routes' in result:
             for route_key, route_data in result['routes'].items():
+                print(f"🔍 Обработка маршрута {route_key}:")
+                print(f"  - name: {route_data.get('name')}")
+                print(f"  - per_unit: {route_data.get('per_unit')}")
+                print(f"  - sale_rub: {route_data.get('sale_rub')}")
+                print(f"  - delivery_days: {route_data.get('delivery_days')}")
+                
+                # КРИТИЧНО: Основные цены для отображения (ВСЕГДА заполняем!)
+                route_data['cost_per_unit_rub'] = route_data.get('per_unit', 0)  # Себестоимость
+                route_data['sale_per_unit_rub'] = route_data.get('sale_rub', 0) / result.get('quantity', 1) if route_data.get('sale_rub') else 0  # Продажная цена
+                route_data['delivery_time'] = f"{route_data.get('delivery_days', 0)} дней"  # Время доставки
+                
                 if 'breakdown' in route_data and route_data['breakdown']:
                     bd = route_data['breakdown']
+                    print(f"✅ Breakdown существует для {route_key}")
                     
                     # Стоимость в Китае (с процентами)
                     china_cost = bd.get('factory_price', 0)
@@ -2509,6 +2521,31 @@ async def execute_calculation_v3(request: ProductInputDTO):
                     route_data['duty_rate_display'] = f"{result.get('customs_info', {}).get('duty_rate', 9.6)}%"
                     route_data['vat_rate_display'] = f"{result.get('customs_info', {}).get('vat_rate', 20)}%"
                     route_data['logistics_type_display'] = route_data.get('name', '')
+                else:
+                    print(f"⚠️ Breakdown НЕ существует для {route_key}, заполняем базовые поля")
+                    # Если breakdown нет - используем базовые значения из route_data
+                    route_data['china_cost_per_unit_rub'] = 0
+                    route_data['price_rub_per_unit'] = 0
+                    route_data['sourcing_fee_per_unit'] = 0
+                    route_data['local_delivery_per_unit'] = 0
+                    route_data['logistics_per_unit_rub'] = 0
+                    route_data['delivery_cost_per_unit'] = 0
+                    route_data['duty_per_unit'] = 0
+                    route_data['vat_per_unit'] = 0
+                    route_data['other_costs_per_unit'] = 0
+                    route_data['moscow_pickup_per_unit'] = 0
+                    route_data['misc_costs_per_unit'] = 0
+                    route_data['fixed_costs_per_unit'] = 0
+                    route_data['china_cost_percentage'] = 0
+                    route_data['logistics_percentage'] = 0
+                    route_data['other_costs_percentage'] = 0
+                    route_data['price_yuan_display'] = request.price_yuan
+                    route_data['weight_display'] = f"{request.weight_kg or 0} кг"
+                    route_data['duty_rate_display'] = f"{result.get('customs_info', {}).get('duty_rate', 9.6)}%"
+                    route_data['vat_rate_display'] = f"{result.get('customs_info', {}).get('vat_rate', 20)}%"
+                    route_data['logistics_type_display'] = route_data.get('name', '')
+        
+        print(f"✅ Обработано маршрутов: {len(result.get('routes', {}))}")
         
         # Возвращаем результат в формате совместимом с V2
         return result
@@ -2517,6 +2554,342 @@ async def execute_calculation_v3(request: ProductInputDTO):
         raise
     except Exception as e:
         print(f"❌ V3 EXECUTE ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# V3 CALCULATIONS ENDPOINTS (для сохранения/пересчета)
+# ============================================
+
+@app.post("/api/v3/calculations", response_model=CalculationResultDTO)
+async def create_calculation_v3(
+    request: ProductInputDTO,
+    position_id: int = None
+):
+    """
+    Создать НОВЫЙ расчет для позиции и СОХРАНИТЬ в БД
+    
+    Flow:
+    1. Выполнить расчет (через execute_calculation_v3)
+    2. Сохранить в БД (v3_calculations)
+    3. Вернуть результат + calculation_id
+    
+    Args:
+        request: Параметры для расчета
+        position_id: ID позиции (опционально, можно передать в request)
+    
+    Returns:
+        Результат расчета с calculation_id
+    """
+    try:
+        from models_v3.calculation import Calculation
+        from models_v3.position import Position
+        
+        # 1. Определить position_id
+        pos_id = position_id or getattr(request, 'position_id', None)
+        
+        if not pos_id:
+            raise HTTPException(
+                status_code=400, 
+                detail="position_id обязателен для сохранения расчета"
+            )
+        
+        # Проверить существование позиции
+        position = db.query(Position).filter(Position.id == pos_id).first()
+        if not position:
+            raise HTTPException(status_code=404, detail=f"Position {pos_id} not found")
+        
+        print(f"💾 Создание расчета для позиции: {position.name} (ID={pos_id})")
+        
+        # 2. Выполнить расчет (существующая логика)
+        result = await execute_calculation_v3(request)
+        
+        # 3. Сохранить в БД
+        calc = Calculation(
+            position_id=pos_id,
+            quantity=request.quantity,
+            markup=request.markup,
+            price_yuan=request.price_yuan,
+            
+            # Весовые данные
+            calculation_type='precise' if request.is_precise_calculation else 'quick',
+            weight_kg=request.weight_kg,
+            packing_units_per_box=request.packing_units_per_box,
+            packing_box_weight=request.packing_box_weight,
+            packing_box_length=request.packing_box_length,
+            packing_box_width=request.packing_box_width,
+            packing_box_height=request.packing_box_height,
+            
+            # Параметры расчета
+            forced_category=getattr(request, 'forced_category', None) or request.category if request.category != result.get('category') else None,
+            custom_logistics=None,  # Пока нет кастомных параметров
+            
+            # Результаты
+            category=result.get('category'),
+            routes=result.get('routes'),
+            customs_calculation=result.get('customs_calculation')
+        )
+        
+        db.add(calc)
+        db.commit()
+        db.refresh(calc)
+        
+        # 4. Добавить calculation_id в ответ
+        result['calculation_id'] = calc.id
+        result['created_at'] = calc.created_at.isoformat()
+        
+        print(f"✅ Расчет сохранен: calculation_id={calc.id}")
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Ошибка создания расчета: {e}")
+        import traceback
+        traceback.print_exc()
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class UpdateCalculationRequest(BaseModel):
+    """Запрос на обновление расчета"""
+    quantity: Optional[int] = None
+    markup: Optional[float] = None
+    forced_category: Optional[str] = None
+    custom_logistics: Optional[Dict[str, Any]] = None
+
+
+@app.put("/api/v3/calculations/{calculation_id}", response_model=CalculationResultDTO)
+async def update_calculation_v3(
+    calculation_id: int,
+    request: UpdateCalculationRequest
+):
+    """
+    ПЕРЕСЧИТАТЬ существующий расчет с новыми параметрами
+    
+    Используется для:
+    - Изменения quantity/markup (Быстрое редактирование)
+    - Изменения категории
+    - Применения кастомных ставок логистики (RouteEditor)
+    
+    Flow:
+    1. Загрузить существующий расчет
+    2. Обновить параметры
+    3. Выполнить пересчет
+    4. Сохранить результаты
+    5. Вернуть обновленный результат
+    
+    Args:
+        calculation_id: ID расчета для пересчета
+        quantity: Новое количество (опционально)
+        markup: Новая наценка (опционально)
+        forced_category: Новая категория (опционально)
+        custom_logistics: Кастомные параметры логистики (опционально)
+    
+    Returns:
+        Обновленный результат расчета
+    """
+    try:
+        from models_v3.calculation import Calculation
+        from models_v3.position import Position
+        from price_calculator import PriceCalculator
+        from strategies.calculation_orchestrator import CalculationOrchestrator
+        
+        # 1. Загрузить существующий расчет
+        calc = db.query(Calculation).filter(Calculation.id == calculation_id).first()
+        
+        if not calc:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Calculation {calculation_id} not found"
+            )
+        
+        # Загрузить позицию
+        position = db.query(Position).filter(Position.id == calc.position_id).first()
+        
+        if not position:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Position {calc.position_id} not found"
+            )
+        
+        print(f"🔄 Пересчет calculation_id={calculation_id}")
+        print(f"   Позиция: {position.name}")
+        print(f"   Старые параметры: quantity={calc.quantity}, markup={calc.markup}")
+        
+        # 2. Обновить параметры (если переданы)
+        if request.quantity is not None:
+            calc.quantity = request.quantity
+            print(f"   Новое количество: {request.quantity}")
+        
+        if request.markup is not None:
+            calc.markup = request.markup
+            print(f"   Новая наценка: {request.markup}")
+        
+        if request.forced_category is not None:
+            calc.forced_category = request.forced_category
+            print(f"   Новая категория: {request.forced_category}")
+        
+        if request.custom_logistics is not None:
+            calc.custom_logistics = request.custom_logistics
+            print(f"   Кастомные параметры: {request.custom_logistics}")
+        
+        # 3. Подготовить запрос для пересчета
+        recalc_request = ProductInputDTO(
+            product_name=position.name,
+            price_yuan=calc.price_yuan,
+            quantity=calc.quantity,
+            markup=calc.markup or 1.7,
+            category=calc.forced_category or position.category,
+            is_precise_calculation=calc.calculation_type == 'precise',
+            weight_kg=calc.weight_kg,
+            packing_units_per_box=calc.packing_units_per_box,
+            packing_box_weight=calc.packing_box_weight,
+            packing_box_length=calc.packing_box_length,
+            packing_box_width=calc.packing_box_width,
+            packing_box_height=calc.packing_box_height
+        )
+        
+        # 4. Выполнить пересчет с кастомными параметрами (если есть)
+        calculator = PriceCalculator()
+        categories_dict = {cat['category']: cat for cat in calculator.categories}
+        
+        orchestrator = CalculationOrchestrator(
+            categories=categories_dict,
+            price_calculator=calculator
+        )
+        
+        result = orchestrator.calculate(
+            product_name=recalc_request.product_name,
+            price_yuan=recalc_request.price_yuan,
+            quantity=recalc_request.quantity,
+            markup=recalc_request.markup,
+            weight_kg=recalc_request.weight_kg or 0.2,
+            is_precise_calculation=recalc_request.is_precise_calculation,
+            packing_units_per_box=recalc_request.packing_units_per_box,
+            packing_box_weight=recalc_request.packing_box_weight,
+            packing_box_length=recalc_request.packing_box_length,
+            packing_box_width=recalc_request.packing_box_width,
+            packing_box_height=recalc_request.packing_box_height,
+            forced_category=recalc_request.category,
+            custom_logistics_params=calc.custom_logistics  # ✅ Передаем кастомные параметры!
+        )
+        
+        # 5. Обработать результаты (как в execute_calculation_v3)
+        # Преобразовать breakdown для каждого маршрута
+        if 'routes' in result:
+            for route_key, route_data in result['routes'].items():
+                route_data['cost_per_unit_rub'] = route_data.get('per_unit', 0)
+                route_data['sale_per_unit_rub'] = route_data.get('sale_rub', 0) / result.get('quantity', 1) if route_data.get('sale_rub') else 0
+                route_data['delivery_time'] = f"{route_data.get('delivery_days', 0)} дней"
+                
+                # ... (остальная логика из execute_calculation_v3 для breakdown)
+        
+        # 6. Сохранить результаты
+        calc.category = result.get('category')
+        calc.routes = result.get('routes')
+        calc.customs_calculation = result.get('customs_calculation')
+        
+        from datetime import datetime
+        calc.updated_at = datetime.utcnow()
+        
+        db.commit()
+        db.refresh(calc)
+        
+        # 7. Добавить calculation_id в ответ
+        result['calculation_id'] = calc.id
+        result['created_at'] = calc.created_at.isoformat()
+        result['updated_at'] = calc.updated_at.isoformat()
+        
+        print(f"✅ Расчет обновлен: calculation_id={calc.id}")
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Ошибка пересчета: {e}")
+        import traceback
+        traceback.print_exc()
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v3/calculations/{calculation_id}")
+async def get_calculation_v3(calculation_id: int):
+    """
+    Получить детали расчета по ID
+    
+    Возвращает:
+    - Входные параметры (для повторного расчета)
+    - Результаты (routes, customs_calculation)
+    - Информацию о позиции
+    - Timestamps
+    
+    Args:
+        calculation_id: ID расчета
+    
+    Returns:
+        Полная информация о расчете
+    """
+    try:
+        from models_v3.calculation import Calculation
+        from models_v3.position import Position
+        
+        calc = db.query(Calculation).filter(Calculation.id == calculation_id).first()
+        
+        if not calc:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Calculation {calculation_id} not found"
+            )
+        
+        # Загрузить позицию для дополнительной информации
+        position = db.query(Position).filter(Position.id == calc.position_id).first()
+        
+        response = {
+            "calculation_id": calc.id,
+            "position_id": calc.position_id,
+            "position_name": position.name if position else None,
+            
+            # Входные параметры
+            "quantity": calc.quantity,
+            "markup": calc.markup,
+            "price_yuan": float(calc.price_yuan),
+            "calculation_type": calc.calculation_type,
+            "weight_kg": float(calc.weight_kg) if calc.weight_kg else None,
+            
+            # Паккинг
+            "packing_units_per_box": calc.packing_units_per_box,
+            "packing_box_weight": float(calc.packing_box_weight) if calc.packing_box_weight else None,
+            "packing_box_length": float(calc.packing_box_length) if calc.packing_box_length else None,
+            "packing_box_width": float(calc.packing_box_width) if calc.packing_box_width else None,
+            "packing_box_height": float(calc.packing_box_height) if calc.packing_box_height else None,
+            
+            # Параметры расчета
+            "forced_category": calc.forced_category,
+            "custom_logistics": calc.custom_logistics,
+            
+            # Результаты
+            "category": calc.category,
+            "routes": calc.routes,
+            "customs_calculation": calc.customs_calculation,
+            "comment": calc.comment,
+            
+            # Timestamps
+            "created_at": calc.created_at.isoformat() if calc.created_at else None,
+            "updated_at": calc.updated_at.isoformat() if calc.updated_at else None
+        }
+        
+        return response
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Ошибка получения расчета: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
@@ -2538,17 +2911,179 @@ async def get_categories_v3():
         if not calc or not hasattr(calc, 'categories'):
             raise ValueError("Не удалось загрузить калькулятор или категории")
         
-        return {
-            'total': len(calc.categories),
-            'version': '3.0',
-            'source': 'PostgreSQL (Railway)',
-            'categories': calc.categories
-        }
+        # Возвращаем список категорий напрямую (как в V2)
+        return calc.categories
         
     except Exception as e:
         print(f"❌ V3 CATEGORIES ERROR: {e}")
         import traceback
         traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v3/categories/statistics")
+async def get_categories_statistics_v3():
+    """
+    V3: Получение статистики по категориям из V3 calculations
+    """
+    try:
+        from sqlalchemy import text
+        
+        query = text("""
+            SELECT 
+                c.category,
+                COUNT(*) as count,
+                MIN(c.sale_price_rub / NULLIF(p.quantity, 0)) as min_price,
+                MAX(c.sale_price_rub / NULLIF(p.quantity, 0)) as max_price,
+                AVG(c.sale_price_rub / NULLIF(p.quantity, 0)) as avg_price,
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY c.sale_price_rub / NULLIF(p.quantity, 0)) as median_price
+            FROM v3_calculations c
+            JOIN v3_positions p ON c.position_id = p.id
+            WHERE c.category IS NOT NULL
+            GROUP BY c.category
+            ORDER BY count DESC
+        """)
+        
+        result = db.execute(query)
+        statistics = []
+        
+        for row in result:
+            statistics.append({
+                'category': row[0],
+                'count': row[1],
+                'min_price': float(row[2]) if row[2] else None,
+                'max_price': float(row[3]) if row[3] else None,
+                'avg_price': float(row[4]) if row[4] else None,
+                'median_price': float(row[5]) if row[5] else None
+            })
+        
+        return statistics
+        
+    except Exception as e:
+        print(f"❌ V3 STATISTICS ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        # Возвращаем пустой массив в случае ошибки (таблицы могут быть пустыми)
+        return []
+
+
+@app.put("/api/v3/categories/{category_id}")
+async def update_category_v3(category_id: int, category_data: dict):
+    """
+    V3: Обновление категории
+    """
+    try:
+        from sqlalchemy import text
+        
+        # Обновляем категорию в БД
+        query = text("""
+            UPDATE categories 
+            SET 
+                category = :category,
+                material = :material,
+                tnved_code = :tnved_code,
+                density = :density,
+                duty_type = :duty_type,
+                duty_rate = :duty_rate,
+                specific_rate = :specific_rate,
+                ad_valorem_rate = :ad_valorem_rate,
+                vat_rate = :vat_rate,
+                rail_base = :rail_base,
+                air_base = :air_base,
+                updated_at = NOW()
+            WHERE id = :id
+        """)
+        
+        db.execute(query, {
+            'id': category_id,
+            'category': category_data.get('category'),
+            'material': category_data.get('material'),
+            'tnved_code': category_data.get('tnved_code'),
+            'density': category_data.get('density'),
+            'duty_type': category_data.get('duty_type'),
+            'duty_rate': category_data.get('duty_rate'),
+            'specific_rate': category_data.get('specific_rate'),
+            'ad_valorem_rate': category_data.get('ad_valorem_rate'),
+            'vat_rate': category_data.get('vat_rate'),
+            'rail_base': category_data.get('rates', {}).get('rail_base'),
+            'air_base': category_data.get('rates', {}).get('air_base')
+        })
+        db.commit()
+        
+        return {"status": "success", "message": "Категория обновлена"}
+        
+    except Exception as e:
+        print(f"❌ V3 UPDATE CATEGORY ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v3/categories")
+async def create_category_v3(category_data: dict):
+    """
+    V3: Создание новой категории
+    """
+    try:
+        from sqlalchemy import text
+        
+        query = text("""
+            INSERT INTO categories 
+            (category, material, tnved_code, density, duty_type, duty_rate, 
+             specific_rate, ad_valorem_rate, vat_rate, rail_base, air_base)
+            VALUES 
+            (:category, :material, :tnved_code, :density, :duty_type, :duty_rate,
+             :specific_rate, :ad_valorem_rate, :vat_rate, :rail_base, :air_base)
+            RETURNING id
+        """)
+        
+        result = db.execute(query, {
+            'category': category_data.get('category'),
+            'material': category_data.get('material'),
+            'tnved_code': category_data.get('tnved_code'),
+            'density': category_data.get('density'),
+            'duty_type': category_data.get('duty_type'),
+            'duty_rate': category_data.get('duty_rate'),
+            'specific_rate': category_data.get('specific_rate'),
+            'ad_valorem_rate': category_data.get('ad_valorem_rate'),
+            'vat_rate': category_data.get('vat_rate'),
+            'rail_base': category_data.get('rates', {}).get('rail_base'),
+            'air_base': category_data.get('rates', {}).get('air_base')
+        })
+        
+        new_id = result.fetchone()[0]
+        db.commit()
+        
+        return {"status": "success", "id": new_id, "message": "Категория создана"}
+        
+    except Exception as e:
+        print(f"❌ V3 CREATE CATEGORY ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/v3/categories/{category_id}")
+async def delete_category_v3(category_id: int):
+    """
+    V3: Удаление категории
+    """
+    try:
+        from sqlalchemy import text
+        
+        query = text("DELETE FROM categories WHERE id = :id")
+        db.execute(query, {'id': category_id})
+        db.commit()
+        
+        return {"status": "success", "message": "Категория удалена"}
+        
+    except Exception as e:
+        print(f"❌ V3 DELETE CATEGORY ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
 # Инициализация БД происходит в lifespan
@@ -2618,38 +3153,62 @@ async def upload_photo(
     position_id: int = Form(default=None)
 ):
     """
-    Загрузка фото на SFTP сервер Beget Cloud
-    
-    Args:
-        file: файл изображения
-        folder: папка для загрузки (по умолчанию "calc")
-        position_id: ID позиции для организации файлов (опционально)
-        
-    Returns:
-        {"url": "https://..."}
+    Загрузка фото на S3 Beget Cloud Storage
     """
     try:
         # Проверка типа файла
         allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'image/gif']
         if file.content_type not in allowed_types:
-            raise HTTPException(400, f"Недопустимый тип файла: {file.content_type}. Разрешены: JPEG, PNG, JPG, WEBP, GIF")
+            raise HTTPException(400, f"Недопустимый тип файла: {file.content_type}")
         
-        # Читаем содержимое файла
+        # Читаем содержимое
         content = await file.read()
-        
         print(f"📤 Загрузка фото: {file.filename} ({len(content)} байт)")
         
-        # Загружаем на SFTP
-        from services.sftp_uploader import SFTPUploader
-        uploader = SFTPUploader()
-        url = uploader.upload_photo(content, file.filename, position_id)
+        # S3 загрузка
+        import boto3
+        from datetime import datetime
+        import os
         
-        print(f"✅ Фото загружено: {url}")
-        return {"url": url}
+        s3_client = boto3.client(
+            's3',
+            endpoint_url='https://s3.ru1.storage.beget.cloud',
+            aws_access_key_id=os.getenv('S3_ACCESS_KEY', 'RECD00AQJIM4300MLJ0W'),
+            aws_secret_access_key=os.getenv('S3_SECRET_KEY', 'FIucJ3i9iIWZ5ieJvabvI0OxEn2Yv4gG5XRUeSNf')
+        )
+        
+        bucket_name = os.getenv('S3_BUCKET', '73d16f7545b3-promogoods')
+        
+        # Генерируем уникальное имя файла
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]
+        ext = os.path.splitext(file.filename)[1].lower() or '.jpg'
+        
+        if position_id:
+            s3_key = f"positions/pos_{position_id}_{timestamp}{ext}"
+        else:
+            s3_key = f"calc/calc_{timestamp}{ext}"
+        
+        # Загружаем в S3 (используем BytesIO для правильной передачи)
+        from io import BytesIO
+        
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key=s3_key,
+            Body=BytesIO(content),
+            ContentType=file.content_type,
+            ContentLength=len(content),
+            ACL='public-read'
+        )
+        
+        # Формируем публичный URL
+        public_url = f"https://s3.ru1.storage.beget.cloud/{bucket_name}/{s3_key}"
+        
+        print(f"✅ Фото загружено в S3: {public_url}")
+        return {"url": public_url}
         
     except Exception as e:
         import traceback
-        print(f"❌ Ошибка загрузки фото: {e}")
+        print(f"❌ Ошибка загрузки: {e}")
         print(traceback.format_exc())
         raise HTTPException(500, f"Ошибка загрузки: {str(e)}")
 

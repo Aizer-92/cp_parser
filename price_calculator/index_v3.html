@@ -53,8 +53,19 @@
     <!-- V3 Components -->
     <script src="/static/js/v3/QuickModeV3.js"></script>
     <script src="/static/js/v3/CustomLogisticsFormV3.js"></script>
-    <script src="/static/js/v3/PositionsListV3.js"></script>
-    <script src="/static/js/v3/PositionFormV3.js"></script>
+    <script src="/static/js/v3/CalculationResultsV3.js"></script>
+    <script src="/static/js/v3/RouteEditorV3.js"></script>
+    <script src="/static/js/v3/QuickEditModalV3.js"></script>
+    <script src="/static/js/v3/CategoryChangeModalV3.js"></script>
+    <script src="/static/js/v3/CalculationHistoryV3.js"></script>
+    
+    <!-- ✅ РЕФАКТОРИНГ: Components with external templates (ES modules) -->
+    <script type="module" src="/static/js/v3/PositionFormV3.js"></script>
+    <script type="module" src="/static/js/v3/PositionsListV3.js"></script>
+    <script type="module" src="/static/js/v3/QuickModeV3.js"></script>
+    <script type="module" src="/static/js/v3/CategoriesPanelV3.js"></script>
+    
+    <script src="/static/js/v3/SettingsPanelV3.js"></script>
     <script src="/static/js/v3/PriceCalculatorAppV3.js"></script>
     
     <!-- Заглушки для еще не созданных компонентов -->
@@ -78,8 +89,15 @@
         // Регистрируем компоненты
         app.component('QuickModeV3', window.QuickModeV3);
         app.component('CustomLogisticsFormV3', window.CustomLogisticsFormV3);
+        app.component('CalculationResultsV3', window.CalculationResultsV3);
+        app.component('RouteEditorV3', window.RouteEditorV3);
+        app.component('QuickEditModalV3', window.QuickEditModalV3);
+        app.component('CategoryChangeModalV3', window.CategoryChangeModalV3);
+        app.component('CalculationHistoryV3', window.CalculationHistoryV3);
         app.component('PositionsListV3', window.PositionsListV3);
         app.component('PositionFormV3', window.PositionFormV3);
+        app.component('SettingsPanelV3', window.SettingsPanelV3);
+        app.component('CategoriesPanelV3', window.CategoriesPanelV3);
         app.component('FactoriesManagerV3', window.FactoriesManagerV3);
         app.component('HistoryV3', window.HistoryV3);
         

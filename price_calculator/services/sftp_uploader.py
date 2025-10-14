@@ -15,7 +15,8 @@ class SFTPUploader:
         self.host = os.getenv('SFTP_HOST', 'sftp.ru1.storage.beget.cloud')
         self.username = os.getenv('SFTP_USER', 'RECD00AQJIM4300MLJ0W')
         self.password = os.getenv('SFTP_PASSWORD', 'FIucJ3i9iIWZ5ieJvabvI0OxEn2Yv4gG5XRUeSNf')
-        self.base_path = '/calc/'
+        # Загружаем в корневую папку (нет прав на создание подпапок)
+        self.base_path = ''
         
     def _get_connection(self):
         """Создать SFTP соединение"""
@@ -57,22 +58,17 @@ class SFTPUploader:
             else:
                 new_filename = f"calc_{timestamp}{ext}"
             
-            # Полный путь на сервере
-            remote_path = f"{self.base_path}{new_filename}"
+            # Полный путь на сервере (просто имя файла)
+            remote_path = new_filename
             
-            # Проверяем существование базовой папки, создаем если нет
-            try:
-                sftp.stat(self.base_path)
-            except FileNotFoundError:
-                sftp.mkdir(self.base_path)
-            
-            # Загружаем файл
+            # Загружаем файл в корневую папку
+            print(f"📤 Загрузка файла: {remote_path}")
             with io.BytesIO(file_content) as file_obj:
                 sftp.putfo(file_obj, remote_path)
             
             # Формируем публичный URL
             # Предполагаем что файлы доступны через HTTP
-            public_url = f"https://ru1.storage.beget.cloud/{self.username}{remote_path}"
+            public_url = f"https://ru1.storage.beget.cloud/{self.username}/{remote_path}"
             
             return public_url
             

@@ -1,136 +1,19 @@
-// PositionsListV3.js - Список всех позиций товаров
+/**
+ * PositionsListV3.js - Список всех позиций товаров
+ * 
+ * ✅ РЕФАКТОРИНГ: Template вынесен в отдельный файл
+ * @see ./templates/positions-list.template.js
+ */
+
+// Импорт template (ES module)
+import { POSITIONS_LIST_TEMPLATE } from './templates/positions-list.template.js';
+
 window.PositionsListV3 = {
-    template: `
-    <div class="positions-list">
-        <!-- Форма создания/редактирования -->
-        <PositionFormV3
-            v-if="showForm"
-            :position="editingPosition"
-            @close="closeForm"
-            @saved="onPositionSaved"
-            @calculate-routes="onCalculateRoutes"
-        />
-        
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h2 class="card-title">Позиции товаров</h2>
-                <button @click="createPosition" class="btn-primary">
-                    + Создать позицию
-                </button>
-            </div>
-            
-            <!-- Поиск и фильтры -->
-            <div class="filters-bar">
-                <input
-                    v-model="searchQuery"
-                    type="text"
-                    placeholder="Поиск по названию или категории..."
-                    class="form-input"
-                    style="flex: 1;"
-                />
-                <select v-model="categoryFilter" class="form-input" style="width: 200px;">
-                    <option value="">Все категории</option>
-                    <option v-for="cat in categories" :key="cat" :value="cat">
-                        {{ cat }}
-                    </option>
-                </select>
-            </div>
-            
-            <!-- Загрузка -->
-            <div v-if="isLoading" class="loading-state">
-                <div class="spinner"></div>
-                <p>Загрузка позиций...</p>
-            </div>
-            
-            <!-- Пустой список -->
-            <div v-else-if="filteredPositions.length === 0" class="empty-state">
-                <p>Нет позиций</p>
-                <button @click="createPosition" class="btn-secondary">
-                    Создать первую позицию
-                </button>
-            </div>
-            
-            <!-- Список позиций -->
-            <div v-else class="positions-grid">
-                <div
-                    v-for="position in filteredPositions"
-                    :key="position.id"
-                    class="position-card"
-                    @click="openPosition(position.id)"
-                >
-                    <!-- Фото -->
-                    <div class="position-image">
-                        <img
-                            :src="(position.design_files_urls && position.design_files_urls.length > 0) ? position.design_files_urls[0] : 'https://via.placeholder.com/300x200?text=No+Image'"
-                            :alt="position.name"
-                            @error="$event.target.src='https://via.placeholder.com/300x200?text=No+Image'"
-                        />
-                    </div>
-                    
-                    <!-- Информация -->
-                    <div class="position-info">
-                        <h3 class="position-name">{{ position.name }}</h3>
-                        <p v-if="position.category" class="position-category">
-                            {{ position.category }}
-                        </p>
-                        <p v-if="position.description" class="position-description">
-                            {{ truncate(position.description, 80) }}
-                        </p>
-                        
-                        <!-- Метаданные -->
-                        <div class="position-meta">
-                            <span class="meta-item">
-                                ID: {{ position.id }}
-                            </span>
-                            <span class="meta-item">
-                                {{ formatDate(position.created_at) }}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <!-- Действия -->
-                    <div class="position-actions">
-                        <button
-                            @click.stop="editPosition(position.id)"
-                            class="btn-icon"
-                            title="Редактировать"
-                        >
-                            ✏
-                        </button>
-                        <button
-                            @click.stop="confirmDelete(position.id)"
-                            class="btn-icon btn-danger"
-                            title="Удалить"
-                        >
-                            🗑
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Пагинация -->
-            <div v-if="totalPages > 1" class="pagination">
-                <button
-                    @click="prevPage"
-                    :disabled="currentPage === 1"
-                    class="btn-secondary btn-sm"
-                >
-                    ← Назад
-                </button>
-                <span class="pagination-info">
-                    Страница {{ currentPage }} из {{ totalPages }}
-                </span>
-                <button
-                    @click="nextPage"
-                    :disabled="currentPage === totalPages"
-                    class="btn-secondary btn-sm"
-                >
-                    Вперёд →
-                </button>
-            </div>
-        </div>
-    </div>
-    `,
+    // ============================================
+    // TEMPLATE (вынесен в отдельный файл)
+    // ============================================
+    template: POSITIONS_LIST_TEMPLATE,
+    
     
     data() {
         return {
@@ -247,10 +130,64 @@ window.PositionsListV3 = {
         },
         
         async onCalculateRoutes(position) {
-            console.log('🚀 Переход на расчет маршрутов для позиции:', position);
+            console.log('🚀 Автоматический расчет для позиции:', position);
             
-            // Переключаемся на вкладку "Быстрый расчёт" и передаем данные позиции
-            this.$emit('switch-to-quick-calc', position);
+            try {
+                const v3 = window.useCalculationV3();
+                
+                // Проверяем наличие всех данных для детального расчета
+                const hasFullPacking = position.packing_units_per_box && 
+                                      position.packing_box_weight && 
+                                      position.packing_units_per_box > 0 && 
+                                      position.packing_box_weight > 0;
+                
+                const hasWeight = position.weight_kg && position.weight_kg > 0;
+                
+                // Формируем запрос для расчета
+                const requestData = {
+                    product_name: position.name,
+                    price_yuan: position.price_yuan,
+                    quantity: 1000, // Значение по умолчанию
+                    markup: 1.7, // Значение по умолчанию
+                    category: position.category || '',
+                    is_precise_calculation: hasFullPacking
+                };
+                
+                // Добавляем данные в зависимости от режима
+                if (hasFullPacking) {
+                    requestData.packing_units_per_box = position.packing_units_per_box;
+                    requestData.packing_box_weight = position.packing_box_weight;
+                    requestData.packing_box_length = position.packing_box_length || 0;
+                    requestData.packing_box_width = position.packing_box_width || 0;
+                    requestData.packing_box_height = position.packing_box_height || 0;
+                    // weight_kg рассчитается автоматически
+                } else if (hasWeight) {
+                    requestData.weight_kg = position.weight_kg;
+                } else {
+                    // Если нет ни паккинга, ни веса - используем вес по умолчанию
+                    alert('⚠️ В позиции не указан вес или паккинг. Используется вес по умолчанию 0.2 кг');
+                    requestData.weight_kg = 0.2;
+                }
+                
+                console.log('📤 Запрос на расчет:', requestData);
+                
+                // Выполняем расчет
+                const result = await v3.calculate(requestData);
+                
+                console.log('✅ Расчет завершен, переход к результатам');
+                
+                // Эмитим событие для перехода к результатам
+                this.$emit('calculation-complete', {
+                    result: result,
+                    requestData: requestData
+                });
+                
+            } catch (error) {
+                console.error('❌ Ошибка расчёта:', error);
+                const detail = error.response?.data?.detail;
+                const message = typeof detail === 'string' ? detail : JSON.stringify(detail);
+                alert('Ошибка расчета: ' + message);
+            }
         },
         
         confirmDelete(id) {

@@ -1,382 +1,19 @@
-// QuickModeV3.js - Быстрый режим расчёта (Position + Calculation)
+/**
+ * QuickModeV3.js - Быстрый режим расчёта (Position + Calculation)
+ * 
+ * ✅ РЕФАКТОРИНГ: Template вынесен в отдельный файл
+ * @see ./templates/quick-mode.template.js
+ */
+
+// Импорт template (ES module)
+import { QUICK_MODE_TEMPLATE } from './templates/quick-mode.template.js';
+
 window.QuickModeV3 = {
-    template: `
-    <div class="quick-mode">
-        <div class="card">
-            <h2 class="card-title">Быстрый расчёт</h2>
-            
-            <form @submit.prevent="calculate" class="form">
-                
-                <!-- Название товара -->
-                <div class="form-group">
-                    <label for="product-name">Название товара *</label>
-                    <input
-                        id="product-name"
-                        v-model="productName"
-                        type="text"
-                        placeholder="Например: Футболка хлопковая"
-                        required
-                        class="form-input"
-                        @input="detectCategory"
-                    />
-                </div>
-                
-                <!-- Категория (автоопределяется) -->
-                <div class="form-group">
-                    <label for="category">
-                        Категория 
-                        <span style="color: #6b7280; font-size: 13px;">(автоопределяется)</span>
-                    </label>
-                    <input
-                        id="category"
-                        v-model="category"
-                        type="text"
-                        list="categories-list"
-                        placeholder="Определится автоматически"
-                        class="form-input"
-                    />
-                    <datalist id="categories-list">
-                        <option v-for="cat in availableCategories" :key="cat" :value="cat">
-                    </datalist>
-                </div>
-                
-                <!-- Фабрика -->
-                <div class="form-group">
-                    <label for="factory">Фабрика (WeChat / URL)</label>
-                    <input
-                        id="factory"
-                        v-model="factoryUrl"
-                        type="text"
-                        placeholder="https://... или WeChat ID"
-                        class="form-input"
-                    />
-                </div>
-                
-                <!-- Цена и Количество -->
-                <div class="form-row">
-                    <div class="form-group flex-1">
-                        <label for="price">Цена (¥) *</label>
-                        <input
-                            id="price"
-                            v-model.number="priceYuan"
-                            type="number"
-                            step="0.01"
-                            required
-                            class="form-input"
-                        />
-                    </div>
-                    
-                    <div class="form-group flex-1">
-                        <label for="quantity">Кол-во *</label>
-                        <input
-                            id="quantity"
-                            v-model.number="quantity"
-                            type="number"
-                            required
-                            class="form-input"
-                        />
-                    </div>
-                </div>
-                    
-                <!-- Переключатель режимов -->
-                <div class="mode-toggle">
-                    <label class="toggle-label">
-                        <input
-                            type="radio"
-                            :value="false"
-                            v-model="detailedMode"
-                            class="toggle-radio"
-                        />
-                        <span>По весу</span>
-                    </label>
-                    <label class="toggle-label">
-                        <input
-                            type="radio"
-                            :value="true"
-                            v-model="detailedMode"
-                            class="toggle-radio"
-                        />
-                        <span>Детальный (упаковка)</span>
-                    </label>
-                </div>
-                
-                <!-- Вес (быстрый режим) -->
-                <div v-if="!detailedMode" class="form-group">
-                    <label for="weight">Вес 1 единицы (кг) *</label>
-                    <input
-                        id="weight"
-                        v-model.number="weightKg"
-                        type="number"
-                        step="0.01"
-                        required
-                        class="form-input"
-                    />
-                </div>
-                
-                <!-- Паккинг (детальный режим) -->
-                <div v-else class="packing-section">
-                    <div class="form-row">
-                        <div class="form-group flex-1">
-                            <label for="units-per-box">Штук в коробке *</label>
-                            <input
-                                id="units-per-box"
-                                v-model.number="packingUnitsPerBox"
-                                type="number"
-                                required
-                                class="form-input"
-                            />
-                        </div>
-                        
-                        <div class="form-group flex-1">
-                            <label for="box-weight">Вес коробки (кг) *</label>
-                            <input
-                                id="box-weight"
-                                v-model.number="packingBoxWeight"
-                                type="number"
-                                step="0.01"
-                                required
-                                class="form-input"
-                            />
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group flex-1">
-                            <label for="box-length">Длина (см) *</label>
-                            <input
-                                id="box-length"
-                                v-model.number="packingBoxLength"
-                                type="number"
-                                step="0.1"
-                                required
-                                class="form-input"
-                                placeholder="50"
-                            />
-                        </div>
-                        
-                        <div class="form-group flex-1">
-                            <label for="box-width">Ширина (см) *</label>
-                            <input
-                                id="box-width"
-                                v-model.number="packingBoxWidth"
-                                type="number"
-                                step="0.1"
-                                required
-                                class="form-input"
-                                placeholder="40"
-                            />
-                        </div>
-                        
-                        <div class="form-group flex-1">
-                            <label for="box-height">Высота (см) *</label>
-                            <input
-                                id="box-height"
-                                v-model.number="packingBoxHeight"
-                                type="number"
-                                step="0.1"
-                                required
-                                class="form-input"
-                                placeholder="30"
-                            />
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Наценка -->
-                <div class="form-group">
-                    <label for="markup">Наценка *</label>
-                    <input
-                        id="markup"
-                        v-model.number="markup"
-                        type="number"
-                        step="0.01"
-                        required
-                        class="form-input"
-                    />
-                </div>
-                
-                <!-- Кнопка расчёта -->
-                <div class="form-actions">
-                    <button
-                        type="submit"
-                        :disabled="isCalculating"
-                        class="btn-primary"
-                    >
-                        {{ isCalculating ? 'Расчёт...' : 'Рассчитать' }}
-                    </button>
-                </div>
-            </form>
-        </div>
-        
-        <!-- Второй этап: кастомные параметры логистики -->
-        <CustomLogisticsFormV3
-            v-if="needsCustomParams"
-            :category="category"
-            :routes="placeholderRoutes"
-            @apply="applyCustomLogistics"
-            @cancel="cancelCustomParams"
-        />
-        
-        <!-- Результаты - детальный вид -->
-        <div v-if="result && !needsCustomParams" class="card" style="margin-top: 24px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 class="card-title">Результаты расчёта</h2>
-                <button @click="reset" class="btn-text">Новый расчёт</button>
-            </div>
-            
-            <!-- Информация о товаре -->
-            <div class="result-summary">
-                <div class="summary-row">
-                    <span>Товар:</span>
-                    <strong>{{ result.product_name }}</strong>
-                </div>
-                <div class="summary-row">
-                    <span>Категория:</span>
-                    <strong>{{ result.category }}</strong>
-                </div>
-                <div class="summary-row">
-                    <span>Количество:</span>
-                    <strong>{{ result.quantity }} шт</strong>
-                </div>
-                <div class="summary-row">
-                    <span>Наценка:</span>
-                    <strong>{{ result.markup }}x</strong>
-                </div>
-            </div>
-            
-            <!-- Краткие результаты по маршрутам (раскрываются по клику) -->
-            <div v-for="(route, key) in result.routes" :key="key" class="route-details">
-                <div class="route-header" @click="toggleRoute(key)" style="cursor: pointer;">
-                    <h3 class="route-title">{{ formatRouteName(key) }}</h3>
-                    <div class="route-quick-info">
-                        <div class="route-prices">
-                            <span class="route-label">Себестоимость:</span>
-                            <span class="route-price">{{ formatPrice(route.cost_per_unit_rub || 0) }}₽</span>
-                            <span class="route-divider">|</span>
-                            <span class="route-label">Продажа:</span>
-                            <span class="route-price">{{ formatPrice(route.sale_per_unit_rub || 0) }}₽</span>
-                            <span class="route-divider">|</span>
-                            <span class="route-label">Прибыль:</span>
-                            <span class="route-price">{{ formatPrice((route.sale_per_unit_rub || 0) - (route.cost_per_unit_rub || 0)) }}₽</span>
-                        </div>
-                        <span class="route-arrow">{{ expandedRoutes[key] ? '▼' : '▶' }}</span>
-                    </div>
-                </div>
-                
-                <!-- Детали (раскрываются) -->
-                <div v-show="expandedRoutes[key]" class="route-expanded">
-                    <!-- Сводка (вверху) -->
-                    <div class="route-summary">
-                        <div class="summary-item">
-                            <span>СЕБЕСТОИМОСТЬ 1 ШТ</span>
-                            <strong>{{ formatPrice(route.cost_per_unit_rub || 0) }}₽</strong>
-                        </div>
-                        <div class="summary-item">
-                            <span>ЦЕНА ПРОДАЖИ 1 ШТ</span>
-                            <strong>{{ formatPrice(route.sale_per_unit_rub || 0) }}₽</strong>
-                        </div>
-                        <div class="summary-item">
-                            <span>ПРИБЫЛЬ 1 ШТ</span>
-                            <strong>{{ formatPrice((route.sale_per_unit_rub || 0) - (route.cost_per_unit_rub || 0)) }}₽</strong>
-                        </div>
-                    </div>
-                
-                <!-- Структура затрат (за 1 шт) -->
-                <div class="cost-breakdown">
-                    <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Структура затрат (за 1 шт)</h4>
-                    
-                    <!-- Стоимость в Китае -->
-                    <div class="cost-section">
-                        <div class="cost-section-header">
-                            <strong>Стоимость в Китае</strong>
-                            <strong>{{ formatPrice(route.china_cost_per_unit_rub) }}₽ ({{ route.china_cost_percentage }}%)</strong>
-                        </div>
-                        <div class="cost-item">
-                            <span>Цена в юанях</span>
-                            <span>{{ route.price_yuan_display || result.price_yuan }}¥</span>
-                            <span>{{ formatPrice(route.price_rub_per_unit) }}₽</span>
-                        </div>
-                        <div class="cost-item">
-                            <span>Пошлина за выкуп (5%)</span>
-                            <span></span>
-                            <span>{{ formatPrice(route.sourcing_fee_per_unit) }}₽</span>
-                        </div>
-                        <div class="cost-item">
-                            <span>Локальная доставка</span>
-                            <span></span>
-                            <span>{{ formatPrice(route.local_delivery_per_unit) }}₽</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Логистика -->
-                    <div class="cost-section">
-                        <div class="cost-section-header">
-                            <strong>Логистика</strong>
-                            <strong>{{ formatPrice(route.logistics_per_unit_rub) }}₽ ({{ route.logistics_percentage }}%)</strong>
-                        </div>
-                        <div class="cost-item">
-                            <span>Доставка {{ route.logistics_type_display || key }}</span>
-                            <span>{{ route.weight_display || '' }}</span>
-                            <span>{{ formatPrice(route.delivery_cost_per_unit) }}₽</span>
-                        </div>
-                        <div class="cost-item">
-                            <span>Пошлины</span>
-                            <span>{{ route.duty_rate_display || '9.6%' }}</span>
-                            <span>{{ formatPrice(route.duty_per_unit) }}₽</span>
-                        </div>
-                        <div class="cost-item">
-                            <span>НДС</span>
-                            <span>{{ route.vat_rate_display || '20%' }}</span>
-                            <span>{{ formatPrice(route.vat_per_unit) }}₽</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Прочие расходы -->
-                    <div class="cost-section">
-                        <div class="cost-section-header">
-                            <strong>Прочие расходы</strong>
-                            <strong>{{ formatPrice(route.other_costs_per_unit) }}₽ ({{ route.other_costs_percentage }}%)</strong>
-                        </div>
-                        <div class="cost-item">
-                            <span>Забор МСК</span>
-                            <span></span>
-                            <span>{{ formatPrice(route.moscow_pickup_per_unit) }}₽</span>
-                        </div>
-                        <div class="cost-item">
-                            <span>Прочие (2.5%)</span>
-                            <span></span>
-                            <span>{{ formatPrice(route.misc_costs_per_unit) }}₽</span>
-                        </div>
-                        <div class="cost-item">
-                            <span>Фиксированные расходы</span>
-                            <span></span>
-                            <span>{{ formatPrice(route.fixed_costs_per_unit) }}₽</span>
-                        </div>
-                    </div>
-                </div>
-                
-                    <!-- Итоги (внизу) -->
-                    <div class="route-totals">
-                        <div class="total-row">
-                            <span>ОБЩАЯ СЕБЕСТОИМОСТЬ</span>
-                            <strong>{{ formatPrice(route.cost_rub || 0) }}₽</strong>
-                        </div>
-                        <div class="total-row">
-                            <span>ЦЕНА ПРОДАЖИ</span>
-                            <strong>{{ formatPrice(route.sale_rub || 0) }}₽</strong>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Кнопки действий -->
-            <div class="form-actions" style="margin-top: 24px;">
-                <button @click="saveCalculation" class="btn-secondary">Сохранить расчёт</button>
-                <button @click="saveAsPosition" class="btn-secondary">Сохранить в Позиции</button>
-            </div>
-        </div>
-    </div>
-    `,
+    // ============================================
+    // TEMPLATE (вынесен в отдельный файл)
+    // ============================================
+    template: QUICK_MODE_TEMPLATE,
+    
     
     data() {
         return {
@@ -403,8 +40,6 @@ window.QuickModeV3 = {
             
             // Состояние
             isCalculating: false,
-            result: null,
-            expandedRoutes: {}, // Отслеживание развернутых маршрутов
             availableCategories: [],
             
             // Второй этап (кастомные параметры)
@@ -445,7 +80,18 @@ window.QuickModeV3 = {
             try {
                 const response = await axios.get(`${window.location.origin}/api/v3/categories`);
                 const data = response.data;
-                this.availableCategories = data.categories.map(c => c.category || c.name || c);
+                
+                // API возвращает массив напрямую
+                if (Array.isArray(data)) {
+                    this.availableCategories = data.map(c => c.category || c.name || c);
+                } else if (data.categories && Array.isArray(data.categories)) {
+                    // На случай если структура изменится
+                    this.availableCategories = data.categories.map(c => c.category || c.name || c);
+                } else {
+                    console.warn('⚠️ Неожиданный формат данных категорий:', data);
+                    this.availableCategories = [];
+                }
+                
                 console.log('✅ Загружено категорий:', this.availableCategories.length);
             } catch (error) {
                 console.error('❌ Ошибка загрузки категорий:', error);
@@ -535,8 +181,12 @@ window.QuickModeV3 = {
                     this.placeholderRoutes = result.routes || {};
                     this.category = result.category;
                 } else {
-                    this.result = result;
-                    console.log('✅ Результат расчёта:', result);
+                    // Эмитим событие для перехода на страницу результатов
+                    console.log('✅ Расчёт завершен, переход к результатам');
+                    this.$emit('calculation-complete', {
+                        result: result,
+                        requestData: requestData
+                    });
                 }
                 
             } catch (error) {
@@ -565,11 +215,13 @@ window.QuickModeV3 = {
                 // Выполняем расчёт с кастомными параметрами
                 const result = await v3.calculate(requestData);
                 
-                // Скрываем форму кастомных параметров и показываем результат
+                // Скрываем форму кастомных параметров и эмитим результат
                 this.needsCustomParams = false;
-                this.result = result;
-                
-                console.log('✅ Результат с кастомными параметрами:', result);
+                console.log('✅ Результат с кастомными параметрами, переход к результатам');
+                this.$emit('calculation-complete', {
+                    result: result,
+                    requestData: requestData
+                });
                 
             } catch (error) {
                 console.error('❌ Ошибка расчёта с кастомными параметрами:', error);
@@ -577,6 +229,31 @@ window.QuickModeV3 = {
                 alert(`Ошибка: ${errorMsg}`);
             } finally {
                 this.isCalculating = false;
+            }
+        },
+        
+        openCustomParams() {
+            // Открываем форму кастомных параметров с текущими результатами
+            console.log('🔧 Открытие формы редактирования ставок');
+            this.needsCustomParams = true;
+            this.placeholderRoutes = this.result.routes || {};
+            this.lastRequestData = {
+                product_name: this.productName,
+                price_yuan: this.priceYuan,
+                quantity: this.quantity,
+                markup: this.markup,
+                category: this.category,
+                is_precise_calculation: this.detailedMode
+            };
+            
+            if (this.detailedMode) {
+                this.lastRequestData.packing_box_length = this.packingBoxLength;
+                this.lastRequestData.packing_box_width = this.packingBoxWidth;
+                this.lastRequestData.packing_box_height = this.packingBoxHeight;
+                this.lastRequestData.packing_box_weight = this.packingBoxWeight;
+                this.lastRequestData.packing_units_per_box = this.packingUnitsPerBox;
+            } else {
+                this.lastRequestData.weight_kg = this.weightKg;
             }
         },
         
