@@ -617,7 +617,21 @@ def products_list():
             for img_row in image_rows:
                 img = ProductImage()
                 img.id = img_row[0]
-                img.image_filename = img_row[3] or img_row[1]  # Используем image_url напрямую
+                
+                # Формируем корректный URL для изображения
+                image_url = img_row[3] or img_row[1]  # image_url или image_filename
+                
+                # ИСПРАВЛЕНИЕ: Если путь начинается с "images/", добавляем S3 префикс
+                if image_url and image_url.startswith('images/'):
+                    image_url = f'https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods/{image_url}'
+                # Заменяем FTP на S3 (если есть FTP домен)
+                elif image_url and 'ftp.ru1.storage.beget.cloud' in image_url:
+                    image_url = image_url.replace('ftp.ru1.storage.beget.cloud', 's3.ru1.storage.beget.cloud')
+                # Заменяем протокол ftp:// на https://s3...
+                elif image_url and image_url.lower().startswith('ftp://'):
+                    image_url = image_url.replace('ftp://', 'https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods/')
+                
+                img.image_filename = image_url
                 img.is_main_image = img_row[2]
                 product.images.append(img)
             
@@ -1011,8 +1025,22 @@ def product_detail(product_id):
         for row in image_rows:
             img = ProductImage()
             img.id = row[0]
-            img.image_filename = row[4] or row[1]  # Используем image_url (row[4]) напрямую из БД
-            img.image_url = row[4] or row[1]
+            
+            # Формируем корректный URL для изображения
+            image_url = row[4] or row[1]  # image_url или image_filename
+            
+            # ИСПРАВЛЕНИЕ: Если путь начинается с "images/", добавляем S3 префикс
+            if image_url and image_url.startswith('images/'):
+                image_url = f'https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods/{image_url}'
+            # Заменяем FTP на S3 (если есть FTP домен)
+            elif image_url and 'ftp.ru1.storage.beget.cloud' in image_url:
+                image_url = image_url.replace('ftp.ru1.storage.beget.cloud', 's3.ru1.storage.beget.cloud')
+            # Заменяем протокол ftp:// на https://s3...
+            elif image_url and image_url.lower().startswith('ftp://'):
+                image_url = image_url.replace('ftp://', 'https://s3.ru1.storage.beget.cloud/73d16f7545b3-promogoods/')
+            
+            img.image_filename = image_url
+            img.image_url = image_url
             img.is_main_image = bool(row[2]) if row[2] is not None else False
             img.display_order = int(row[3]) if row[3] is not None else 1
             images.append(img)
